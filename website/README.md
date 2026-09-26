@@ -28,6 +28,13 @@ repository's `/planacity/` path. Desktop assets live separately in
 In the repository's **Settings -> Pages -> Build and deployment**, select
 **GitHub Actions** as the source (one-time setup).
 
+If a separate `pages build and deployment` run fails with "Invalid YAML front
+matter" in an `.astro` file, check that source setting. The branch-based Pages
+builder uses Jekyll, which cannot build Astro source files. Keep the existing
+Actions workflow as the publisher; do not change Astro front matter to YAML.
+After correcting the source, run `CI` manually on `main` and verify its
+`deploy-pages` job. Historical failed Jekyll runs remain visible in Actions.
+
 The shared CI workflow builds the site on pull requests. Merges to `main` publish
 the generated `website/dist` artifact only after both Python and website checks
 pass. Deployment runs in the `github-pages` environment; feature branches and pull
