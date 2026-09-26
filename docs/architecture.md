@@ -1,7 +1,8 @@
 # Initial architecture
 
-This document records the skeleton and the intended v0.1 boundaries. The domain
-and persistence packages are currently placeholders; no project schema exists yet.
+This document records the skeleton and the v0.1 boundaries. The canonical plan,
+horizon, and work hierarchy are implemented; persistence remains a placeholder
+and no project-file schema exists yet. See [domain-model.md](domain-model.md).
 
 | Layer | Responsibility | Allowed dependencies |
 | --- | --- | --- |
@@ -15,6 +16,11 @@ Use normal Python calls and Qt signals. Business rules belong below the UI;
 validation must also apply to loading files and non-UI callers. The future Plan
 editor uses `QTreeView` and a `QAbstractItemModel` backed by the canonical model.
 Do not keep separate editable copies of data for each view.
+
+The domain validates complete immutable plan snapshots, including hierarchy
+invariants. Planning operations create a candidate snapshot and return it only
+after validation succeeds, preserving the original on errors. This keeps the
+same invariants available to the future UI and file loaders without Qt imports.
 
 ## v0.1 decisions
 
