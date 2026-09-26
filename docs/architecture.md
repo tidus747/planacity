@@ -1,7 +1,8 @@
 # Initial architecture
 
 This document records the skeleton and the v0.1 boundaries. The canonical plan,
-horizon, and work hierarchy are implemented; persistence remains a placeholder
+horizon, work hierarchy, people, estimates, dates, groups, and relationships are
+implemented; persistence remains a placeholder
 and no project-file schema exists yet. See [domain-model.md](domain-model.md).
 
 | Layer | Responsibility | Allowed dependencies |
