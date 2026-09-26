@@ -24,6 +24,10 @@ pass. Pull requests never publish the site.
 
 ## Implementation and validation
 
+Use ordinary keyboard punctuation in authored text: hyphens, straight quotes,
+`...`, and `->` if a text arrow is needed. Avoid decorative Unicode punctuation.
+Preserve accents in names and language, and preserve user/imported data exactly.
+
 Follow the setup and check commands in [README.md](README.md). Use type hints and
 small, explicit functions. Keep domain entities and planning rules independent of
 Qt. Use the standard library for SQLite and JSON; avoid infrastructure or

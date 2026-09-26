@@ -69,7 +69,7 @@ def overview_page(on_plan: Callable[[], None], on_people: Callable[[], None]) ->
         ("Planning horizon", "A date range that fits your program"),
     ):
         panel = Panel(title)
-        panel.content.addWidget(label("—", "metric"))
+        panel.content.addWidget(label("Not set", "metric"))
         panel.content.addWidget(label(description))
         metrics.addWidget(panel, 1)
     page.content.addLayout(metrics)
@@ -86,8 +86,8 @@ def overview_page(on_plan: Callable[[], None], on_people: Callable[[], None]) ->
         label("No project is open. Creating and saving a plan is coming in v0.1.")
     )
     actions = QHBoxLayout()
-    actions.addWidget(_button("View plan →", on_plan))
-    actions.addWidget(_button("View people →", on_people))
+    actions.addWidget(_button("View plan", on_plan))
+    actions.addWidget(_button("View people", on_people))
     actions.addStretch()
     structure.content.addLayout(actions)
     structure.content.addStretch()
@@ -107,7 +107,7 @@ def overview_page(on_plan: Callable[[], None], on_people: Callable[[], None]) ->
     page.content.addLayout(panels, 1)
     page.content.addWidget(
         label(
-            "Development preview · Navigation and appearance are available. Plan editing is next."
+            "Development preview | Navigation and appearance are available. Plan editing is next."
         )
     )
     return page
@@ -186,7 +186,7 @@ def work_page(*, people: bool = False) -> WorkspacePage:
     split.setStretchFactor(1, 2)
     split.setSizes([600, 300])
     page.content.addWidget(split, 1)
-    page.content.addWidget(label("Development preview · No project open"))
+    page.content.addWidget(label("Development preview | No project open"))
     return page
 
 

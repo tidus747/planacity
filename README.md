@@ -7,15 +7,15 @@ and offline-capable. Planning data stays local by default.
 
 ## Current status
 
-This repository is the initial **v0.1 — Planning Foundation** skeleton, not a
+This repository is the initial **v0.1 - Planning Foundation** skeleton, not a
 finished planning application. It includes a launchable PySide6 shell with a left
 sidebar, Overview cards, Plan and People workspaces with resizable details panels,
 and an Import roadmap page, plus development checks and a small static website.
 Creating, editing, saving, and reopening plans are still planned work.
 
 Switch between **Light** and **Dark** at the bottom of the sidebar or through
-**View → Appearance**. The choice is saved locally for the next launch. The first
-launch uses the system appearance when Qt can detect it. Use **Ctrl+1–4** or the
+**View -> Appearance**. The choice is saved locally for the next launch. The first
+launch uses the system appearance when Qt can detect it. Use **Ctrl+1-4** or the
 View menu to switch pages. The Import page describes planned v0.2 work; capacity
 remains planned for v0.4. Empty workspaces contain no fabricated planning data.
 
@@ -70,6 +70,9 @@ installed, as in CI. See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow guidanc
 - `examples/`: sample-program brief, pending the project file format.
 - `website/`: standalone Astro Home and Roadmap pages; see its [README](website/README.md).
 - `.github/`: CI and contribution templates.
+- `assets/`: editable design originals; desktop runtime graphics belong in
+  `src/planacity/resources/icons/` and `src/planacity/resources/images/`.
+- `website/public/icons/` and `website/public/images/`: static website graphics.
 
 ## License
 

@@ -18,9 +18,14 @@ to `dist/`. The configuration targets `https://tidus747.github.io/planacity/`;
 update `site` and `base` for a different repository or custom domain.
 Internal links include the configured base path.
 
+Put static website icons in `public/icons/` and other graphics in `public/images/`.
+Reference them using `import.meta.env.BASE_URL` so they also work under the
+repository's `/planacity/` path. Desktop assets live separately in
+`src/planacity/resources/`; editable design originals belong in `assets/`.
+
 ## Publishing
 
-In the repository's **Settings → Pages → Build and deployment**, select
+In the repository's **Settings -> Pages -> Build and deployment**, select
 **GitHub Actions** as the source (one-time setup).
 
 The shared CI workflow builds the site on pull requests. Merges to `main` publish
