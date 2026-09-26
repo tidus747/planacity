@@ -1,0 +1,33 @@
+---
+import Page from '../layouts/Page.astro';
+const releases = [
+  ['v0.2', 'Jira Roundtrip', 'Bring Jira work in and export the agreed structure through CSV.'],
+  ['v0.3', 'Visual Planning', 'See the program on a timeline.'],
+  ['v0.4', 'Team & Capacity', 'Check planned work against realistic team availability.'],
+  ['v0.5', 'Program Calendar', 'Understand work alongside leave, holidays, and program events.'],
+  ['v0.6', 'Milestones & Deliveries', 'Track program outcomes and delivery readiness.'],
+  ['v0.7', 'Communication', 'Share plans and reports outside the application.'],
+  ['v0.8', 'Scenarios & Reconciliation', 'Compare alternatives and reconcile Jira changes.'],
+  ['v0.9', 'Stabilisation', 'Improve reliability, usability, and desktop packaging.'],
+  ['v1.0', 'Stable', 'Complete the import-to-planning-to-export workflow.'],
+];
+---
+
+<Page title="Roadmap">
+  <h1>Small releases. Useful progress.</h1>
+  <p>This is a direction, not a delivery schedule. Planacity is a single-maintainer
+    side project; scope stays focused on one useful increment at a time.</p>
+  <h2>Current target: v0.1 — Planning Foundation</h2>
+  <p>Create, edit, save, close, and reopen a small Program Plan.</p>
+  <ul>
+    <li>Program details and a flexible planning horizon</li>
+    <li>Epics, Tasks, Subtasks, WorkGroups, and basic relationships</li>
+    <li>People, estimates, dates, and a spreadsheet-like Plan view</li>
+    <li>Local persistence, JSON backup/export, and a fictional example</li>
+  </ul>
+  <p class="status">Only the initial shell is available in the current source preview.</p>
+  <h2>Later milestones</h2>
+  <ul>
+    {releases.map(([version, name, goal]) => <li><strong>{version} — {name}:</strong> {goal}</li>)}
+  </ul>
+</Page>
