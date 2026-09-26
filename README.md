@@ -13,6 +13,10 @@ sidebar, Overview cards, Plan and People workspaces with resizable details panel
 and an Import roadmap page, plus development checks and a small static website.
 Creating, editing, saving, and reopening plans are still planned work.
 
+The Python [domain model](docs/domain-model.md) now supports Program Plans,
+flexible horizons, and validated Epic/Task/Subtask editing. Connecting these APIs
+to the desktop editor and project files is upcoming work.
+
 Switch between **Light** and **Dark** at the bottom of the sidebar or through
 **View -> Appearance**. The choice is saved locally for the next launch. The first
 launch uses the system appearance when Qt can detect it. Use **Ctrl+1-4** or the
