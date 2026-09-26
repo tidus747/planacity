@@ -25,6 +25,9 @@ Issues = "https://github.com/tidus747/planacity/issues"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+planacity = ["resources/icons/*", "resources/images/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

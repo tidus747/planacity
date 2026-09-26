@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from planacity.ui.icons import navigation_icon
+from planacity.ui.icons import navigation_icon, svg_icon
 from planacity.ui.pages import import_page, label, overview_page, work_page
 from planacity.ui.theme import COLORS, Theme, stylesheet
 
@@ -31,6 +31,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.settings = settings if settings is not None else QSettings("Planacity", "Planacity")
         self.setWindowTitle("Planacity")
+        self.setWindowIcon(svg_icon("app.svg"))
         self.resize(1280, 840)
         self.setMinimumSize(960, 640)
         self.navigation: dict[str, QPushButton] = {}
@@ -58,7 +59,7 @@ class MainWindow(QMainWindow):
             scroll.setWidget(page)
             self.pages.addWidget(scroll)
         self._menus()
-        self.statusBar().showMessage("Development preview · No project open")
+        self.statusBar().showMessage("Development preview | No project open")
         self.statusBar().addPermanentWidget(label(f"Planacity {version('planacity')}", "eyebrow"))
         default = (
             Theme.DARK
@@ -134,7 +135,7 @@ class MainWindow(QMainWindow):
 
     def _menus(self) -> None:
         file_menu = self.menuBar().addMenu("&File")
-        for title in ("&New plan…", "&Open…", "&Save", "Save &as…"):
+        for title in ("&New plan...", "&Open...", "&Save", "Save &as..."):
             action = file_menu.addAction(title)
             action.setEnabled(False)
             action.setToolTip("Project creation and persistence are coming in v0.1.")
