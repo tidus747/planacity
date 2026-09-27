@@ -4,7 +4,7 @@ from functools import partial
 from importlib.metadata import version
 
 from PySide6.QtCore import QSettings, QSize, Qt
-from PySide6.QtGui import QAction, QActionGroup, QGuiApplication, QKeySequence
+from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QGuiApplication, QKeySequence
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -19,17 +19,22 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from planacity.ui.editor_pages import PeoplePage, PlanPage
 from planacity.ui.icons import navigation_icon, svg_icon
-from planacity.ui.pages import import_page, label, overview_page, work_page
+from planacity.ui.overview import OverviewPage
+from planacity.ui.pages import import_page, label
+from planacity.ui.project_actions import ProjectActions
+from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Theme, stylesheet
 
 
 class MainWindow(QMainWindow):
-    """Keep presentation preferences separate from future program data."""
+    """Share one document while keeping appearance preferences separate from project data."""
 
     def __init__(self, settings: QSettings | None = None) -> None:
         super().__init__()
         self.settings = settings if settings is not None else QSettings("Planacity", "Planacity")
+        self.session = Session()
         self.setWindowTitle("Planacity")
         self.setWindowIcon(svg_icon("app.svg"))
         self.resize(1280, 840)
@@ -47,10 +52,12 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._sidebar())
         layout.addWidget(self.pages, 1)
         self.setCentralWidget(central)
+        self.plan_page = PlanPage(self.session)
+        self.people_page = PeoplePage(self.session)
         for page in (
-            overview_page(partial(self.show_page, 1), partial(self.show_page, 2)),
-            work_page(),
-            work_page(people=True),
+            OverviewPage(self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)),
+            self.plan_page,
+            self.people_page,
             import_page(),
         ):
             scroll = QScrollArea()
@@ -59,6 +66,7 @@ class MainWindow(QMainWindow):
             scroll.setWidget(page)
             self.pages.addWidget(scroll)
         self._menus()
+        self.session.changed.connect(self._refresh_document)
         self.statusBar().showMessage("Development preview | No project open")
         self.statusBar().addPermanentWidget(label(f"Planacity {version('planacity')}", "eyebrow"))
         default = (
@@ -114,7 +122,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(divider)
         layout.addSpacing(10)
         layout.addWidget(label("PROJECT", "eyebrow"))
-        layout.addWidget(label("No project open", "heading"))
+        self.project_label = label("No project open", "heading")
+        layout.addWidget(self.project_label)
         layout.addWidget(label("Planning Foundation\nv0.1 preview"))
         layout.addStretch()
         layout.addWidget(label("APPEARANCE", "eyebrow"))
@@ -134,17 +143,12 @@ class MainWindow(QMainWindow):
         return sidebar
 
     def _menus(self) -> None:
-        file_menu = self.menuBar().addMenu("&File")
-        for title in ("&New plan...", "&Open...", "&Save", "Save &as..."):
-            action = file_menu.addAction(title)
-            action.setEnabled(False)
-            action.setToolTip("Project creation and persistence are coming in v0.1.")
-        file_menu.addSeparator()
-        quit_action = file_menu.addAction("E&xit")
-        quit_action.setShortcut(QKeySequence.StandardKey.Quit)
-        quit_action.triggered.connect(self.close)
+        self.file_actions = ProjectActions(self, self.session)
+        self.file_actions.flush_edit = self.plan_page.commit_editor
         edit_menu = self.menuBar().addMenu("&Edit")
-        edit_menu.addAction("Plan editing is coming in v0.1").setEnabled(False)
+        edit_menu.addAction("Plan properties...", self.file_actions.properties)
+        edit_menu.addAction("Move selected work...", self.plan_page.move_item)
+        edit_menu.addAction("Delete selected work...", self.plan_page.delete_item)
         view_menu = self.menuBar().addMenu("&View")
         for index, name in enumerate(self.navigation):
             action = view_menu.addAction(name)
@@ -169,10 +173,32 @@ class MainWindow(QMainWindow):
             "About Planacity",
             "<b>Planacity</b><p>Plan the work. "
             "Respect the capacity.</p><p>Planning Foundation development preview. "
-            "Plan editing and saving are not available yet.</p>",
+            "Create, edit, and save local Program Plans. "
+            "Jira and capacity are planned for later versions.</p>",
         )
 
+    def _refresh_document(self) -> None:
+        document = self.session.document
+        if document.plan is None:
+            return
+        self.project_label.setText(document.plan.name)
+        marker = " *" if document.dirty else ""
+        self.setWindowTitle(f"{document.plan.name}{marker} - Planacity")
+        location = str(document.path) if document.path else "Not saved yet"
+        self.statusBar().showMessage(
+            f"{'Unsaved changes' if document.dirty else 'Saved'} | {location}"
+        )
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self.file_actions.guard():
+            event.accept()
+        else:
+            event.ignore()
+
     def show_page(self, index: int) -> None:
+        if index != 1 and not self.plan_page.commit_editor():
+            list(self.navigation.values())[self.pages.currentIndex()].setChecked(True)
+            return
         self.pages.setCurrentIndex(index)
         list(self.navigation.values())[index].setChecked(True)
         self._refresh_icons()

@@ -56,10 +56,16 @@ def stylesheet(theme: Theme) -> str:
     c = COLORS[theme]
     return f"""
         QWidget {{ color: {c.text}; font-size: 14px; }}
-        QMainWindow, QMessageBox, QStackedWidget, QScrollArea, QWidget#page {{
+        QMainWindow, QDialog, QMessageBox, QStackedWidget, QScrollArea, QWidget#page {{
             background: {c.background};
         }}
         QLabel {{ background: transparent; }}
+        QLineEdit, QPlainTextEdit, QComboBox, QListWidget {{
+            background: {c.surface}; color: {c.text}; border: 1px solid {c.border};
+            padding: 6px; selection-background-color: {c.selected};
+            selection-color: {c.text};
+        }}
+        QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus {{ border-color: {c.accent}; }}
         QLabel[role="muted"] {{ color: {c.muted}; }}
         QLabel[role="title"] {{ font-size: 32px; font-weight: 700; }}
         QLabel[role="subtitle"] {{ color: {c.muted}; font-size: 16px; }}
