@@ -1,0 +1,140 @@
+{
+  "format": "planacity",
+  "schema_version": 1,
+  "plan": {
+    "name": "Aurora Test Bench",
+    "horizon": {
+      "start": "2026-10-01",
+      "end": "2026-11-30"
+    },
+    "description": "Fictional example. Prepare a laboratory test bench and its control software. People form a roster; work allocations and capacity calculations are not part of v0.1.",
+    "id": "d4b07f6b-ebba-5c26-a6b6-94e3bb7027a8",
+    "work_items": [
+      {
+        "title": "Test bench readiness",
+        "kind": "epic",
+        "id": "d7bb9292-f99f-5c21-a7e6-51466637ddce",
+        "parent_id": null,
+        "estimate_hours": null,
+        "start": "2026-10-01",
+        "end": "2026-10-30"
+      },
+      {
+        "title": "Review fixture design",
+        "kind": "task",
+        "id": "3953fa27-f49c-58c3-a0b3-12f5e552afd1",
+        "parent_id": "d7bb9292-f99f-5c21-a7e6-51466637ddce",
+        "estimate_hours": "16.5",
+        "start": "2026-10-01",
+        "end": "2026-10-06"
+      },
+      {
+        "title": "Assemble test bench",
+        "kind": "task",
+        "id": "0123af5d-891e-5951-8800-ef3e5442a414",
+        "parent_id": "d7bb9292-f99f-5c21-a7e6-51466637ddce",
+        "estimate_hours": "40",
+        "start": "2026-10-07",
+        "end": "2026-10-21"
+      },
+      {
+        "title": "Inspect wiring",
+        "kind": "subtask",
+        "id": "51e285cb-cc5c-5fac-9ce2-dc31a87d1ad4",
+        "parent_id": "0123af5d-891e-5951-8800-ef3e5442a414",
+        "estimate_hours": "4.25",
+        "start": "2026-10-20",
+        "end": "2026-10-21"
+      },
+      {
+        "title": "Control software",
+        "kind": "epic",
+        "id": "b6ba97b1-82d9-54d1-954b-f7ebb113039e",
+        "parent_id": null,
+        "estimate_hours": null,
+        "start": "2026-10-05",
+        "end": "2026-11-20"
+      },
+      {
+        "title": "Implement instrument driver",
+        "kind": "task",
+        "id": "c14afdd4-f0ce-52ad-8b3e-42dfb6828732",
+        "parent_id": "b6ba97b1-82d9-54d1-954b-f7ebb113039e",
+        "estimate_hours": "32",
+        "start": "2026-10-05",
+        "end": "2026-10-16"
+      },
+      {
+        "title": "Calibrate measurements",
+        "kind": "task",
+        "id": "51551aa7-3025-5a7d-b6ef-09adf8b3abf8",
+        "parent_id": "b6ba97b1-82d9-54d1-954b-f7ebb113039e",
+        "estimate_hours": "12",
+        "start": "2026-10-22",
+        "end": "2026-10-26"
+      },
+      {
+        "title": "Verify calibration report",
+        "kind": "subtask",
+        "id": "1e45ea21-f4c8-5c4b-86e2-96490da73c1d",
+        "parent_id": "51551aa7-3025-5a7d-b6ef-09adf8b3abf8",
+        "estimate_hours": "3",
+        "start": "2026-10-26",
+        "end": "2026-10-26"
+      },
+      {
+        "title": "Write handover notes",
+        "kind": "task",
+        "id": "852f35ba-6fd0-52ef-9501-46e34191a671",
+        "parent_id": null,
+        "estimate_hours": null,
+        "start": null,
+        "end": null
+      }
+    ],
+    "people": [
+      {
+        "name": "Alex Rivera",
+        "id": "8a2cfaff-65dd-5e1d-8e9c-9a4f3807d461"
+      },
+      {
+        "name": "Morgan Chen",
+        "id": "089ba714-f087-53e8-bb39-1af2bd5d2b87"
+      },
+      {
+        "name": "Sam Taylor",
+        "id": "05cdb162-47d8-526f-aae7-88a354d567a9"
+      }
+    ],
+    "work_groups": [
+      {
+        "name": "Aurora readiness",
+        "id": "b2a606a4-0d30-52bc-a315-6f925f4a23e8",
+        "epic_ids": [
+          "d7bb9292-f99f-5c21-a7e6-51466637ddce",
+          "b6ba97b1-82d9-54d1-954b-f7ebb113039e"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source_id": "0123af5d-891e-5951-8800-ef3e5442a414",
+        "target_id": "3953fa27-f49c-58c3-a0b3-12f5e552afd1",
+        "kind": "depends_on",
+        "id": "e1544fea-d32c-56fd-ac19-707acf076af1"
+      },
+      {
+        "source_id": "51551aa7-3025-5a7d-b6ef-09adf8b3abf8",
+        "target_id": "c14afdd4-f0ce-52ad-8b3e-42dfb6828732",
+        "kind": "depends_on",
+        "id": "4d3b00d8-b3c4-5a7a-ab65-bd6b3be324c5"
+      },
+      {
+        "source_id": "0123af5d-891e-5951-8800-ef3e5442a414",
+        "target_id": "51551aa7-3025-5a7d-b6ef-09adf8b3abf8",
+        "kind": "blocks",
+        "id": "cc36e4e7-11c9-513d-b68b-518c584d2ac9"
+      }
+    ]
+  }
+}
