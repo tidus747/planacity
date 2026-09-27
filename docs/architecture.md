@@ -1,20 +1,20 @@
 # Initial architecture
 
-This document records the skeleton and the v0.1 boundaries. The canonical plan,
-horizon, work hierarchy, people, estimates, dates, groups, and relationships are
-implemented; persistence remains a placeholder
-and no project-file schema exists yet. See [domain-model.md](domain-model.md).
+The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
+people, estimates, dates, groups, and relationships. See
+[domain-model.md](domain-model.md) and [project-file-format.md](project-file-format.md).
 
 | Layer | Responsibility | Allowed dependencies |
 | --- | --- | --- |
 | `domain` | Canonical entities and intrinsic invariants | Python standard library |
 | `planning` | Editing operations and cross-entity validation | Domain, standard library |
 | `persistence` | SQLite project files and JSON backups | Domain, standard library |
-| `ui` | Qt views and model adapters; present validation errors | Domain, planning, persistence, PySide6 |
+| `document.py` | Open/save state and the last saved snapshot | Domain, persistence, standard library |
+| `ui` | Qt views and model adapters; present validation errors | Document, domain, planning, persistence, PySide6 |
 | `main.py` | Application startup | UI, PySide6 |
 
 Use normal Python calls and Qt signals. Business rules belong below the UI;
-validation must also apply to loading files and non-UI callers. The future Plan
+validation must also apply to loading files and non-UI callers. The Plan
 editor uses `QTreeView` and a `QAbstractItemModel` backed by the canonical model.
 Do not keep separate editable copies of data for each view.
 
@@ -38,7 +38,7 @@ same invariants available to the future UI and file loaders without Qt imports.
   from project data; use the system appearance on first launch. Tests inject a
   temporary settings file so they do not overwrite user preferences.
 - Use SQLite via `sqlite3` for local project persistence and `json` for backups.
-  Decide and document the versioned file format in the storage issue. No ORM,
+  Schema 1 stores one validated JSON snapshot in a SQLite container. No ORM,
   database service, HTTP API, or cloud component is needed.
 - Use canonical IDs and Python dates. A planning horizon is any valid date range.
   Parent/child hierarchy, WorkGroups, and relationships are distinct concepts.
@@ -55,7 +55,15 @@ same invariants available to the future UI and file loaders without Qt imports.
 ## Validation strategy
 
 The skeleton tests navigation, theme switching and restoration, and a real Qt
-startup/shutdown. Feature issues add
-headless domain and persistence tests, including invalid input and failure paths.
-The milestone finishes with a manual Windows create/edit/save/close/reopen check.
+startup/shutdown. Domain, persistence, and document tests cover invalid data and
+failed writes. Selective Qt tests cover hierarchy, form validation, cancellation,
+keyboard save, and close/reopen/continue. Native Windows GUI acceptance and visual
+checks are recorded in [getting-started.md](getting-started.md).
 Building a wheel checks Python packaging; a Windows installer remains later work.
+
+One `Session` change signal connects the document to Overview, Plan, and People.
+The Qt model holds a reference to the same immutable plan snapshot. Structural
+changes use model reset notifications and restore selection/expansion by UUID;
+cell edits use `dataChanged` so invalid drafts and the current editor stay intact.
+File dialogs and confirmation prompts are presentation concerns; persistence and
+dirty-state transitions are independently testable without Qt.

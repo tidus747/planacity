@@ -1,8 +1,8 @@
 # Planning Foundation domain model
 
 V01-02 through V01-05 provide a small canonical model and editing API independent of
-Qt, file formats, and external tools. These APIs are implemented; the desktop
-editor and persistence are separate upcoming issues.
+Qt, file formats, and external tools. The desktop editor and versioned local
+project/backup adapters use these APIs.
 
 ## Entities
 
@@ -89,7 +89,7 @@ passing `None` clears it. Parent estimates are independent, not computed rollups
 `set_work_dates(plan, item_id, start=..., end=...)` sets or clears both optional
 dates atomically. A start-only or end-only item is valid. When both are known,
 end must be on or after start. Dates outside the horizon are preserved.
-`work_outside_horizon(plan)` returns affected items in order for a future editor
+`work_outside_horizon(plan)` returns affected items in order for the editor
 to display; it never invents missing dates, clamps values, or shifts other work.
 
 ## WorkGroups and relationships
@@ -129,6 +129,7 @@ plan = add_work_item(plan, task)
 assert plan.children(epic.id) == (task,)
 ```
 
-No project-file schema, scheduling, capacity, or imports are implemented by these
-issues. Run their tests with `python -m pytest tests/domain`;
+Scheduling, capacity, and imports remain future work. Storage is documented in
+[project-file-format.md](project-file-format.md). Run domain tests with
+`python -m pytest tests/domain`;
 neither these tests nor the model require importing Qt.
