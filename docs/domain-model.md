@@ -1,6 +1,6 @@
 # Planning Foundation domain model
 
-V01-02 and V01-03 provide a small canonical model and editing API independent of
+V01-02 through V01-05 provide a small canonical model and editing API independent of
 Qt, file formats, and external tools. These APIs are implemented; the desktop
 editor and persistence are separate upcoming issues.
 
@@ -9,8 +9,11 @@ editor and persistence are separate upcoming issues.
 | Entity | Fields | Rules |
 | --- | --- | --- |
 | `PlanningHorizon` | `start`, `end` | Inclusive dates; end cannot precede start |
-| `ProgramPlan` | `id`, `name`, `description`, `horizon`, `work_items` | Non-blank name and a valid hierarchy |
-| `WorkItem` | `id`, `title`, `kind`, `parent_id` | Non-blank title and a supported kind |
+| `ProgramPlan` | `id`, `name`, `description`, `horizon`, `work_items`, `people`, `work_groups`, `relationships` | Valid immutable collections and references |
+| `WorkItem` | `id`, `title`, `kind`, `parent_id`, `estimate_hours`, `start`, `end` | Valid hierarchy, estimates and optional dates |
+| `Person` | `id`, `name` | Non-blank name; unique ID within the roster |
+| `WorkGroup` | `id`, `name`, `epic_ids` | Named group of existing Epics |
+| `Relationship` | `id`, `source_id`, `target_id`, `kind` | Existing distinct endpoints; no duplicate links |
 
 IDs are Python `uuid.UUID` values. Constructors generate UUIDs by default and
 accept explicit UUIDs when reconstructing existing data. Editing preserves IDs.
@@ -38,9 +41,9 @@ children, allowing a future loader to resolve a complete snapshot before validat
 `plan.children()` returns roots; `plan.children(parent_id)` returns direct children.
 `plan.work_item(item_id)` retrieves an item or raises an actionable `ValueError`.
 
-WorkGroups and relationships will be separate concepts, not extra hierarchy
-levels. Assignment will use separate Allocations when implemented; no single
-owner field is introduced here.
+WorkGroups and relationships are separate concepts, not extra hierarchy levels.
+Assignment will use separate Allocations when implemented; no single owner field
+is introduced here.
 
 ## Editing
 
@@ -63,6 +66,52 @@ Subtree deletion requires `delete_descendants=True`, which must be a boolean.
 The future UI must show what will be removed and ask the user before passing it.
 Deleting a group of items does not reorder the surviving items.
 
+Removing referenced work also requires `remove_references=True` (a boolean).
+Without it, the operation reports the affected relationship and group-membership
+counts and leaves the plan unchanged. Confirmed removal drops those references,
+including references to descendants, and preserves surviving work and groups.
+
+## People, estimates and dates
+
+`planning/people.py` provides `add_person`, `rename_person`, and `remove_person`.
+Names may repeat; IDs identify people. Renaming preserves identity and roster
+order. Removing a person currently affects only the roster. Future Allocations
+and recurring reservations must explicitly handle references before allowing
+removal; there are no capacity or assignment fields yet.
+
+`estimate_hours` is `decimal.Decimal | None`. `None` means unknown; `Decimal(0)`
+means an explicit zero-hour estimate. Fractional precision is preserved, with no
+rounding. Negative/non-finite values, floats, strings, and booleans are rejected.
+Future UI/import adapters must parse human input into Decimal explicitly.
+`set_work_estimate(plan, item_id, Decimal("1.25"))` changes the estimate;
+passing `None` clears it. Parent estimates are independent, not computed rollups.
+
+`set_work_dates(plan, item_id, start=..., end=...)` sets or clears both optional
+dates atomically. A start-only or end-only item is valid. When both are known,
+end must be on or after start. Dates outside the horizon are preserved.
+`work_outside_horizon(plan)` returns affected items in order for a future editor
+to display; it never invents missing dates, clamps values, or shifts other work.
+
+## WorkGroups and relationships
+
+`planning/structure.py` provides group add/rename/remove operations and
+`set_group_epics` to replace ordered membership. Groups contain Epics directly;
+an Epic can appear in multiple groups. Tasks remain under their canonical Epic.
+Removing a group removes its memberships and preserves all work and links.
+
+`add_relationship` and `remove_relationship` manage explicit links:
+
+- `A related_to B` is symmetric. Reversing it is a duplicate.
+- `A depends_on B` means B is the prerequisite of A.
+- `A blocks B` means A is the prerequisite of B. It duplicates `B depends_on A`.
+
+Duplicate IDs, equivalent duplicate links, self-links, and missing endpoints are
+rejected. A related link and a dependency between the same items can coexist.
+Dependency cycles are recorded without scheduling or risk analysis in v0.1;
+hierarchy cycles are always rejected. Adding a link never changes dates, hours,
+or parentage. Future scheduling/validation must report dependency cycles rather
+than traverse them indefinitely.
+
 ```python
 from datetime import date
 
@@ -80,6 +129,6 @@ plan = add_work_item(plan, task)
 assert plan.children(epic.id) == (task,)
 ```
 
-No project-file schema, scheduling, estimates, people, capacity, or imports are
-implemented by these two issues. Run their tests with `python -m pytest tests/domain`;
+No project-file schema, scheduling, capacity, or imports are implemented by these
+issues. Run their tests with `python -m pytest tests/domain`;
 neither these tests nor the model require importing Qt.
