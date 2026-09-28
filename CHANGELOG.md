@@ -4,6 +4,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+## [0.1.0] - Release candidate
+
 ### Added
 
 - Create Program Plans with arbitrary planning horizons and editable metadata.
@@ -27,3 +29,7 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 ### Changed
 
 - Use ordinary keyboard punctuation in the application, website, and documentation.
+
+### Fixed
+
+- Invalid calendar dates stay in the editor with guidance to use YYYY-MM-DD.

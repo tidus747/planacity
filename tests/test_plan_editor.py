@@ -1,5 +1,6 @@
 """Qt model invariants and real keyboard editing over a shared document."""
 
+from datetime import date
 from pathlib import Path
 
 from PySide6.QtCore import QModelIndex, Qt
@@ -81,6 +82,33 @@ def test_inline_invalid_draft_remains_editable_then_save_commits_it(
     assert window.file_actions.save()
     assert not session.document.dirty
     assert session.document.plan.work_items[0].title == "Updated readiness"
+
+
+def test_invalid_date_draft_stays_open_with_actionable_guidance(app, window):
+    plan = example()
+    window.session.document.new(plan)
+    window.session.changed.emit()
+    window.show_page(1)
+    table, model = window.plan_page.table, window.plan_page.model
+    index = model.index(0, 3)
+    table.setCurrentIndex(index)
+    table.edit(index)
+    app.processEvents()
+    editor = table.findChild(QLineEdit)
+    assert editor is not None
+    editor.setText("2026-02-30")
+    QTest.keyClick(editor, Qt.Key.Key_Return)
+    app.processEvents()
+    assert editor.isVisible()
+    assert editor.text() == "2026-02-30"
+    assert window.session.document.plan.work_items[0].start == plan.work_items[0].start
+    assert window.plan_page.error.text() == "Enter dates as YYYY-MM-DD."
+    editor.setText("2026-10-02")
+    QTest.keyClick(editor, Qt.Key.Key_Return)
+    app.processEvents()
+    assert window.session.document.plan.work_items[0].start == date(2026, 10, 2)
+    assert window.plan_page.error.text() == ""
+    window.session.document.saved_plan = window.session.document.plan
 
 
 def test_delete_cancellation_and_confirmation_preserve_other_work(app, window, monkeypatch):
