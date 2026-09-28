@@ -4,8 +4,15 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
-from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QComboBox, QDialogButtonBox, QLineEdit, QListWidget, QPushButton
+from PySide6.QtCore import QDate, QTimer
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDateEdit,
+    QDialogButtonBox,
+    QLineEdit,
+    QListWidget,
+    QPushButton,
+)
 
 from planacity.domain import WorkItemType
 from planacity.persistence.project import restore_backup
@@ -37,14 +44,18 @@ def accept(dialog):
 
 def test_create_plan_correct_invalid_range_then_edit_hierarchy(app, window):
     def create(dialog):
-        name, start, end = dialog.findChildren(QLineEdit)
+        name = dialog.findChild(QLineEdit)
+        start, end = dialog.findChildren(QDateEdit)
+        assert start.calendarPopup() and end.calendarPopup()
+        assert start.displayFormat() == "yyyy-MM-dd"
+        assert end.displayFormat() == "yyyy-MM-dd"
         name.setText("Fresh program")
-        start.setText("2026-12-01")
-        end.setText("2026-11-01")
+        start.setDate(QDate(2026, 12, 1))
+        end.setDate(QDate(2026, 11, 1))
         accept(dialog)
         assert dialog.isVisible()
         assert name.text() == "Fresh program"
-        end.setText("2027-02-01")
+        end.setDate(QDate(2027, 2, 1))
         accept(dialog)
 
     drive_dialog(app, window.file_actions.new, create)

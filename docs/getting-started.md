@@ -3,8 +3,9 @@
 Install and run from source using [the README](../README.md#run-from-source).
 No account or network connection is needed while planning.
 
-1. Choose **File -> New plan...** (`Ctrl+N`). Enter a name and an inclusive date
-   range in `YYYY-MM-DD` form. A plan can span any dates, not only a quarter.
+1. Choose **File -> New plan...** (`Ctrl+N`). Enter a name and choose an inclusive
+   date range from the calendar controls. You can also type dates in `YYYY-MM-DD`
+   form. A plan can span any dates, not only a quarter.
 2. Open **Plan**. Add an Epic, select it and add a Task, then select that Task and
    add a Subtask. With no Epic selected, Add Task creates a standalone Task.
 3. Double-click a title, estimate, start, or end cell, or press `F2` to edit.

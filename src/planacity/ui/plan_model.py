@@ -136,7 +136,9 @@ class PlanModel(QAbstractItemModel):
             return value
         if role == Qt.ItemDataRole.ToolTipRole:
             return (
-                values[5] or "Dates: YYYY-MM-DD. Estimates: hours. Clear a cell to leave it unset."
+                values[5]
+                or "Dates: calendar button or YYYY-MM-DD. Estimates: hours. "
+                "Clear a cell to leave it unset."
             )
         return None
 

@@ -6,6 +6,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Calendar pickers for planning-horizon dates and optional work item start and
+  end dates, while retaining ISO keyboard entry and clearable optional dates.
 - Use the supplied Planacity mark as the desktop window icon and the full
   wordmark in the application sidebar.
 

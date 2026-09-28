@@ -6,13 +6,36 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
+from PySide6.QtCore import QDate
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit
+from PySide6.QtWidgets import (
+    QDateEdit,
+    QFileDialog,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPlainTextEdit,
+)
 
 from planacity.domain import PlanningHorizon, ProgramPlan
 from planacity.persistence.project import export_backup, load_project, restore_backup
 from planacity.ui.forms import validated_form
 from planacity.ui.session import Session
+
+
+def _date_editor(value: date, accessible_name: str) -> QDateEdit:
+    editor = QDateEdit(QDate(value.year, value.month, value.day))
+    editor.setAccessibleName(accessible_name)
+    editor.setDisplayFormat("yyyy-MM-dd")
+    editor.setDateRange(QDate(1, 1, 1), QDate(9999, 12, 31))
+    editor.setCalendarPopup(True)
+    editor.setKeyboardTracking(False)
+    return editor
+
+
+def _date_value(editor: QDateEdit) -> date:
+    value = editor.date()
+    return date(value.year(), value.month(), value.day())
 
 
 class ProjectActions:
@@ -76,13 +99,13 @@ class ProjectActions:
     def _metadata(self, plan: ProgramPlan | None) -> ProgramPlan | None:
         name = QLineEdit(plan.name if plan else "")
         description = QPlainTextEdit(plan.description if plan else "")
-        start = QLineEdit((plan.horizon.start if plan else date.today()).isoformat())
-        end = QLineEdit((plan.horizon.end if plan else date.today()).isoformat())
+        start = _date_editor(
+            plan.horizon.start if plan else date.today(), "Planning horizon start date"
+        )
+        end = _date_editor(plan.horizon.end if plan else date.today(), "Planning horizon end date")
 
         def build() -> ProgramPlan:
-            horizon = PlanningHorizon(
-                date.fromisoformat(start.text()), date.fromisoformat(end.text())
-            )
+            horizon = PlanningHorizon(_date_value(start), _date_value(end))
             if plan:
                 return replace(
                     plan, name=name.text(), description=description.toPlainText(), horizon=horizon

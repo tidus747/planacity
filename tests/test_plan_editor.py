@@ -3,12 +3,13 @@
 from datetime import date
 from pathlib import Path
 
-from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QDate, QModelIndex, Qt
 from PySide6.QtTest import QAbstractItemModelTester, QTest
-from PySide6.QtWidgets import QLineEdit, QMessageBox
+from PySide6.QtWidgets import QCalendarWidget, QLineEdit, QMessageBox
 
 from planacity.persistence.project import restore_backup
 from planacity.planning.work_items import move_work_item, remove_work_item
+from planacity.ui.forms import CalendarLineEdit
 from planacity.ui.plan_model import PlanModel
 from planacity.ui.session import Session
 
@@ -95,7 +96,7 @@ def test_invalid_date_draft_stays_open_with_actionable_guidance(app, window):
     table.edit(index)
     app.processEvents()
     editor = table.findChild(QLineEdit)
-    assert editor is not None
+    assert isinstance(editor, CalendarLineEdit)
     editor.setText("2026-02-30")
     QTest.keyClick(editor, Qt.Key.Key_Return)
     app.processEvents()
@@ -109,6 +110,45 @@ def test_invalid_date_draft_stays_open_with_actionable_guidance(app, window):
     assert window.session.document.plan.work_items[0].start == date(2026, 10, 2)
     assert window.plan_page.error.text() == ""
     window.session.document.saved_plan = window.session.document.plan
+
+
+def test_inline_date_calendar_selects_and_commits_iso_date(app, window):
+    plan = example()
+    window.session.document.new(plan)
+    window.session.changed.emit()
+    try:
+        window.show_page(1)
+        table, model = window.plan_page.table, window.plan_page.model
+        index = model.index(0, 4)
+        table.setCurrentIndex(index)
+        table.edit(index)
+        app.processEvents()
+        editor = table.findChild(CalendarLineEdit)
+        assert editor is not None
+        editor.calendar_action.trigger()
+        app.processEvents()
+        calendar = editor.findChild(QCalendarWidget)
+        assert calendar is not None and calendar.isVisible()
+        assert editor.property("calendarOpen")
+        calendar.clicked.emit(QDate(2026, 10, 3))
+        app.processEvents()
+        assert window.session.document.plan.work_items[0].end == date(2026, 10, 3)
+        assert model.data(index, Qt.ItemDataRole.EditRole) == "2026-10-03"
+        assert window.plan_page.error.text() == ""
+
+        table.setCurrentIndex(index)
+        table.edit(index)
+        app.processEvents()
+        clear_editor = next(
+            candidate for candidate in table.findChildren(CalendarLineEdit) if candidate.isVisible()
+        )
+        clear_editor.clear()
+        QTest.keyClick(clear_editor, Qt.Key.Key_Return)
+        app.processEvents()
+        assert window.session.document.plan.work_items[0].end is None
+        assert model.data(index, Qt.ItemDataRole.EditRole) == ""
+    finally:
+        window.session.document.saved_plan = window.session.document.plan
 
 
 def test_delete_cancellation_and_confirmation_preserve_other_work(app, window, monkeypatch):
