@@ -80,3 +80,15 @@ may change or be deleted without invalidating their original snapshots.
 serializes the current hierarchy and carries original references, status, and
 external people. Project schema 2 stores imports; schema 1 loads with none.
 Mapping profiles are separate local files with no imported rows or people.
+
+## Visual planning
+
+`planning/timeline.py` is a read-only projection over the canonical plan. It
+flattens hierarchy for display, calculates inclusive day coordinates, and carries
+effective WorkGroup membership without copying editable state. Qt Timeline views
+consume this projection and rebuild it when the shared `Session` changes.
+
+Coordinates outside the horizon remain outside rather than changing stored dates.
+Person grouping waits for Allocations in v0.4, and milestone markers wait for the
+first-class Milestone model. The Timeline must not infer either concept from Jira
+metadata or represent milestones as zero-duration work.
