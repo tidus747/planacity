@@ -78,10 +78,8 @@ def stylesheet(theme: Theme) -> str:
             background: {c.selected}; color: {c.accent};
             border-radius: 5px; padding: 6px 10px; font-size: 12px;
         }}
-        QLabel#brand {{ font-size: 21px; font-weight: 700; }}
-        QLabel#brandMark {{
-            background: {c.accent}; color: {c.background}; border-radius: 8px;
-            font-size: 20px; font-weight: 750;
+        QLabel#brandLogo {{
+            background: #ffffff; border: 1px solid #dce4ee; border-radius: 8px;
         }}
         QFrame#sidebar {{ background: {c.sidebar}; border-right: 1px solid {c.border}; }}
         QFrame[role="panel"] {{

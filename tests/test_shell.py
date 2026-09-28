@@ -5,13 +5,20 @@ import sys
 
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QTreeView
+from PySide6.QtWidgets import QApplication, QLabel, QTreeView
 
 from planacity.ui.main_window import MainWindow
 
 
 def test_shell_navigation_and_close(app: QApplication, window: MainWindow) -> None:
     assert window.isVisible()
+    assert not window.windowIcon().isNull()
+    brand = window.findChild(QLabel, "brandLogo")
+    assert brand is window.brand_logo
+    assert brand.accessibleName() == "Planacity"
+    assert brand.text() == ""
+    assert brand.pixmap() is not None
+    assert not brand.pixmap().isNull()
     assert window.pages.count() == 5
     for index, button in enumerate(window.navigation.values()):
         QTest.mouseClick(button, Qt.MouseButton.LeftButton)
