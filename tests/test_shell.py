@@ -51,6 +51,7 @@ import planacity.main as entry
 
 class TimedApplication(QApplication):
     def exec(self):
+        assert not self.windowIcon().isNull()
         QTimer.singleShot(0, self.quit)
         return super().exec()
 
