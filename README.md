@@ -29,7 +29,8 @@ and continue working. See the [issue breakdown](docs/v0.1-issues.md) for review
 status. Jira CSV roundtrip is implemented for v0.2 review; timelines, capacity
 calculations, and recurring-capacity wizards remain later work. Read the
 [import guide](docs/jira-import.md), [export guide](docs/jira-export.md), and
-[v0.2 issue breakdown](docs/v0.2-issues.md). No stable packaged release is published yet.
+[v0.2 issue breakdown](docs/v0.2-issues.md). Visual Planning is tracked in the
+[v0.3 issue breakdown](docs/v0.3-issues.md). No stable packaged release is published yet.
 
 ## Run from source
 
@@ -73,7 +74,8 @@ installed, as in CI. See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow guidanc
 - `src/planacity/`: desktop entry point, UI, and boundaries for domain, planning,
   and persistence code.
 - `tests/`: domain, persistence, document-state, and selective Qt interaction tests.
-- `docs/`: [architecture](docs/architecture.md) and [v0.1 issues](docs/v0.1-issues.md).
+- `docs/`: [architecture](docs/architecture.md), release issue breakdowns, and
+  user guidance.
 - `examples/`: fictional Aurora program, loadable through Restore JSON backup.
 - `website/`: standalone Astro Home and Roadmap pages; see its [README](website/README.md).
 - `.github/`: CI and contribution templates.

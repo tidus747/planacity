@@ -129,10 +129,24 @@ plan = add_work_item(plan, task)
 assert plan.children(epic.id) == (task,)
 ```
 
-Scheduling, capacity, and imports remain future work. Storage is documented in
+Automatic scheduling and capacity remain future work. Storage is documented in
 [project-file-format.md](project-file-format.md). Run domain tests with
 `python -m pytest tests/domain`;
 neither these tests nor the model require importing Qt.
+
+## Timeline projection (v0.3)
+
+`planning/timeline.py` derives immutable rows from a complete `ProgramPlan` for
+visualization. Rows keep work IDs, hierarchy depth, sibling order, original
+dates, and effective WorkGroup memberships. Tasks and Subtasks inherit the
+memberships of their containing Epic; standalone Tasks remain ungrouped.
+
+Day coordinates are zero-based from the inclusive planning-horizon start. They
+may be negative or extend past the horizon, making outside work visible without
+changing or clamping its dates. A scheduled same-day item has duration one.
+Start-only, end-only, and unscheduled work remain explicit states; the projection
+never invents missing dates. This module has no Qt or Jira dependency.
+
 ## Imported baselines (v0.2)
 
 `ProgramPlan.imports` holds immutable `ImportSnapshot` sources. Each snapshot
