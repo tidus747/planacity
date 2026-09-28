@@ -33,6 +33,9 @@ reuse a local JSON profile. After choosing custom type mappings, go Back to the
 first page to save them. Profiles require the same headers in the same order;
 they never silently adapt a changed CSV. They contain column names, positions,
 type mappings, units, and date format, not CSV rows or person identities.
+Profiles with duplicate JSON fields are rejected rather than choosing one value.
+Remove the duplicate fields or save a new profile from the wizard. A failed load
+keeps the current mapping unchanged.
 
 ## Preserved baseline
 

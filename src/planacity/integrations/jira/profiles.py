@@ -20,9 +20,22 @@ def dump_profile(headers: tuple[str, ...], mapping: Mapping) -> str:
     )
 
 
+def _unique_fields(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Reject ambiguity before JSON decoding can discard an earlier setting."""
+    fields: dict[str, object] = {}
+    for name, value in pairs:
+        if name in fields:
+            raise ValueError(
+                f"Duplicate mapping profile field: {name}. "
+                "Keep one value for each field, or save a new profile from the import wizard."
+            )
+        fields[name] = value
+    return fields
+
+
 def load_profile(text: str, headers: tuple[str, ...]) -> Mapping:
     try:
-        data = json.loads(text)
+        data = json.loads(text, object_pairs_hook=_unique_fields)
         if (
             not isinstance(data, dict)
             or set(data)
