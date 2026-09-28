@@ -40,6 +40,8 @@ Top-level fields: `format` (`"planacity"`), `schema_version` (`2`), and `plan`.
 - All declared fields are required, including empty arrays and optional nulls.
 - Unknown/missing fields, duplicate JSON keys, invalid references, invalid entity
   values, and unsupported versions are errors. No fields are silently ignored.
+- In SQLite projects, `PRAGMA user_version` and the embedded JSON
+  `schema_version` must match. A mixed-version file is rejected as corrupt.
 
 See [the complete fictional example](../examples/aurora.planacity.json).
 Text is UTF-8; supplied characters and whitespace are preserved.

@@ -32,7 +32,8 @@ def load_project(path: Path) -> ProgramPlan:
         try:
             if connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID:
                 raise ValueError("This file is not a Planacity project.")
-            if connection.execute("PRAGMA user_version").fetchone()[0] not in (1, SCHEMA_VERSION):
+            project_version = connection.execute("PRAGMA user_version").fetchone()[0]
+            if project_version not in (1, SCHEMA_VERSION):
                 raise ValueError("Unsupported project version. Use a compatible Planacity version.")
             tables = connection.execute(
                 "SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'"
@@ -45,7 +46,7 @@ def load_project(path: Path) -> ProgramPlan:
             rows = connection.execute("SELECT id, payload FROM document").fetchall()
             if len(rows) != 1 or rows[0][0] != 1 or not isinstance(rows[0][1], str):
                 raise ValueError("The project must contain exactly one complete plan.")
-            return loads(rows[0][1])
+            return loads(rows[0][1], expected_schema_version=project_version)
         finally:
             connection.close()
     except (sqlite3.Error, ValueError) as error:
