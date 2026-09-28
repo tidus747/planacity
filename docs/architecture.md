@@ -30,8 +30,8 @@ same invariants available to the future UI and file loaders without Qt imports.
 - Keep the initial shell honest about unavailable functionality. Add actual
   editing and file actions as complete, tested increments.
 - Organize the shell around a persistent sidebar (Overview, Plan, People, Import),
-  project context, page headers, and a status bar. Plan and People use resizable
-  list/detail panels. Import is an informational placeholder for v0.2. Do not
+  project context, page headers, and a status bar. Plan uses resizable list/detail
+  panels; People provides the team roster. Import is informational for v0.2. Do not
   derive domain assumptions such as quarters or single owners from UI references.
 - Keep shared light/dark colors in `ui/theme.py` and empty-state layouts in
   `ui/pages.py`. Use Qt's local `QSettings` for the appearance preference, separate
