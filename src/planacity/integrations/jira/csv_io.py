@@ -102,6 +102,21 @@ def external_people(table: CsvTable, mapping: Mapping) -> tuple[str, ...]:
     )
 
 
+def _validate_parent_type(
+    kind: WorkItemType,
+    title: str,
+    parent: str,
+    parent_kind: WorkItemType | None,
+) -> None:
+    """Add CSV row context before aggregate hierarchy validation runs."""
+    if kind == WorkItemType.EPIC and parent:
+        raise ValueError(f"Epic {title!r} must be at the root of the plan.")
+    if kind == WorkItemType.TASK and parent and parent_kind != WorkItemType.EPIC:
+        raise ValueError(f"Task {title!r} requires an Epic parent or no parent.")
+    if kind == WorkItemType.SUBTASK and (not parent or parent_kind != WorkItemType.TASK):
+        raise ValueError(f"Subtask {title!r} requires a Task parent.")
+
+
 def preview_import(
     plan: ProgramPlan,
     table: CsvTable,
@@ -134,6 +149,8 @@ def preview_import(
                     f"CSV row {number}: {label} must be nonblank and unique: {value!r}."
                 )
             seen.add(value)
+    mapped_types = tuple(dict(mapping.types).get(cell(row, "type")) for row in table.rows)
+    types_by_identity = dict(zip(identities, mapped_types, strict=True))
     imported = {r.external_reference for source in plan.imports for r in source.records}
     if imported.intersection(references):
         raise ValueError(
@@ -143,11 +160,10 @@ def preview_import(
     ids = {key: uuid4() for key in identities}
     records = []
     errors = []
-    for number, (row, key, reference) in enumerate(
-        zip(table.rows, identities, references, strict=True), 2
+    for number, (row, key, reference, kind) in enumerate(
+        zip(table.rows, identities, references, mapped_types, strict=True), 2
     ):
         try:
-            kind = dict(mapping.types).get(cell(row, "type"))
             if kind is None:
                 raise ValueError(f"Map work type {cell(row, 'type')!r} explicitly.")
             parent = cell(row, "parent")
@@ -156,6 +172,7 @@ def preview_import(
                     f"Parent {parent!r} is not in this CSV. Include its row and "
                     "map row ID if parents use numeric IDs."
                 )
+            _validate_parent_type(kind, cell(row, "title"), parent, types_by_identity.get(parent))
             value = cell(row, "estimate")
             estimate = None if not value.strip() else Decimal(value)
             if estimate is not None and (not estimate.is_finite() or estimate < 0):

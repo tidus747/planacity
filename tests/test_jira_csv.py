@@ -91,7 +91,8 @@ def test_malformed_csv_is_actionable(text, message):
         ("3601", "-1", "non-negative"),
         ("3601", "1h", "CSV row 2"),
         ("Task,A-1", "Story,A-1", "Map work type"),
-        ("Epic,,,", "Sub-task,,,", "requires an Epic"),
+        ("Epic,,,", "Sub-task,,,", r"CSV row 3 \(A-1\): .*requires a Task"),
+        ("Epic,,,", "Task,,,", r"CSV row 2 \(A-2\): .*requires an Epic"),
     ],
 )
 def test_invalid_mapping_rows_never_modify_plan(plan, old, new, message):
