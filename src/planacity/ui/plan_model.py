@@ -2,7 +2,7 @@
 
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from typing import overload
+from typing import cast, overload
 from uuid import UUID
 
 from PySide6.QtCore import (
@@ -84,14 +84,14 @@ class PlanModel(QAbstractItemModel):
         return self.createIndex(row, 0, self.tokens[item.id])
 
     @overload
-    def parent(self) -> QObject | None: ...
+    def parent(self) -> QObject: ...
 
     @overload
     def parent(self, index: Index) -> QModelIndex: ...
 
-    def parent(self, index: Index | None = None) -> QObject | QModelIndex | None:
+    def parent(self, index: Index | None = None) -> QObject | QModelIndex:
         if index is None:
-            return super().parent()
+            return cast(QObject, super().parent())
         item = self.item(index)
         return self.index_for_id(item.parent_id) if item else QModelIndex()
 
@@ -149,7 +149,10 @@ class PlanModel(QAbstractItemModel):
                     self.plan, item.id, Decimal(text) if text.strip() else None
                 )
             if index.column() in (3, 4):
-                value = date.fromisoformat(text) if text.strip() else None
+                try:
+                    value = date.fromisoformat(text) if text.strip() else None
+                except ValueError as error:
+                    raise ValueError("Enter dates as YYYY-MM-DD.") from error
                 if value is not None and value.isoformat() != text:
                     raise ValueError("Enter dates as YYYY-MM-DD.")
                 return set_work_dates(
