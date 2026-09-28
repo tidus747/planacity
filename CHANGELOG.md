@@ -11,6 +11,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Fixed
 
+- Initialize the Planacity icon at application startup and use the exact
+  maintainer-supplied mark and wordmark assets.
 - Reject ambiguous mapping profiles with duplicate JSON fields, preserving the
   current wizard mapping instead of silently replacing settings such as estimate units.
 
