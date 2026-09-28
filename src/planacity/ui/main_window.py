@@ -21,8 +21,9 @@ from PySide6.QtWidgets import (
 
 from planacity.ui.editor_pages import PeoplePage, PlanPage
 from planacity.ui.icons import navigation_icon, svg_icon
+from planacity.ui.jira_pages import ChangesPage, ImportPage
 from planacity.ui.overview import OverviewPage
-from planacity.ui.pages import import_page, label
+from planacity.ui.pages import label
 from planacity.ui.project_actions import ProjectActions
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Theme, stylesheet
@@ -58,7 +59,8 @@ class MainWindow(QMainWindow):
             OverviewPage(self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)),
             self.plan_page,
             self.people_page,
-            import_page(),
+            ImportPage(self.session),
+            ChangesPage(self.session),
         ):
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
@@ -104,7 +106,7 @@ class MainWindow(QMainWindow):
         layout.addSpacing(25)
         group = QButtonGroup(self)
         group.setExclusive(True)
-        for index, name_text in enumerate(("Overview", "Plan", "People", "Import")):
+        for index, name_text in enumerate(("Overview", "Plan", "People", "Import", "Changes")):
             button = QPushButton("  " + name_text)
             button.setAccessibleName(name_text)
             button.setProperty("role", "nav")
@@ -114,7 +116,7 @@ class MainWindow(QMainWindow):
             group.addButton(button)
             self.navigation[name_text] = button
             layout.addWidget(button)
-        self.navigation["Import"].setToolTip("Jira CSV import is planned for v0.2.")
+        self.navigation["Import"].setToolTip("Import and export Jira CSV files.")
         layout.addSpacing(20)
         divider = QFrame()
         divider.setProperty("role", "divider")
@@ -124,7 +126,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(label("PROJECT", "eyebrow"))
         self.project_label = label("No project open", "heading")
         layout.addWidget(self.project_label)
-        layout.addWidget(label("Planning Foundation\nv0.1 preview"))
+        layout.addWidget(label("Jira Roundtrip\nv0.2 preview"))
         layout.addStretch()
         layout.addWidget(label("APPEARANCE", "eyebrow"))
         modes = QHBoxLayout()
@@ -172,9 +174,9 @@ class MainWindow(QMainWindow):
             self,
             "About Planacity",
             "<b>Planacity</b><p>Plan the work. "
-            "Respect the capacity.</p><p>Planning Foundation development preview. "
+            "Respect the capacity.</p><p>Jira Roundtrip development preview. "
             "Create, edit, and save local Program Plans. "
-            "Jira and capacity are planned for later versions.</p>",
+            "Import and export Jira CSV. Capacity remains planned for later versions.</p>",
         )
 
     def _refresh_document(self) -> None:

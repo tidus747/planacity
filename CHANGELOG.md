@@ -4,6 +4,22 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+## [0.2.0] - Release candidate
+
+### Added
+
+- Jira CSV import with explicit field, type, and people mapping, validation,
+  preview, and reusable local mapping profiles.
+- Preserved imported baselines and original CSV cells in projects and backups.
+- Jira CSV export with configurable column labels, estimate units, and dates.
+- Changes view for added, modified, and removed work; external references in Plan.
+- Fictional Jira CSV example and import/export guides.
+
+### Changed
+
+- Project schema 2 retains source baselines; existing schema 1 files remain readable.
+  Saving upgrades the file, so keep a backup before returning to v0.1.
+
 ## [0.1.0] - Release candidate
 
 ### Added

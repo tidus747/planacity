@@ -44,7 +44,7 @@ def test_empty_and_incomplete_plan_round_trip(plan, tmp_path):
 @pytest.mark.parametrize(
     "change",
     [
-        lambda d: d.update(schema_version=2),
+        lambda d: d.update(schema_version=99),
         lambda d: d.update(schema_version=True),
         lambda d: d.update(format="foreign"),
         lambda d: d.update(unknown="data"),

@@ -1,0 +1,5 @@
+Issue key,Issue ID,Issue Type,Summary,Parent,Original Estimate,Start Date,Due Date,Assignee,Status,Labels,Labels
+AUR-1,1,Epic,Aurora readiness,,,2026-10-01,2026-12-18,,To Do,aurora,readiness
+AUR-2,2,Task,Build integration fixture,1,57600,2026-10-05,2026-10-09,alex@example.invalid,To Do,hardware,fixture
+AUR-3,3,Sub-task,Check fixture wiring,2,14400,2026-10-08,2026-10-09,alex@example.invalid,To Do,hardware,verification
+AUR-4,4,Task,Document acceptance procedure,1,28800,2026-11-02,2026-11-06,sam@example.invalid,In Progress,docs,readiness

@@ -130,6 +130,63 @@ class WorkItem:
 
 
 @dataclass(frozen=True, kw_only=True)
+class ImportedWork:
+    """Original work and external identity, independent of subsequent local edits."""
+
+    item: WorkItem
+    external_reference: str
+    external_person: str = ""
+    person: Person | None = None
+    status: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.item, WorkItem):
+            raise ValueError("Imported work requires a valid work item.")
+        _require_text(self.external_reference, "External reference")
+        if not isinstance(self.external_person, str) or not isinstance(self.status, str):
+            raise ValueError("External person and status must be text.")
+        if self.person is not None and not isinstance(self.person, Person):
+            raise ValueError("Imported person must be a Person snapshot.")
+
+
+@dataclass(frozen=True, kw_only=True)
+class ImportSnapshot:
+    """A local source baseline; raw cells include fields not represented in the plan."""
+
+    name: str
+    headers: tuple[str, ...]
+    rows: tuple[tuple[str, ...], ...]
+    records: tuple[ImportedWork, ...]
+    id: UUID = field(default_factory=uuid4)
+
+    def __post_init__(self) -> None:
+        _require_id(self.id, "Import snapshot ID")
+        _require_text(self.name, "Import source name")
+        if (
+            not isinstance(self.headers, tuple)
+            or not self.headers
+            or any(not isinstance(cell, str) for cell in self.headers)
+        ):
+            raise ValueError("Source headers must be a nonempty tuple of text.")
+        if not isinstance(self.rows, tuple) or any(
+            not isinstance(row, tuple)
+            or len(row) != len(self.headers)
+            or any(not isinstance(cell, str) for cell in row)
+            for row in self.rows
+        ):
+            raise ValueError("Source rows must match the headers and contain text.")
+        if (
+            not isinstance(self.records, tuple)
+            or any(not isinstance(record, ImportedWork) for record in self.records)
+            or len(self.records) != len(self.rows)
+        ):
+            raise ValueError("Every source row requires an imported work record.")
+        if len({r.external_reference for r in self.records}) != len(self.records):
+            raise ValueError("External references must be unique in a source.")
+        _validate_hierarchy(tuple(r.item for r in self.records))
+
+
+@dataclass(frozen=True, kw_only=True)
 class ProgramPlan:
     """A validated plan snapshot whose work-item order defines sibling order."""
 
@@ -141,6 +198,7 @@ class ProgramPlan:
     people: tuple[Person, ...] = ()
     work_groups: tuple[WorkGroup, ...] = ()
     relationships: tuple[Relationship, ...] = ()
+    imports: tuple[ImportSnapshot, ...] = ()
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Program Plan ID")
@@ -161,6 +219,19 @@ class ProgramPlan:
         if len({person.id for person in self.people}) != len(self.people):
             raise ValueError("Person IDs must be unique within a plan.")
         _validate_groups_and_relationships(self)
+        if not isinstance(self.imports, tuple) or any(
+            not isinstance(source, ImportSnapshot) for source in self.imports
+        ):
+            raise ValueError("Imports must be a tuple of ImportSnapshot objects.")
+        if len({source.id for source in self.imports}) != len(self.imports):
+            raise ValueError("Import snapshot IDs must be unique.")
+        records = tuple(record for source in self.imports for record in source.records)
+        if len({r.item.id for r in records}) != len(records):
+            raise ValueError("A work item cannot belong to multiple import baselines.")
+        if len({r.external_reference for r in records}) != len(records):
+            raise ValueError(
+                "External references already imported; reconciliation is not supported."
+            )
 
     def work_group(self, group_id: UUID) -> WorkGroup:
         for group in self.work_groups:

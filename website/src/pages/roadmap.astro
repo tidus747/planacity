@@ -1,7 +1,6 @@
 ---
 import Page from '../layouts/Page.astro';
 const releases = [
-  ['v0.2', 'Jira Roundtrip', 'Bring Jira work in and export the agreed structure through CSV.'],
   ['v0.3', 'Visual Planning', 'See the program on a timeline.'],
   ['v0.4', 'Team & Capacity', 'Check realistic team availability, with guided recurring reservations for meetings and front-office duties per sprint.'],
   ['v0.5', 'Program Calendar', 'Understand work alongside leave, holidays, and program events.'],
@@ -17,16 +16,16 @@ const releases = [
   <h1>Small releases. Useful progress.</h1>
   <p>This is a direction, not a delivery schedule. Planacity is a single-maintainer
     side project; scope stays focused on one useful increment at a time.</p>
-  <h2>Current target: v0.1 - Planning Foundation</h2>
-  <p>Create, edit, save, close, and reopen a small Program Plan.</p>
+  <h2>Current target: v0.2 - Jira Roundtrip</h2>
+  <p>Bring Jira work into a local Program Plan and export the agreed structure.</p>
   <ul>
-    <li>Program details and a flexible planning horizon</li>
-    <li>Epics, Tasks, Subtasks, WorkGroups, and basic relationships</li>
-    <li>People, estimates, dates, and a spreadsheet-like Plan view</li>
-    <li>Local persistence, JSON backup/export, and a fictional example</li>
+    <li>CSV column and people mapping, validation, and import preview</li>
+    <li>Reusable local mapping profiles and preserved imported baselines</li>
+    <li>Changes view and configurable Jira CSV export</li>
+    <li>Manual planning, local save/open, and JSON backups from v0.1</li>
   </ul>
-  <p class="status">The source preview supports manual planning, local save/open,
-    and JSON backups. Packaging and release review remain; no stable release is published yet.</p>
+  <p class="status">The source preview supports the CSV roundtrip workflow. Release review remains;
+    no stable release is published yet. Jira APIs and re-import reconciliation are deferred.</p>
   <h2>Later milestones</h2>
   <ul>
     {releases.map(([version, name, goal]) => <li><strong>{version} - {name}:</strong> {goal}</li>)}

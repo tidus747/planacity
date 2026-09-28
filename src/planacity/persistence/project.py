@@ -32,7 +32,7 @@ def load_project(path: Path) -> ProgramPlan:
         try:
             if connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID:
                 raise ValueError("This file is not a Planacity project.")
-            if connection.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+            if connection.execute("PRAGMA user_version").fetchone()[0] not in (1, SCHEMA_VERSION):
                 raise ValueError("Unsupported project version. Use a compatible Planacity version.")
             tables = connection.execute(
                 "SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'"
@@ -72,7 +72,11 @@ def save_project(plan: ProgramPlan, path: Path) -> None:
 
 
 def export_backup(plan: ProgramPlan, path: Path) -> None:
-    payload = dumps(plan)
+    export_text(dumps(plan), path)
+
+
+def export_text(payload: str, path: Path) -> None:
+    """Atomically replace a user-selected text export after UI overwrite confirmation."""
     with _replacement(path) as temporary:
         with temporary.open("w", encoding="utf-8", newline="\n") as stream:
             stream.write(payload)

@@ -39,7 +39,7 @@ class OverviewPage(WorkspacePage):
         self.content.addWidget(panel, 1)
         self.content.addWidget(
             label(
-                "Jira CSV is planned for v0.2. "
+                "Use Import to bring in Jira CSV or export the agreed plan. "
                 "Capacity and recurring reservations are planned for v0.4."
             )
         )

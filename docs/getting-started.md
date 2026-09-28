@@ -43,6 +43,10 @@ Use **File -> Export JSON backup...** for a portable backup. See
 
 ## Validation record
 
+For the v0.2 workflow, see [Jira CSV import](jira-import.md) and
+[Jira CSV export](jira-export.md). Imported baselines survive local edits and
+save/reopen; use Changes (Ctrl+5) to review differences.
+
 On Windows, Python 3.12 and PySide6 6.11.2, automated tests exercise new-plan
 validation, hierarchy editing, invalid inline drafts, People/WorkGroup/link forms,
 Ctrl+S, Save As, cancellation, close/reopen/continue, and JSON backup/restore.

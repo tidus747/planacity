@@ -133,3 +133,14 @@ Scheduling, capacity, and imports remain future work. Storage is documented in
 [project-file-format.md](project-file-format.md). Run domain tests with
 `python -m pytest tests/domain`;
 neither these tests nor the model require importing Qt.
+## Imported baselines (v0.2)
+
+`ProgramPlan.imports` holds immutable `ImportSnapshot` sources. Each snapshot
+contains original headers and cells plus `ImportedWork` records with original
+WorkItems, external references, status, and person identity snapshots.
+The imported person mapping does not make `WorkItem.owner` part of the model and
+does not represent an Allocation. Capacity and allocation editing remain v0.4.
+
+Baseline references need not exist in current work or the current roster after
+local deletion. The baseline validates its own original hierarchy independently.
+Computed Changes compares that original work with current work by stable UUID.
