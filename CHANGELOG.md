@@ -4,6 +4,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+### Added
+
+- Calendar pickers for planning-horizon dates and optional work item start and
+  end dates, while retaining ISO keyboard entry and clearable optional dates.
+
 ### Fixed
 
 - Reject ambiguous mapping profiles with duplicate JSON fields, preserving the

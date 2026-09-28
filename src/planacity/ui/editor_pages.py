@@ -141,7 +141,8 @@ class PlanPage(WorkspacePage):
         else:
             self.detail.setText(
                 f"{item.title}\n\n{item.kind.value.title()}\n\n"
-                "Double-click a title, estimate, or date to edit. Clear a value to leave it unset. "
+                "Double-click a title, estimate, or date to edit. Use the calendar button or type "
+                "a date as YYYY-MM-DD. Clear a value to leave it unset. "
                 "Escape cancels an inline edit.\n\nAssignments and capacity are planned for v0.4."
             )
 

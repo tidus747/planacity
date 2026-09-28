@@ -60,12 +60,14 @@ def stylesheet(theme: Theme) -> str:
             background: {c.background};
         }}
         QLabel {{ background: transparent; }}
-        QLineEdit, QPlainTextEdit, QComboBox, QListWidget {{
+        QLineEdit, QDateEdit, QPlainTextEdit, QComboBox, QListWidget {{
             background: {c.surface}; color: {c.text}; border: 1px solid {c.border};
             padding: 6px; selection-background-color: {c.selected};
             selection-color: {c.text};
         }}
-        QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus {{ border-color: {c.accent}; }}
+        QLineEdit:focus, QDateEdit:focus, QPlainTextEdit:focus, QComboBox:focus {{
+            border-color: {c.accent};
+        }}
         QLabel[role="muted"] {{ color: {c.muted}; }}
         QLabel[role="title"] {{ font-size: 32px; font-weight: 700; }}
         QLabel[role="subtitle"] {{ color: {c.muted}; font-size: 16px; }}
