@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from planacity.domain import PlanningHorizon, ProgramPlan
 from planacity.persistence.project import export_backup, load_project, restore_backup
+from planacity.ui.calendars import PlanacityCalendar
 from planacity.ui.forms import validated_form
 from planacity.ui.session import Session
 
@@ -30,6 +31,9 @@ def _date_editor(value: date, accessible_name: str) -> QDateEdit:
     editor.setDateRange(QDate(1, 1, 1), QDate(9999, 12, 31))
     editor.setCalendarPopup(True)
     editor.setKeyboardTracking(False)
+    calendar = PlanacityCalendar()
+    calendar.setAccessibleName(f"{accessible_name} calendar")
+    editor.setCalendarWidget(calendar)
     return editor
 
 

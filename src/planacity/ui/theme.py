@@ -51,6 +51,50 @@ COLORS = {
 }
 
 
+def calendar_stylesheet(theme: Theme) -> str:
+    """Style date fields and popup calendars from the active Planacity palette."""
+    c = COLORS[theme]
+    return f"""
+        QDateEdit::drop-down {{
+            subcontrol-origin: padding; subcontrol-position: top right;
+            width: 28px; background: {c.sidebar}; border: none;
+            border-left: 1px solid {c.border};
+        }}
+        QDateEdit::drop-down:hover {{ background: {c.hover}; }}
+        QCalendarWidget#dateCalendar {{
+            background: {c.surface}; border: 1px solid {c.border};
+        }}
+        QCalendarWidget#dateCalendar QWidget#qt_calendar_navigationbar {{
+            background: {c.sidebar}; border-bottom: 1px solid {c.border};
+        }}
+        QCalendarWidget#dateCalendar QToolButton {{
+            color: {c.text}; background: transparent; border: 1px solid transparent;
+            border-radius: 4px; padding: 6px;
+        }}
+        QCalendarWidget#dateCalendar QToolButton:hover {{
+            background: {c.hover}; border-color: {c.border};
+        }}
+        QCalendarWidget#dateCalendar QToolButton:pressed {{ background: {c.selected}; }}
+        QCalendarWidget#dateCalendar QToolButton::menu-indicator {{ image: none; }}
+        QCalendarWidget#dateCalendar QSpinBox {{
+            background: {c.surface}; color: {c.text}; border: 1px solid {c.border};
+            selection-background-color: {c.accent}; selection-color: {c.surface};
+        }}
+        QCalendarWidget#dateCalendar QAbstractItemView {{
+            background: {c.surface}; color: {c.text}; border: none; outline: none;
+            gridline-color: {c.border}; selection-background-color: {c.accent};
+            selection-color: {c.surface};
+        }}
+        QCalendarWidget#dateCalendar QAbstractItemView:disabled {{ color: {c.disabled}; }}
+        QCalendarWidget#dateCalendar QAbstractItemView::item:hover {{
+            background: {c.hover}; color: {c.text};
+        }}
+        QCalendarWidget#dateCalendar QAbstractItemView::item:selected {{
+            background: {c.accent}; color: {c.surface};
+        }}
+    """
+
+
 def stylesheet(theme: Theme) -> str:
     """Keep every content surface, selection, and focus indicator in one theme."""
     c = COLORS[theme]
@@ -142,4 +186,5 @@ def stylesheet(theme: Theme) -> str:
         QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             background: transparent;
         }}
+        {calendar_stylesheet(theme)}
     """

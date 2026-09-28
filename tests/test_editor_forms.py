@@ -47,6 +47,10 @@ def test_create_plan_correct_invalid_range_then_edit_hierarchy(app, window):
         name = dialog.findChild(QLineEdit)
         start, end = dialog.findChildren(QDateEdit)
         assert start.calendarPopup() and end.calendarPopup()
+        assert start.calendarWidget().objectName() == "dateCalendar"
+        assert end.calendarWidget().objectName() == "dateCalendar"
+        assert start.calendarWidget().accessibleName() == "Planning horizon start date calendar"
+        assert end.calendarWidget().accessibleName() == "Planning horizon end date calendar"
         assert start.displayFormat() == "yyyy-MM-dd"
         assert end.displayFormat() == "yyyy-MM-dd"
         name.setText("Fresh program")

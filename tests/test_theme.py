@@ -1,13 +1,14 @@
 """Appearance changes must preserve workspace state and survive reopening."""
 
 import pytest
-from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtCore import QDate, QSettings, Qt
+from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QSplitter
+from PySide6.QtWidgets import QApplication, QSplitter, QToolButton, QVBoxLayout, QWidget
 
+from planacity.ui.calendars import PlanacityCalendar
 from planacity.ui.main_window import MainWindow
-from planacity.ui.theme import Theme
+from planacity.ui.theme import COLORS, Theme, calendar_stylesheet
 
 
 def test_theme_controls_preserve_workspace(app: QApplication, window: MainWindow) -> None:
@@ -66,4 +67,59 @@ def test_invalid_preference_falls_back_to_system(
     finally:
         window.close()
         window.deleteLater()
+        app.processEvents()
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_calendar_styles_use_active_palette(theme: Theme) -> None:
+    styles = calendar_stylesheet(theme)
+    colors = COLORS[theme]
+    for selector in (
+        "QDateEdit::drop-down",
+        "QCalendarWidget#dateCalendar",
+        "QWidget#qt_calendar_navigationbar",
+        "QToolButton:hover",
+        "QAbstractItemView::item:selected",
+    ):
+        assert selector in styles
+    for color in (
+        colors.sidebar,
+        colors.surface,
+        colors.text,
+        colors.border,
+        colors.accent,
+        colors.selected,
+        colors.hover,
+        colors.disabled,
+    ):
+        assert color in styles
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_calendar_refreshes_native_header_and_navigation(app: QApplication, theme: Theme) -> None:
+    host = QWidget()
+    host.setStyleSheet(calendar_stylesheet(theme))
+    layout = QVBoxLayout(host)
+    calendar = PlanacityCalendar(host)
+    layout.addWidget(calendar)
+    host.show()
+    app.processEvents()
+    try:
+        header = calendar.headerTextFormat()
+        colors = COLORS[theme]
+        assert header.background().color() == QColor(colors.sidebar)
+        assert header.foreground().color() == QColor(colors.muted)
+        assert calendar.weekdayTextFormat(Qt.DayOfWeek.Saturday).foreground().color() == QColor(
+            colors.accent
+        )
+        today = calendar.dateTextFormat(QDate.currentDate())
+        assert today.foreground().color() == QColor(colors.accent)
+        assert today.fontUnderline()
+        for name in ("qt_calendar_prevmonth", "qt_calendar_nextmonth"):
+            button = calendar.findChild(QToolButton, name)
+            assert button is not None and not button.icon().isNull()
+            assert button.iconSize().width() == 18
+    finally:
+        host.close()
+        host.deleteLater()
         app.processEvents()
