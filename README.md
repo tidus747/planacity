@@ -7,27 +7,27 @@ and offline-capable. Planning data stays local by default.
 
 ## Current status
 
-This repository is the initial **v0.1 - Planning Foundation** skeleton, not a
-finished planning application. It includes a launchable PySide6 shell with a left
-sidebar, Overview cards, Plan and People workspaces with resizable details panels,
-and an Import roadmap page, plus development checks and a small static website.
-Creating, editing, saving, and reopening plans are still planned work.
+The **v0.1 - Planning Foundation** source preview can create, edit, save, and reopen
+local Program Plans. It includes a hierarchical Plan editor, a people roster,
+WorkGroups, relationships, estimates in hours, optional dates, and JSON backups.
+See [Getting started](docs/getting-started.md) for the complete workflow and example.
 
 The Python [domain model](docs/domain-model.md) now supports Program Plans,
 flexible horizons, validated Epic/Task/Subtask editing, a people roster, exact
-hour estimates, optional dates, WorkGroups, and basic relationships. Connecting
-these APIs to the desktop editor and project files is upcoming work.
+hour estimates, optional dates, WorkGroups, and basic relationships. The desktop
+editor and local files use this same validated model.
 
 Switch between **Light** and **Dark** at the bottom of the sidebar or through
 **View -> Appearance**. The choice is saved locally for the next launch. The first
 launch uses the system appearance when Qt can detect it. Use **Ctrl+1-4** or the
 View menu to switch pages. The Import page describes planned v0.2 work; capacity
-remains planned for v0.4. Empty workspaces contain no fabricated planning data.
+remains planned for v0.4. New workspaces start empty; a fictional example is
+available separately in `examples/aurora.planacity.json`.
 
 The v0.1 goal is to build a small Program Plan manually, close Planacity, reopen it,
-and continue working. See the [issue breakdown](docs/v0.1-issues.md) for the work
-needed to reach that goal. Jira, timelines, capacity calculations, and other later
-roadmap features are outside this skeleton.
+and continue working. See the [issue breakdown](docs/v0.1-issues.md) for review
+status. Jira, timelines, capacity calculations, and recurring-capacity wizards
+remain later roadmap work. This is not a stable packaged release yet.
 
 ## Run from source
 
@@ -70,9 +70,9 @@ installed, as in CI. See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow guidanc
 
 - `src/planacity/`: desktop entry point, UI, and boundaries for domain, planning,
   and persistence code.
-- `tests/`: application smoke tests; domain tests will accompany each feature.
+- `tests/`: domain, persistence, document-state, and selective Qt interaction tests.
 - `docs/`: [architecture](docs/architecture.md) and [v0.1 issues](docs/v0.1-issues.md).
-- `examples/`: sample-program brief, pending the project file format.
+- `examples/`: fictional Aurora program, loadable through Restore JSON backup.
 - `website/`: standalone Astro Home and Roadmap pages; see its [README](website/README.md).
 - `.github/`: CI and contribution templates.
 - `assets/`: editable design originals; desktop runtime graphics belong in

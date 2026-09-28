@@ -25,7 +25,8 @@ const releases = [
     <li>People, estimates, dates, and a spreadsheet-like Plan view</li>
     <li>Local persistence, JSON backup/export, and a fictional example</li>
   </ul>
-  <p class="status">Only the initial shell is available in the current source preview.</p>
+  <p class="status">The source preview supports manual planning, local save/open,
+    and JSON backups. Packaging and release review remain; no stable release is published yet.</p>
   <h2>Later milestones</h2>
   <ul>
     {releases.map(([version, name, goal]) => <li><strong>{version} - {name}:</strong> {goal}</li>)}
