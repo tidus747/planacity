@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from planacity.ui.editor_pages import PeoplePage, PlanPage
-from planacity.ui.icons import navigation_icon, svg_icon
+from planacity.ui.icons import image_icon, image_pixmap, navigation_icon
 from planacity.ui.jira_pages import ChangesPage, ImportPage
 from planacity.ui.overview import OverviewPage
 from planacity.ui.pages import label
@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         self.settings = settings if settings is not None else QSettings("Planacity", "Planacity")
         self.session = Session()
         self.setWindowTitle("Planacity")
-        self.setWindowIcon(svg_icon("app.svg"))
+        self.setWindowIcon(image_icon("planacity-mark.png"))
         self.resize(1280, 840)
         self.setMinimumSize(960, 640)
         self.navigation: dict[str, QPushButton] = {}
@@ -92,18 +92,19 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(sidebar)
         layout.setContentsMargins(14, 25, 14, 18)
         layout.setSpacing(8)
-        brand = QHBoxLayout()
-        mark = QLabel("P")
-        mark.setObjectName("brandMark")
-        mark.setFixedSize(32, 32)
-        mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        brand.addWidget(mark)
-        name = QLabel("Planacity")
-        name.setObjectName("brand")
-        brand.addWidget(name)
-        brand.addStretch()
-        layout.addLayout(brand)
-        layout.addSpacing(25)
+        self.brand_logo = QLabel()
+        self.brand_logo.setObjectName("brandLogo")
+        self.brand_logo.setAccessibleName("Planacity")
+        self.brand_logo.setFixedSize(184, 70)
+        self.brand_logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        wordmark = image_pixmap("planacity-wordmark.png").scaled(
+            QSize(164, 55),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self.brand_logo.setPixmap(wordmark)
+        layout.addWidget(self.brand_logo)
+        layout.addSpacing(17)
         group = QButtonGroup(self)
         group.setExclusive(True)
         for index, name_text in enumerate(("Overview", "Plan", "People", "Import", "Changes")):
