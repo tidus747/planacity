@@ -106,6 +106,27 @@ def test_bad_sqlite_is_not_opened_or_overwritten(plan, tmp_path, kind):
     assert path.read_bytes() == before
 
 
+@pytest.mark.parametrize(("container_version", "payload_version"), [(1, 2), (2, 1)])
+def test_mismatched_project_and_payload_versions_are_not_opened_or_overwritten(
+    plan, tmp_path, container_version, payload_version
+):
+    path = tmp_path / "mismatched.planacity"
+    save_project(plan, path)
+    data = json.loads(dumps(plan))
+    if payload_version == 1:
+        data["schema_version"] = 1
+        data["plan"].pop("imports")
+    with sqlite3.connect(path) as connection:
+        connection.execute(f"PRAGMA user_version={container_version}")
+        connection.execute("UPDATE document SET payload=?", (json.dumps(data),))
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="does not match"):
+        load_project(path)
+    with pytest.raises(ValueError, match="does not match"):
+        save_project(plan, path)
+    assert path.read_bytes() == before
+
+
 @pytest.mark.parametrize("backup", [False, True])
 def test_failed_replace_preserves_previous_file_and_cleans_temporary(
     plan, tmp_path, monkeypatch, backup

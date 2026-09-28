@@ -87,7 +87,7 @@ def _invalid_constant(value: str) -> object:
     raise ValueError(f"Invalid JSON number: {value}.")
 
 
-def loads(text: str) -> ProgramPlan:
+def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPlan:
     """Reject unknown fields and malformed data before constructing an editable plan."""
     try:
         root = _object(
@@ -102,6 +102,14 @@ def loads(text: str) -> ProgramPlan:
         ):
             raise ValueError(
                 "Unsupported schema version. Open this file with a compatible Planacity."
+            )
+        if (
+            expected_schema_version is not None
+            and root["schema_version"] != expected_schema_version
+        ):
+            raise ValueError(
+                f"Project container version {expected_schema_version} does not match "
+                f"document schema version {root['schema_version']}."
             )
         p = _object(
             root["plan"],
