@@ -4,6 +4,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject ambiguous mapping profiles with duplicate JSON fields, preserving the
+  current wizard mapping instead of silently replacing settings such as estimate units.
+
 ## [0.2.0] - Release candidate
 
 ### Added

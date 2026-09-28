@@ -102,6 +102,34 @@ def test_explicit_type_mapping_and_profile_reuse(app, tmp_path, monkeypatch):
     other.deleteLater()
 
 
+def test_ambiguous_profile_keeps_existing_wizard_mapping(app, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog
+
+    from planacity.integrations.jira.profiles import dump_profile
+
+    table = read_csv("Issue key,Summary,Issue Type\nTEST-1,Test,Task\n")
+    plan = empty_plan()
+    wizard = ImportWizard(plan, table, "sample.csv")
+    original = wizard.current_mapping()
+    path = tmp_path / "ambiguous.json"
+    profile = dump_profile(table.headers, original)
+    path.write_text(profile[:-1] + ', "estimate_unit": "hours"}', encoding="utf-8")
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a: (str(path), ""))
+    wizard.load_profile()
+    assert "Duplicate mapping profile field: estimate_unit" in wizard.error.toPlainText()
+    assert wizard.current_mapping() == original
+    assert wizard.candidate is None
+    assert wizard.plan == plan
+    # Correcting the file allows recovery in the same wizard.
+    path.write_text(profile, encoding="utf-8")
+    wizard.load_profile()
+    assert not wizard.error.toPlainText()
+    wizard.advance()
+    wizard.advance()
+    assert wizard.candidate is not None
+    wizard.deleteLater()
+
+
 def test_import_page_and_real_export_form(window, app, tmp_path, monkeypatch):
     from pathlib import Path
 

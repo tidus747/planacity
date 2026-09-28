@@ -194,6 +194,23 @@ def test_malformed_profile_is_actionable(field, value):
         load_profile(json.dumps(data), table.headers)
 
 
+@pytest.mark.parametrize(
+    "duplicate,field",
+    [
+        ('"estimate_unit": "hours"', "estimate_unit"),
+        ('"version": 1', "version"),
+        ('"columns": [["title", 0], ["type", 1], ["reference", 2]]', "columns"),
+        ('"estimate_\\u0075nit": "hours"', "estimate_unit"),
+    ],
+)
+def test_duplicate_profile_fields_are_rejected(duplicate, field):
+    table = read_csv(CSV)
+    profile = dump_profile(table.headers, MAPPING)
+    ambiguous = profile[:-1] + ", " + duplicate + "}"
+    with pytest.raises(ValueError, match=f"Duplicate mapping profile field: {field}"):
+        load_profile(ambiguous, table.headers)
+
+
 def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     import sqlite3
 
