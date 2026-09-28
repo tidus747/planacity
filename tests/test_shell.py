@@ -12,7 +12,7 @@ from planacity.ui.main_window import MainWindow
 
 def test_shell_navigation_and_close(app: QApplication, window: MainWindow) -> None:
     assert window.isVisible()
-    assert window.pages.count() == 4
+    assert window.pages.count() == 5
     for index, button in enumerate(window.navigation.values()):
         QTest.mouseClick(button, Qt.MouseButton.LeftButton)
         app.processEvents()
@@ -31,7 +31,7 @@ def test_keyboard_navigation_and_empty_workspaces(app: QApplication, window: Mai
     app.processEvents()
     assert window.pages.currentIndex() == 1
     tables = window.findChildren(QTreeView)
-    assert len(tables) == 2
+    assert len(tables) == 3
     assert all(table.model().rowCount() == 0 for table in tables)
 
 

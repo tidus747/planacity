@@ -26,4 +26,5 @@ def svg_icon(filename: str, color: str | None = None) -> QIcon:
 
 
 def navigation_icon(name: str, color: str) -> QIcon:
-    return svg_icon(f"{name.lower()}.svg", color)
+    filename = "plan" if name == "Changes" else name.lower()
+    return svg_icon(f"{filename}.svg", color)

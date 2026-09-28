@@ -24,7 +24,15 @@ ROOT = QModelIndex()
 
 class PlanModel(QAbstractItemModel):
     error = Signal(str)
-    headers = ("Work item", "Type", "Estimate (h)", "Start", "End", "Planning notes")
+    headers = (
+        "Work item",
+        "Type",
+        "Estimate (h)",
+        "Start",
+        "End",
+        "Planning notes",
+        "External reference",
+    )
 
     def __init__(self, session: Session) -> None:
         super().__init__(session)
@@ -103,6 +111,15 @@ class PlanModel(QAbstractItemModel):
             d is not None and not self.plan.horizon.start <= d <= self.plan.horizon.end
             for d in (item.start, item.end)
         )
+        reference = next(
+            (
+                r.external_reference
+                for source in self.plan.imports
+                for r in source.records
+                if r.item.id == item.id
+            ),
+            "",
+        )
         values = (
             item.title,
             item.kind.value.title(),
@@ -110,6 +127,7 @@ class PlanModel(QAbstractItemModel):
             "" if item.start is None else item.start.isoformat(),
             "" if item.end is None else item.end.isoformat(),
             "Outside planning horizon" if outside else "",
+            reference,
         )
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             value = values[index.column()]
