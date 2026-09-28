@@ -11,3 +11,11 @@ WorkGroup, relationships, fractional hour estimates, and optional dates. Missing
 estimates/dates are intentional. The roster does not imply work allocations.
 
 See [Getting started](../docs/getting-started.md) for the full workflow.
+
+## Jira roundtrip sample
+
+`jira-aurora.csv` is a fictional Jira-style export for v0.2. Choose Import,
+keep comma delimiter, use seconds and ISO dates, and explicitly match or create
+the two example people. Repeated Labels columns demonstrate source preservation.
+See [the import guide](../docs/jira-import.md) and
+[the export guide](../docs/jira-export.md).

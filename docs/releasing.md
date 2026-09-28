@@ -44,3 +44,25 @@ for v0.2; capacity calculations and recurring reservations remain future work.
 
 Publication is pending. Replace the changelog's release-candidate label with the
 actual release date in the reviewed release commit before tagging it.
+
+## v0.2.0 prepared notes
+
+Bring Jira work into a local Program Plan, edit its structure, and export the
+agreed plan as CSV.
+
+- Map columns, work types, estimates, dates, and external people with a preview.
+- Reuse local mapping profiles.
+- Preserve original source cells and baseline work in saved projects and backups.
+- Review added, modified, and removed work in Changes.
+- Export Jira CSV with configurable column labels, estimate units, and dates.
+
+Schema 1 projects remain readable. Saving writes schema 2; keep an original backup
+if you need to return to v0.1. Status and external assignees are preserved, not
+editable. Exports omit unmapped columns, WorkGroups, and relationships; JSON
+backups retain the full plan. Jira APIs, reconciliation, capacity, and standalone
+installers remain deferred. No release has been published by this preparation.
+
+Package version `0.2.0` is prepared. Before publishing, finalize the changelog date
+in a reviewed commit. Run the same release checks, then tag the approved `main`
+commit using `v0.2.0` in the commands above. A v0.1.0 tag is optional if the first
+public release will be v0.2.0; never tag the same v0.2 commit as both versions.
