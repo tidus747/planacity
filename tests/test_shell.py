@@ -49,12 +49,19 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 import planacity.main as entry
 
+events = []
+
 class TimedApplication(QApplication):
+    def __init__(self, *args, **kwargs):
+        assert events == ["identity"]
+        super().__init__(*args, **kwargs)
+
     def exec(self):
         assert not self.windowIcon().isNull()
         QTimer.singleShot(0, self.quit)
         return super().exec()
 
+entry._set_windows_runtime_identity = lambda: events.append("identity")
 entry.QApplication = TimedApplication
 raise SystemExit(entry.main())
 """

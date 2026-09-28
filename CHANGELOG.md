@@ -13,6 +13,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Fixed
 
+- Give the hosted Python process a Planacity identity so Windows can display the
+  runtime icon instead of grouping it under Python.
 - Initialize the Planacity icon at application startup and use the exact
   maintainer-supplied mark and wordmark assets.
 - Reject ambiguous mapping profiles with duplicate JSON fields, preserving the
