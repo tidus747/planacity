@@ -140,9 +140,7 @@ def test_inline_date_calendar_selects_and_commits_iso_date(app, window):
         table.edit(index)
         app.processEvents()
         clear_editor = next(
-            candidate
-            for candidate in table.findChildren(CalendarLineEdit)
-            if candidate.isVisible()
+            candidate for candidate in table.findChildren(CalendarLineEdit) if candidate.isVisible()
         )
         clear_editor.clear()
         QTest.keyClick(clear_editor, Qt.Key.Key_Return)

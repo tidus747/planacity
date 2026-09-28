@@ -102,9 +102,7 @@ class ProjectActions:
         start = _date_editor(
             plan.horizon.start if plan else date.today(), "Planning horizon start date"
         )
-        end = _date_editor(
-            plan.horizon.end if plan else date.today(), "Planning horizon end date"
-        )
+        end = _date_editor(plan.horizon.end if plan else date.today(), "Planning horizon end date")
 
         def build() -> ProgramPlan:
             horizon = PlanningHorizon(_date_value(start), _date_value(end))
