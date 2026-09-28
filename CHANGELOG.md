@@ -4,6 +4,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+### Added
+
+- Use the supplied Planacity mark as the desktop window icon and the full
+  wordmark in the application sidebar.
+
 ### Fixed
 
 - Reject ambiguous mapping profiles with duplicate JSON fields, preserving the
