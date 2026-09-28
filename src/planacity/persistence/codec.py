@@ -17,9 +17,10 @@ from planacity.domain import (
     WorkItem,
     WorkItemType,
 )
+from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def _encode(value: object) -> str:
@@ -95,34 +96,24 @@ def loads(text: str) -> ProgramPlan:
         )
         if root["format"] != FORMAT:
             raise ValueError("This is not a Planacity backup.")
-        if type(root["schema_version"]) is not int or root["schema_version"] != SCHEMA_VERSION:
+        if type(root["schema_version"]) is not int or root["schema_version"] not in (
+            1,
+            SCHEMA_VERSION,
+        ):
             raise ValueError(
                 "Unsupported schema version. Open this file with a compatible Planacity."
             )
         p = _object(
-            root["plan"], "id name description horizon work_items people work_groups relationships"
+            root["plan"],
+            "id name description horizon work_items people work_groups relationships"
+            + (" imports" if root["schema_version"] == 2 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
         for value in _rows(p["people"]):
             row = _object(value, "id name")
             people.append(Person(id=_id(row["id"]), name=_text(row["name"])))
-        work = []
-        for value in _rows(p["work_items"]):
-            row = _object(value, "id title kind parent_id estimate_hours start end")
-            work.append(
-                WorkItem(
-                    id=_id(row["id"]),
-                    title=_text(row["title"]),
-                    kind=WorkItemType(_text(row["kind"])),
-                    parent_id=None if row["parent_id"] is None else _id(row["parent_id"]),
-                    estimate_hours=None
-                    if row["estimate_hours"] is None
-                    else Decimal(_text(row["estimate_hours"])),
-                    start=None if row["start"] is None else _date(row["start"]),
-                    end=None if row["end"] is None else _date(row["end"]),
-                )
-            )
+        work = [_work(value) for value in _rows(p["work_items"])]
         groups = []
         for value in _rows(p["work_groups"]):
             row = _object(value, "id name epic_ids")
@@ -153,6 +144,49 @@ def loads(text: str) -> ProgramPlan:
             people=tuple(people),
             work_groups=tuple(groups),
             relationships=tuple(links),
+            imports=tuple(_source(value) for value in _rows(p.get("imports", []))),
         )
     except (ValueError, InvalidOperation, RecursionError) as error:
         raise ValueError(f"Cannot read plan: {error}") from error
+
+
+def _work(value: object) -> WorkItem:
+    row = _object(value, "id title kind parent_id estimate_hours start end")
+    return WorkItem(
+        id=_id(row["id"]),
+        title=_text(row["title"]),
+        kind=WorkItemType(_text(row["kind"])),
+        parent_id=None if row["parent_id"] is None else _id(row["parent_id"]),
+        estimate_hours=None
+        if row["estimate_hours"] is None
+        else Decimal(_text(row["estimate_hours"])),
+        start=None if row["start"] is None else _date(row["start"]),
+        end=None if row["end"] is None else _date(row["end"]),
+    )
+
+
+def _source(value: object) -> ImportSnapshot:
+    row = _object(value, "id name headers rows records")
+    records = []
+    for entry in _rows(row["records"]):
+        r = _object(entry, "item external_reference external_person person status")
+        person = None
+        if r["person"] is not None:
+            person_row = _object(r["person"], "id name")
+            person = Person(id=_id(person_row["id"]), name=_text(person_row["name"]))
+        records.append(
+            ImportedWork(
+                item=_work(r["item"]),
+                external_reference=_text(r["external_reference"]),
+                external_person=_text(r["external_person"]),
+                person=person,
+                status=_text(r["status"]),
+            )
+        )
+    return ImportSnapshot(
+        id=_id(row["id"]),
+        name=_text(row["name"]),
+        headers=tuple(_text(cell) for cell in _rows(row["headers"])),
+        rows=tuple(tuple(_text(cell) for cell in _rows(cells)) for cells in _rows(row["rows"])),
+        records=tuple(records),
+    )

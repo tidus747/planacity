@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 1)
+# Project files and JSON backups (schema 2)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,12 +7,12 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 1` is the schema version.
+- `PRAGMA user_version = 2` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
 
-The small v0.1 application edits complete immutable plan snapshots, so a single
+The application edits complete immutable plan snapshots, so a single
 document payload keeps its SQLite storage and backup representations identical.
 There is no partial entity loading or database-side scheduling. A normalized
 schema can be introduced through an explicit migration if future query needs
@@ -26,10 +26,10 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`1`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`2`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
-`work_groups`, and `relationships`. Fields match [the domain model](domain-model.md).
+`work_groups`, `relationships`, and `imports`. Fields match [the domain model](domain-model.md).
 
 - UUIDs are strings. Identity is preserved on load, save, and backup restore.
 - Dates are ISO `YYYY-MM-DD` strings, without timestamps or timezones.
@@ -56,7 +56,17 @@ Normal Save/Discard/Cancel protection applies to the previous plan. Save the
 restored plan to a `.planacity` file to continue working. A failed restore leaves
 the current document intact. Keep backups separately from the working project.
 
-Schema 1 has no migrations because it is the first project format. Unsupported
-versions require a compatible application; do not edit the version field to
-bypass validation. Concurrent editing of the same project by multiple processes
-is not supported in v0.1.
+Schema 1 files are read with an empty imports collection. Saving writes schema 2;
+older versions cannot open the upgraded file. Keep a backup before upgrading.
+Unsupported versions require a compatible application; do not edit version fields
+to bypass validation. Concurrent editing of one project is not supported.
+
+## Imported source snapshots
+
+Each entry in `imports` contains a UUID, source name, original headers, raw rows,
+and one record per row. Records contain the original WorkItem, external
+reference, external person, mapped Person snapshot (or null), and original status.
+Headers may repeat; every row must match their width. Baseline work forms its own
+validated hierarchy. References and work IDs cannot be duplicated across sources.
+Baseline records remain valid when current work or roster entries are removed.
+The baseline is never rewritten by editing or exporting the current plan.

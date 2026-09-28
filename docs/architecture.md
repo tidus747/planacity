@@ -67,3 +67,16 @@ changes use model reset notifications and restore selection/expansion by UUID;
 cell edits use `dataChanged` so invalid drafts and the current editor stay intact.
 File dialogs and confirmation prompts are presentation concerns; persistence and
 dirty-state transitions are independently testable without Qt.
+
+## Jira roundtrip
+
+The `integrations/jira` adapter parses CSV and builds an immutable candidate plan.
+The wizard commits that candidate only after validation and explicit confirmation.
+`ImportSnapshot` and `ImportedWork` preserve source cells and baseline work in the
+canonical model, without Jira API dependencies. Current roster entries and work
+may change or be deleted without invalidating their original snapshots.
+
+`planning/changes.py` computes differences; it never writes a baseline. CSV export
+serializes the current hierarchy and carries original references, status, and
+external people. Project schema 2 stores imports; schema 1 loads with none.
+Mapping profiles are separate local files with no imported rows or people.
