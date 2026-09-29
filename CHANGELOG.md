@@ -6,6 +6,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Resize Timeline bar edges with day snapping, a date/duration preview, and
+  cancellation. Edit dates with the keyboard or calendar without changing effort
+  hours, dependent work, or the imported baseline.
 - Timeline grouping by hierarchy, Epic, or WorkGroup, with title, type,
   WorkGroup, and schedule-state filters and explicit ungrouped sections.
 - Directional dependency arrows with readable relationship details, filter and

@@ -112,3 +112,10 @@ orthogonal connector geometry is independently testable. The Qt schedule view
 maps day coordinates to visible cells and draws arrows only when both actual
 endpoints are on screen. Cross-section links use the first occurrence when no
 shared section exists. None of these operations changes the canonical plan.
+
+Timeline editing is separate from projection and painting. `timeline_resize.py`
+in planning snaps period fractions to inclusive days and delegates validation to
+`set_work_dates`. The UI holds the original immutable snapshot throughout a drag,
+previews candidates, and applies once on release only if that snapshot is still
+current. Escape, view changes, and invalid drops discard the candidate. The
+keyboard date form uses the same canonical setter and stale-snapshot check.
