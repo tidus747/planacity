@@ -1,4 +1,4 @@
-"""Read-only desktop Timeline backed by the canonical timeline projection."""
+"""Desktop Timeline backed by the canonical projection and validated date edits."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ from planacity.planning.timeline_view import TimelineFilters, TimelineGrouping, 
 from planacity.ui.pages import WorkspacePage, label
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Colors, Theme
-from planacity.ui.timeline_links import DependencyScheduleView
+from planacity.ui.timeline_resize import ResizeScheduleView, edit_timeline_dates
 
 Index = QModelIndex | QPersistentModelIndex
 ROOT = QModelIndex()
@@ -309,12 +309,12 @@ class TimelineBarDelegate(QStyledItemDelegate):
 
 
 class TimelinePage(WorkspacePage):
-    """Show the current plan through read-only synchronized label and schedule views."""
+    """Synchronize schedule views and apply explicit date edits to the shared plan."""
 
     def __init__(self, session: Session, settings: QSettings | None = None) -> None:
         super().__init__(
             "Timeline",
-            "See plan dates without changing the canonical Program Plan.",
+            "Explore the schedule. Drag a bar edge or edit dates to adjust planned work.",
         )
         self.session = session
         self.settings = settings
@@ -365,7 +365,7 @@ class TimelinePage(WorkspacePage):
         self.labels.setColumnHidden(2, True)
         self.labels.horizontalHeader().setStretchLastSection(True)
 
-        self.schedule = DependencyScheduleView()
+        self.schedule = ResizeScheduleView(session)
         self.schedule.setObjectName("timelineSchedule")
         self.schedule.setAccessibleName("Timeline schedule by day")
         self.schedule_model = TimelineScheduleModel(self.schedule)
@@ -385,6 +385,10 @@ class TimelinePage(WorkspacePage):
         scale_label.setBuddy(self.scale_box)
         self.header.addWidget(scale_label)
         self.header.addWidget(self.scale_box)
+        self.edit_dates = QPushButton("Edit &dates...")
+        self.edit_dates.setEnabled(False)
+        self.edit_dates.clicked.connect(self._edit_dates)
+        self.header.addWidget(self.edit_dates)
         self.schedule.setModel(self.schedule_model)
         self.schedule.setItemDelegate(TimelineBarDelegate(self.schedule))
         header = self.schedule.horizontalHeader()
@@ -415,6 +419,12 @@ class TimelinePage(WorkspacePage):
         split.setStretchFactor(1, 1)
         self.splitter = split
         self.content.addWidget(split, 1)
+        self.resize_preview = label(
+            "Drag a bar edge to resize dates. Escape cancels. Effort is unchanged."
+        )
+        self.resize_preview.setAccessibleName("Date resize preview")
+        self.content.addWidget(self.resize_preview)
+        self.schedule.preview_changed.connect(self.resize_preview.setText)
         self.dependency_toggle = QCheckBox("Show dependency arrows")
         self.dependency_toggle.setChecked(True)
         self.dependency_toggle.toggled.connect(self._toggle_dependencies)
@@ -474,6 +484,7 @@ class TimelinePage(WorkspacePage):
         self.schedule.setAccessibleName(f"Timeline schedule by {self.schedule_model.scale.value}")
 
     def _change_scale(self) -> None:
+        self.schedule.cancel_resize()
         scale = TimelineScale(self.scale_box.currentData())
         if scale == self.schedule_model.scale:
             return
@@ -554,6 +565,7 @@ class TimelinePage(WorkspacePage):
             self._select_row(current.row(), current.column())
 
     def refresh(self) -> None:
+        self.schedule.cancel_resize()
         selected_id = self._selected_id()
         selected = self.labels.currentIndex().data(ROW_ROLE)
         section_id = selected.section_id if isinstance(selected, TimelineRow) else None
@@ -656,6 +668,7 @@ class TimelinePage(WorkspacePage):
 
     def _update_dependency_details(self) -> None:
         selected = self._selected_id()
+        self.edit_dates.setEnabled(selected is not None)
         links = [
             link
             for link in self.schedule.dependencies
@@ -673,3 +686,8 @@ class TimelinePage(WorkspacePage):
             "Predecessor end -> successor start. Select work to inspect its links. "
             "Arrows require both endpoints on screen. Dates are never changed."
         )
+
+    def _edit_dates(self) -> None:
+        selected = self._selected_id()
+        if selected is not None:
+            edit_timeline_dates(self, self.session, selected)
