@@ -113,6 +113,9 @@ def test_mismatched_project_and_payload_versions_are_not_opened_or_overwritten(
     path = tmp_path / "mismatched.planacity"
     save_project(plan, path)
     data = json.loads(dumps(plan))
+    data["schema_version"] = payload_version
+    data["plan"].pop("work_calendars")
+    data["plan"].pop("person_calendars")
     if payload_version == 1:
         data["schema_version"] = 1
         data["plan"].pop("imports")

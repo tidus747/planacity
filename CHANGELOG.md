@@ -4,6 +4,17 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+### Added
+
+- Named work calendars with explicit weekday hours, per-person assignments,
+  and nominal horizon hours in People, before leave, events, or reservations.
+
+### Changed
+
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 3
+  to retain calendars. Schema 1/2 files still open without inferred assignments;
+  keep a backup or use Save As for compatibility with v0.3 and earlier.
+
 ## [0.3.0] - Release candidate
 
 ### Added

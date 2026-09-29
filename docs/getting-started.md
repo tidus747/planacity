@@ -19,8 +19,11 @@ No account or network connection is needed while planning.
    **Relationships...** to add `related_to`, `depends_on`, or `blocks` links.
    Links do not automatically reschedule work. Dates outside the horizon are
    retained and shown in the Planning notes column.
-6. Open **People** to add, rename, or remove roster members. Assignments, load
-   calculations, and recurring capacity reservations are planned for v0.4.
+6. Open **People** to add, rename, or remove roster members. Use **Work calendars...**
+   to define all seven weekdays, then **Assign calendar...** for each person.
+   The table shows nominal hours for the horizon, before leave, events, or
+   reservations. Unassigned calendars show Unknown. See [calendar setup](capacity-model.md).
+   Work allocations and recurring reservations remain future work.
 7. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling

@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 2)
+# Project files and JSON backups (schema 3)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 2` is the schema version.
+- `PRAGMA user_version = 3` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,10 +26,16 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`2`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`3`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
-`work_groups`, `relationships`, and `imports`. Fields match [the domain model](domain-model.md).
+`work_groups`, `relationships`, `imports`, `work_calendars`, and `person_calendars`.
+Fields match [the domain model](domain-model.md).
+
+Each work calendar stores `id`, `name`, and seven `weekday_hours` Decimal strings,
+Monday through Sunday. Each person/calendar assignment stores `person_id` and
+`calendar_id`. Both must reference existing plan entities; one person may have
+only one calendar. Imported Person snapshots remain separate and unchanged.
 
 - UUIDs are strings. Identity is preserved on load, save, and backup restore.
 - Dates are ISO `YYYY-MM-DD` strings, without timestamps or timezones.
@@ -58,8 +64,10 @@ Normal Save/Discard/Cancel protection applies to the previous plan. Save the
 restored plan to a `.planacity` file to continue working. A failed restore leaves
 the current document intact. Keep backups separately from the working project.
 
-Schema 1 files are read with an empty imports collection. Saving writes schema 2;
-older versions cannot open the upgraded file. Keep a backup before upgrading.
+Schema 1 files are read with an empty imports collection. Schema 1 and 2 files
+open without calendars or assignments; no default hours are invented. Opening
+does not modify the file. Saving writes schema 3; Planacity v0.3 and earlier
+cannot open the upgraded file. Keep a backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.
 

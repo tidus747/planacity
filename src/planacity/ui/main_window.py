@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(label("PROJECT", "eyebrow"))
         self.project_label = label("No project open", "heading")
         layout.addWidget(self.project_label)
-        layout.addWidget(label("Visual Planning\nv0.3 preview"))
+        layout.addWidget(label("Team & Capacity\nv0.4 preview"))
         layout.addStretch()
         layout.addWidget(label("APPEARANCE", "eyebrow"))
         modes = QHBoxLayout()
@@ -180,10 +180,11 @@ class MainWindow(QMainWindow):
             self,
             "About Planacity",
             "<b>Planacity</b><p>Plan the work. "
-            "Respect the capacity.</p><p>Visual Planning development preview. "
+            "Respect the capacity.</p><p>Team &amp; Capacity development preview. "
             "Create, edit, and save local Program Plans. "
             "Import and export Jira CSV, and review work on the Timeline. "
-            "Capacity remains planned for later versions.</p>",
+            "Configure work calendars and review nominal hours. "
+            "Availability deductions and recurring reservations remain planned.</p>",
         )
 
     def _refresh_document(self) -> None:

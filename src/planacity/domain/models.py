@@ -6,6 +6,8 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID, uuid4
 
+from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
+
 
 def _require_text(value: str, field_name: str) -> None:
     if not isinstance(value, str) or not value.strip():
@@ -199,6 +201,8 @@ class ProgramPlan:
     work_groups: tuple[WorkGroup, ...] = ()
     relationships: tuple[Relationship, ...] = ()
     imports: tuple[ImportSnapshot, ...] = ()
+    work_calendars: tuple[WorkCalendar, ...] = ()
+    person_calendars: tuple[PersonCalendar, ...] = ()
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Program Plan ID")
@@ -219,6 +223,23 @@ class ProgramPlan:
         if len({person.id for person in self.people}) != len(self.people):
             raise ValueError("Person IDs must be unique within a plan.")
         _validate_groups_and_relationships(self)
+        if not isinstance(self.work_calendars, tuple) or any(
+            not isinstance(calendar, WorkCalendar) for calendar in self.work_calendars
+        ):
+            raise ValueError("Work calendars must be a tuple of WorkCalendar objects.")
+        if len({calendar.id for calendar in self.work_calendars}) != len(self.work_calendars):
+            raise ValueError("WorkCalendar IDs must be unique within a plan.")
+        if not isinstance(self.person_calendars, tuple) or any(
+            not isinstance(assignment, PersonCalendar) for assignment in self.person_calendars
+        ):
+            raise ValueError("Person calendars must be a tuple of PersonCalendar objects.")
+        if len({assignment.person_id for assignment in self.person_calendars}) != len(
+            self.person_calendars
+        ):
+            raise ValueError("Each person can have only one work calendar.")
+        for assignment in self.person_calendars:
+            self.person(assignment.person_id)
+            self.work_calendar(assignment.calendar_id)
         if not isinstance(self.imports, tuple) or any(
             not isinstance(source, ImportSnapshot) for source in self.imports
         ):
@@ -238,6 +259,12 @@ class ProgramPlan:
             if group.id == group_id:
                 return group
         raise ValueError(f"WorkGroup {group_id} does not exist in this plan.")
+
+    def work_calendar(self, calendar_id: UUID) -> WorkCalendar:
+        for calendar in self.work_calendars:
+            if calendar.id == calendar_id:
+                return calendar
+        raise ValueError(f"WorkCalendar {calendar_id} does not exist in this plan.")
 
     def person(self, person_id: UUID) -> Person:
         for person in self.people:

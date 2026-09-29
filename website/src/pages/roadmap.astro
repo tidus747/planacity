@@ -1,7 +1,6 @@
 ---
 import Page from '../layouts/Page.astro';
 const releases = [
-  ['v0.4', 'Team & Capacity', 'Check realistic team availability, with guided recurring reservations for meetings and front-office duties per sprint.'],
   ['v0.5', 'Program Calendar', 'Understand work alongside leave, holidays, and program events.'],
   ['v0.6', 'Milestones & Deliveries', 'Track program outcomes and delivery readiness.'],
   ['v0.7', 'Communication', 'Share plans and reports outside the application.'],
@@ -15,18 +14,19 @@ const releases = [
   <h1>Small releases. Useful progress.</h1>
   <p>This is a direction, not a delivery schedule. Planacity is a single-maintainer
     side project; scope stays focused on one useful increment at a time.</p>
-  <h2>Current target: v0.3 - Visual Planning</h2>
-  <p>Review the program visually using the same local plan and preserved Jira baseline.</p>
+  <h2>Current target: v0.4 - Team &amp; Capacity</h2>
+  <p>Build toward realistic team capacity, starting with explicit work calendars.</p>
   <ul>
     <li>Available: Timeline with day, week, and month scales</li>
     <li>Available: hierarchy, Epic, and WorkGroup grouping, filters, and dependency arrows</li>
     <li>Available: drag bar edges or edit dates with the keyboard without changing effort hours</li>
-    <li>Prepared: Visual Planning acceptance checks and v0.3.0 release notes</li>
+    <li>Available: named work calendars, person assignments, and nominal horizon hours</li>
+    <li>Planned: availability deductions, allocations, overload checks, and recurring reservation wizards</li>
     <li>Implemented foundations: manual planning, Jira CSV roundtrip, and local persistence</li>
   </ul>
-  <p class="status">The earlier planning and Jira implementation milestones are complete. Visual Planning
-    awaits final integration and publication approval;
-    no stable release is published yet. Jira APIs and re-import reconciliation are deferred.</p>
+  <p class="status">This is a development preview. Nominal hours are before leave, events,
+    reservations, and allocations; remaining planning capacity is not yet calculated.
+    No stable release is published yet. Jira APIs and re-import reconciliation are deferred.</p>
   <h2>Later milestones</h2>
   <ul>
     {releases.map(([version, name, goal]) => <li><strong>{version} - {name}:</strong> {goal}</li>)}

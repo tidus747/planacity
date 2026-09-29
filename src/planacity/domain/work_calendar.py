@@ -7,6 +7,18 @@ from uuid import UUID, uuid4
 
 
 @dataclass(frozen=True, kw_only=True)
+class PersonCalendar:
+    """One explicit calendar assignment, separate from imported Person snapshots."""
+
+    person_id: UUID
+    calendar_id: UUID
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.person_id, UUID) or not isinstance(self.calendar_id, UUID):
+            raise ValueError("Person/calendar references must be UUIDs.")
+
+
+@dataclass(frozen=True, kw_only=True)
 class WorkCalendar:
     """A repeating Monday-to-Sunday pattern before leave or other deductions.
 
