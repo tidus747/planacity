@@ -126,7 +126,7 @@ keyboard date form uses the same canonical setter and stale-snapshot check.
 `planning/work_calendar.py` calculates nominal hours for an inclusive horizon in
 constant space using seven weekday counts. It preserves Decimal precision without
 modifying the caller's arithmetic context. ProgramPlan owns calendars and separate
-PersonCalendar references. Schema 3 stores both collections, leaving imported
+PersonCalendar references. Schema 4 stores both collections, leaving imported
 Person snapshots untouched. Schema 1/2 loads with empty collections. Lifecycle
 services validate references and require explicit unassignment when deleting a
 referenced calendar. The People view delegates editing and calculation to these services.
@@ -135,7 +135,11 @@ reasons. `planning/availability.py` splits the horizon at event boundaries,
 applies the strongest active fraction, and reports overlaps by stable event IDs.
 It avoids expanding long horizons into daily lists and preserves exact Decimal
 products. Callers supply an explicit calendar and one person's events; mismatched
-references and duplicate IDs are rejected. This calculation API is not yet wired
-to ProgramPlan storage or desktop editing. Program-event deductions, reservations,
+references and duplicate IDs are rejected. ProgramPlan owns availability events;
+schema 4 persists them and reads schemas 1-3 without inferred entries. Lifecycle
+services preserve IDs and guard person deletion. People delegates previews and
+totals to the planning layer, with validated date/share forms and stale-draft
+protection. PlanningHorizon lives in a shared domain module to avoid a circular
+dependency between ProgramPlan and its availability events. Program-event deductions, reservations,
 and allocations remain separate inputs. See [the capacity model](capacity-model.md)
 for the public API and limits.

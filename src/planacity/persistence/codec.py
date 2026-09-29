@@ -8,6 +8,7 @@ from typing import cast
 from uuid import UUID
 
 from planacity.domain import (
+    AvailabilityEvent,
     Person,
     PersonCalendar,
     PlanningHorizon,
@@ -22,8 +23,8 @@ from planacity.domain import (
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 3
-SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3)
+SCHEMA_VERSION = 4
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4)
 
 
 def _encode(value: object) -> str:
@@ -117,8 +118,9 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         p = _object(
             root["plan"],
             "id name description horizon work_items people work_groups relationships"
-            + (" imports" if root["schema_version"] in (2, 3) else "")
-            + (" work_calendars person_calendars" if root["schema_version"] == 3 else ""),
+            + (" imports" if root["schema_version"] in (2, 3, 4) else "")
+            + (" work_calendars person_calendars" if root["schema_version"] in (3, 4) else "")
+            + (" availability_events" if root["schema_version"] == 4 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -161,9 +163,23 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             person_calendars=tuple(
                 _assignment(value) for value in _rows(p.get("person_calendars", []))
             ),
+            availability_events=tuple(
+                _availability(value) for value in _rows(p.get("availability_events", []))
+            ),
         )
     except (ValueError, InvalidOperation, RecursionError) as error:
         raise ValueError(f"Cannot read plan: {error}") from error
+
+
+def _availability(value: object) -> AvailabilityEvent:
+    row = _object(value, "id person_id period unavailable_fraction")
+    period = _object(row["period"], "start end")
+    return AvailabilityEvent(
+        id=_id(row["id"]),
+        person_id=_id(row["person_id"]),
+        period=PlanningHorizon(_date(period["start"]), _date(period["end"])),
+        unavailable_fraction=Decimal(_text(row["unavailable_fraction"])),
+    )
 
 
 def _calendar(value: object) -> WorkCalendar:

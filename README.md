@@ -23,8 +23,8 @@ Switch between **Light** and **Dark** at the bottom of the sidebar or through
 launch uses the system appearance when Qt can detect it. Use **Ctrl+1-6** or the
 View menu to switch pages: Overview, Plan, Timeline, People, Import, and Changes.
 Import supports Jira CSV mapping, preview, saved profiles, and CSV export;
-People supports explicit calendars and nominal horizon hours. Availability,
-allocations, and recurring reservations remain planned for v0.4.
+People supports calendars, dated availability editing, and horizon totals with
+overlap reporting. Program events, allocations, and recurring reservations remain planned.
 New workspaces start empty; a fictional example is
 available separately in `examples/aurora.planacity.json`.
 
@@ -41,8 +41,8 @@ No stable packaged release is published yet.
 The v0.3.0 source candidate has [prepared release notes](docs/releases/v0.3.0.md)
 and a [validation record](docs/v0.3-validation.md). Publication requires a reviewed
 main commit, passing CI, and a separately approved release.
-Current source is `0.4.0.dev0` and saves schema 3. Schema 1/2 files open without
-inferred calendars; keep a backup or use Save As for compatibility with v0.3 or earlier.
+Current source is `0.4.0.dev0` and saves schema 4. Schema 1/2/3 files open without
+inferred availability; keep a backup or use Save As for compatibility with older builds.
 
 ## Run from source
 

@@ -159,6 +159,7 @@ def test_v1_migration_and_strict_baseline_validation(plan):
     data["plan"].pop("imports")
     data["plan"].pop("work_calendars")
     data["plan"].pop("person_calendars")
+    data["plan"].pop("availability_events")
     assert loads(json.dumps(data)) == plan
     data = json.loads(dumps(imported(plan)))
     data["plan"]["imports"][0]["records"][0]["unexpected"] = "keep me"
@@ -224,6 +225,7 @@ def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     data["plan"].pop("imports")
     data["plan"].pop("work_calendars")
     data["plan"].pop("person_calendars")
+    data["plan"].pop("availability_events")
     with sqlite3.connect(path) as connection:
         connection.execute(f"PRAGMA application_id={APPLICATION_ID}")
         connection.execute("PRAGMA user_version=1")
@@ -235,5 +237,5 @@ def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     save_project(updated, path)
     assert load_project(path) == updated
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
     connection.close()

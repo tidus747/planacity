@@ -29,7 +29,7 @@ Open Timeline (Ctrl+3) and compare Day, Week, and Month. The initial summary is
 - Save to a new project, reopen, and continue. The supplied JSON remains unchanged.
 
 This remains a schema 1 backup to exercise backward compatibility. Restoring and
-saving produces the current schema 3 project format. The roster is not an
+saving produces the current schema 4 project format. The roster is not an
 allocation model, and the example contains no synthetic zero-duration milestones.
 
 ## Jira roundtrip sample

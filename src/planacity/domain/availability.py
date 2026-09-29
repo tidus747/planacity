@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from planacity.domain.models import PlanningHorizon
+from planacity.domain.horizon import PlanningHorizon
 
 
 @dataclass(frozen=True, kw_only=True)
