@@ -90,11 +90,79 @@ Nominal capacity is the first input to the future calculation:
     - Reserved capacity
     = Planning capacity
 
-Allocations then consume planning capacity. The current API does not calculate
-remaining hours, overload, availability reductions, or team totals. These must
-not be labelled as nominal capacity or inferred without explicit inputs.
+Allocations then consume planning capacity. The nominal-calendar API does not
+apply reductions. The separate availability API below applies unavailability
+only; neither API calculates remaining planning hours, overload, or team totals.
+The desktop continues to show nominal hours, before all reductions.
 
-Next slices must add availability/event deductions with clear overlap rules. Recurring
-reservations (#8), lifecycle (#9), and the wizard (#10) depend on those inputs.
+Next slices must persist and edit availability and add program-event deductions.
+Recurring reservations (#8), lifecycle (#9), and the wizard (#10) depend on those inputs.
 Calendar data uses schema 3, while Jira hour estimates and import baselines are
 unchanged. See [recurring reservations](capacity-wizards.md).
+
+## Availability calculation API
+
+The calculation foundation for [#60](https://github.com/tidus747/planacity/issues/60)
+accepts explicit AvailabilityEvents for one person. Each event has an identity,
+person UUID, inclusive PlanningHorizon, and unavailable fraction from 0 to 1.
+For example, 0.5 removes half of each date's nominal hours; 1 removes all of them.
+No 8-hour day or reason for the absence is inferred or stored. Fractions must be
+finite Decimal values. This is a calculation API only: events are not saved in
+projects, editable in People, or included in its displayed nominal hours yet.
+
+```python
+from datetime import date
+from decimal import Decimal
+from uuid import uuid4
+
+from planacity.domain import AvailabilityEvent, PlanningHorizon, WorkCalendar
+from planacity.planning.availability import availability_capacity
+
+person_id = uuid4()
+horizon = PlanningHorizon(date(2026, 9, 28), date(2026, 10, 4))
+calendar = WorkCalendar(
+    name="Explicit example",
+    weekday_hours=tuple(Decimal(v) for v in ("6", "6", "6", "6", "6", "0", "0")),
+)
+absence = AvailabilityEvent(
+    person_id=person_id,
+    period=PlanningHorizon(date(2026, 9, 28), date(2026, 9, 29)),
+    unavailable_fraction=Decimal("0.5"),
+)
+result = availability_capacity(calendar, horizon, person_id, (absence,))
+assert result.nominal_hours == Decimal(30)
+assert result.unavailable_hours == Decimal(6)
+assert result.available_hours == Decimal(24)
+assert not result.overlaps
+```
+
+### Overlaps and partial days
+
+On each date, the strongest active unavailable fraction wins. A full-day holiday
+and full-day leave therefore remove the date's hours once. Two half-day entries
+also remove half, not all: without times, they may refer to the same half-day.
+When separate partial absences should add up, supply one combined daily fraction
+instead. This model describes availability limits, not additive appointments or
+reserved duties. Time-of-day scheduling is outside this API.
+
+Every interval with more than one positive-share event is returned in `overlaps`,
+with its clipped dates and sorted event IDs. Even zero-hour calendar dates remain
+visible in overlap reports. Zero-share entries have no effect and do not create
+overlap warnings. Adjacent inclusive ranges do not overlap unless they share a
+date. Inputs are never modified, and event order does not change the result.
+
+Callers must supply only the requested person's events and explicitly resolve
+their calendar. Duplicate event IDs and mismatched person references are rejected,
+even outside the horizon. A missing calendar is an error, not zero capacity.
+The result is available hours **before** program events, reservations, and
+allocations; it must not be labelled remaining planning capacity.
+
+### Range and precision
+
+Only the intersection with the queried horizon contributes. The implementation
+splits at event boundaries and counts weekdays within each interval, rather than
+materializing every date. It handles date.min/date.max, leap days, variable hours,
+working weekends, and calendars explicitly set to zero. Decimal precision covers
+both the calendar hours and fraction, without rounding or changing the caller's
+context. Availability cannot exceed nominal hours or reduce them below zero;
+future over-reservation must still be reported rather than silently clamped.

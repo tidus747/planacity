@@ -143,6 +143,13 @@ Imported Person snapshots do not contain these assignments and remain unchanged.
 People shows nominal horizon hours, before reductions or allocations. See the
 [capacity model](capacity-model.md) for lifecycle rules and future deductions.
 
+AvailabilityEvent is an immutable calculation input with a stable UUID, person
+reference, inclusive period, and Decimal unavailable fraction. It records no
+absence reason. Overlaps use the strongest daily fraction and return reviewable
+periods and event IDs. Events are not yet attached to ProgramPlan, persisted, or
+editable in the desktop. The [availability API](capacity-model.md#availability-calculation-api)
+documents these boundaries and the partial-day interpretation.
+
 ## Timeline projection (v0.3)
 
 `planning/timeline.py` derives immutable rows from a complete `ProgramPlan` for

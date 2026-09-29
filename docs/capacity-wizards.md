@@ -8,9 +8,10 @@ must be ready before this wizard becomes an enabled command.
 The [work-calendar calculation foundation](capacity-model.md) is implemented for
 review in [#56](https://github.com/tidus747/planacity/issues/56). It accepts an
 explicit seven-day pattern and calculates nominal hours only. Calendar storage,
-assignment, and editing are implemented for review in #58. Availability/event
-deductions remain prerequisites for #8 and the wizard. Existing plans have no
-inferred calendar.
+assignment, and editing are implemented for review in #58. The unavailable-share
+calculation and overlap reports follow in #60. Persisted availability editing and
+program-event deductions remain prerequisites for #8 and the wizard. Existing
+plans have no inferred calendar.
 
 ## Purpose and entry point
 
@@ -74,7 +75,8 @@ report negative remaining capacity instead of hiding it by clamping to zero.
 0. **[Work-calendar foundation (#56)](https://github.com/tidus747/planacity/issues/56):**
    Explicit weekly hours and exact nominal-capacity calculations, independent of
    Qt and persistence. Calendar storage/assignment/editing follows in #58;
-   availability/event deductions precede recurring reservation calculations.
+   availability calculation follows in #60. Persisted availability editing and
+   program-event deductions precede recurring reservation calculations.
 1. **[Reservation rules and calculations (#8)](https://github.com/tidus747/planacity/issues/8):** Validate recurrence, hours and person
    references. Test full/partial periods, non-Monday anchors, leap years, leave,
    holidays, zero availability, overlapping rules, and deterministic expansion.

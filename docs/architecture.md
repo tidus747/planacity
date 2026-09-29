@@ -130,5 +130,12 @@ PersonCalendar references. Schema 3 stores both collections, leaving imported
 Person snapshots untouched. Schema 1/2 loads with empty collections. Lifecycle
 services validate references and require explicit unassignment when deleting a
 referenced calendar. The People view delegates editing and calculation to these services.
-Availability deductions, reservations, and allocations are separate future
-inputs. See [the capacity model](capacity-model.md) for the public API and limits.
+`domain/availability.py` defines person-specific unavailable shares without HR
+reasons. `planning/availability.py` splits the horizon at event boundaries,
+applies the strongest active fraction, and reports overlaps by stable event IDs.
+It avoids expanding long horizons into daily lists and preserves exact Decimal
+products. Callers supply an explicit calendar and one person's events; mismatched
+references and duplicate IDs are rejected. This calculation API is not yet wired
+to ProgramPlan storage or desktop editing. Program-event deductions, reservations,
+and allocations remain separate inputs. See [the capacity model](capacity-model.md)
+for the public API and limits.
