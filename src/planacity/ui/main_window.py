@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.pages, 1)
         self.setCentralWidget(central)
         self.plan_page = PlanPage(self.session)
-        self.timeline_page = TimelinePage(self.session)
+        self.timeline_page = TimelinePage(self.session, self.settings)
         self.people_page = PeoplePage(self.session)
         for page in (
             OverviewPage(self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)),

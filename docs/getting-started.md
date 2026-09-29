@@ -25,6 +25,12 @@ No account or network connection is needed while planning.
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling
    do not change the plan.
+   Use **Scale** to choose Day, Week, or Month. Weeks start on Monday and use ISO
+   week numbers; months follow the calendar, including leap days. Partial periods
+   at the horizon edges are clipped, with exact dates in header tooltips.
+   The selected work and visible date context are preserved where scrolling allows.
+   The scale is remembered locally and never changes dates, hours, or project data.
+   Use `Alt+S` to focus Scale, then arrow keys to choose a value.
 8. Choose **File -> Save** (`Ctrl+S`) and select a `.planacity` path. **Save As**
    (`Ctrl+Shift+S`) saves a separate project. The window title shows `*` while
    changes are unsaved. Cancelled or failed saves retain the current draft.
@@ -48,6 +54,13 @@ Use **File -> Export JSON backup...** for a portable backup. See
 [project-file-format.md](project-file-format.md) for validation and recovery.
 
 ## Validation record
+
+Timeline scales retain selection and date context without editing the plan.
+Week and month views are available in both appearances; narrow period labels
+are shortened, with exact dates available in header tooltips.
+
+![Weekly Timeline in light appearance](images/timeline-week-light.png)
+![Monthly Timeline in dark appearance](images/timeline-month-dark.png)
 
 Date pickers use compact calendar cells so date numbers and weekday headers fit
 in both appearances. Mouse selection and keyboard date entry remain available.

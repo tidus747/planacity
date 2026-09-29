@@ -92,3 +92,11 @@ Coordinates outside the horizon remain outside rather than changing stored dates
 Person grouping waits for Allocations in v0.4, and milestone markers wait for the
 first-class Milestone model. The Timeline must not infer either concept from Jira
 metadata or represent milestones as zero-duration work.
+
+## Timeline scale coordinates
+
+`planning/timeline_axis.py` calculates day, ISO-week, and calendar-month columns
+without Qt or a list of every date. Partial first/last periods stay within the
+planning horizon, including the supported minimum and maximum dates. Rendering
+uses fractional bar spans within those periods; canonical dates never change.
+The desktop stores `timeline/scale` in local QSettings, independently of projects.

@@ -6,6 +6,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Day, week, and month Timeline scales with calendar-aligned periods, preserved
+  selection and visible dates, and a remembered local scale preference.
 - A read-only desktop Timeline with aligned hierarchy labels, scheduled bars,
   partial and unscheduled states, synchronized scrolling, and stable selection.
 - Calendar pickers for planning-horizon dates and optional work item start and
