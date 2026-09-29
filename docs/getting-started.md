@@ -49,6 +49,12 @@ Use **File -> Export JSON backup...** for a portable backup. See
 
 ## Validation record
 
+Date pickers use compact calendar cells so date numbers and weekday headers fit
+in both appearances. Mouse selection and keyboard date entry remain available.
+
+![Calendar in light appearance](images/calendar-light.png)
+![Calendar in dark appearance](images/calendar-dark.png)
+
 For the v0.2 workflow, see [Jira CSV import](jira-import.md) and
 [Jira CSV export](jira-export.md). Imported baselines survive local edits and
 save/reopen; use Changes (Ctrl+6) to review differences.
