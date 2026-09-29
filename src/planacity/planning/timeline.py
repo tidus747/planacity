@@ -42,6 +42,8 @@ class TimelineRow:
     date_state: TimelineDateState
     outside_horizon: bool
     group_ids: tuple[UUID, ...]
+    section: str = ""
+    section_id: UUID | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
