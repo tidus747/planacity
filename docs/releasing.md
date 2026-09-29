@@ -24,7 +24,10 @@ Use `v0.1.0` for Planning Foundation and `v0.2.0` for Jira Roundtrip.
    using the existing tag, the reviewed notes, wheel, and source distribution.
    Clearly state that these are Python packages, not standalone installers.
    Verify installing the wheel and launching `python -m planacity` in a fresh
-   virtual environment before attaching the artifacts.
+virtual environment before attaching the artifacts.
+   The running Windows application sets a Planacity process identity and window
+   icon. A desktop icon for the executable itself requires the future standalone
+   Windows package to embed an `.ico` resource.
 6. Verify the published release and links. Never move a published tag; fixes get
    a new patch version. Start the next development version in a separate PR.
 
