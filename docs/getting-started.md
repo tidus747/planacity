@@ -20,10 +20,14 @@ No account or network connection is needed while planning.
    retained and shown in the Planning notes column.
 6. Open **People** to add, rename, or remove roster members. Assignments, load
    calculations, and recurring capacity reservations are planned for v0.4.
-7. Choose **File -> Save** (`Ctrl+S`) and select a `.planacity` path. **Save As**
+7. Open **Timeline** (`Ctrl+3`) for a read-only view of scheduled bars across the
+   planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
+   remain visible as explicit schedule states. Timeline selection and scrolling
+   do not change the plan.
+8. Choose **File -> Save** (`Ctrl+S`) and select a `.planacity` path. **Save As**
    (`Ctrl+Shift+S`) saves a separate project. The window title shows `*` while
    changes are unsaved. Cancelled or failed saves retain the current draft.
-8. Close Planacity, launch it again, then use **File -> Open...** (`Ctrl+O`) to
+9. Close Planacity, launch it again, then use **File -> Open...** (`Ctrl+O`) to
    reopen the project. Continue editing and save again.
 
 New, Open, Restore, and Exit ask whether to save, discard, or cancel when the
@@ -46,7 +50,7 @@ Use **File -> Export JSON backup...** for a portable backup. See
 
 For the v0.2 workflow, see [Jira CSV import](jira-import.md) and
 [Jira CSV export](jira-export.md). Imported baselines survive local edits and
-save/reopen; use Changes (Ctrl+5) to review differences.
+save/reopen; use Changes (Ctrl+6) to review differences.
 
 On Windows, Python 3.12 and PySide6 6.11.2, automated tests exercise new-plan
 validation, hierarchy editing, invalid inline drafts, People/WorkGroup/link forms,
