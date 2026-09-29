@@ -85,6 +85,11 @@ def calendar_stylesheet(theme: Theme) -> str:
             gridline-color: {c.border}; selection-background-color: {c.accent};
             selection-color: {c.surface};
         }}
+        /* Fixed-size calendar cells cannot use the spreadsheet's item padding. */
+        QCalendarWidget#dateCalendar QAbstractItemView::item {{ padding: 0; border: none; }}
+        QCalendarWidget#dateCalendar QAbstractItemView::item:focus {{
+            border: 1px solid {c.accent};
+        }}
         QCalendarWidget#dateCalendar QAbstractItemView:disabled {{ color: {c.disabled}; }}
         QCalendarWidget#dateCalendar QAbstractItemView::item:hover {{
             background: {c.hover}; color: {c.text};

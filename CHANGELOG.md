@@ -20,6 +20,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Fixed
 
+- Restore readable calendar date numbers and weekday headers in both appearances
+  by keeping spreadsheet padding out of date-picker cells.
+
 - Give the hosted Python process a Planacity identity so Windows can display the
   runtime icon instead of grouping it under Python.
 - Initialize the Planacity icon at application startup and use the exact
