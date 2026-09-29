@@ -5,6 +5,12 @@ feature available in the current desktop preview. The v0.1 people roster is a
 prerequisite; calendars, allocations, persistence, and capacity calculations
 must be ready before this wizard becomes an enabled command.
 
+The [work-calendar calculation foundation](capacity-model.md) is implemented for
+review in [#56](https://github.com/tidus747/planacity/issues/56). It accepts an
+explicit seven-day pattern and calculates nominal hours only. Calendar storage,
+person/calendar assignment, editing, and availability/event deductions remain
+prerequisites for #8 and the wizard. Existing plans have no inferred calendar.
+
 ## Purpose and entry point
 
 Reserve time for recurring duties before allocating delivery work. Examples:
@@ -64,6 +70,10 @@ report negative remaining capacity instead of hiding it by clamping to zero.
 
 ## Trackable implementation slices
 
+0. **[Work-calendar foundation (#56)](https://github.com/tidus747/planacity/issues/56):**
+   Explicit weekly hours and exact nominal-capacity calculations, independent of
+   Qt and persistence. Calendar storage/assignment/editing and availability/event
+   deductions follow before recurring reservation calculations.
 1. **[Reservation rules and calculations (#8)](https://github.com/tidus747/planacity/issues/8):** Validate recurrence, hours and person
    references. Test full/partial periods, non-Monday anchors, leap years, leave,
    holidays, zero availability, overlapping rules, and deterministic expansion.

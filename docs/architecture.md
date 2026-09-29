@@ -119,3 +119,13 @@ in planning snaps period fractions to inclusive days and delegates validation to
 previews candidates, and applies once on release only if that snapshot is still
 current. Escape, view changes, and invalid drops discard the candidate. The
 keyboard date form uses the same canonical setter and stale-snapshot check.
+
+## Work-calendar foundation
+
+`domain/work_calendar.py` defines an immutable, explicit weekly hours pattern.
+`planning/work_calendar.py` calculates nominal hours for an inclusive horizon in
+constant space using seven weekday counts. It preserves Decimal precision without
+modifying the caller's arithmetic context. The model is not yet attached to a
+ProgramPlan or Person and does not change the persisted schema or desktop UI.
+Availability deductions, reservations, and allocations are separate future
+inputs. See [the capacity model](capacity-model.md) for the public API and limits.
