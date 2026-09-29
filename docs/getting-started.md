@@ -55,6 +55,32 @@ Use **File -> Export JSON backup...** for a portable backup. See
 
 ## Validation record
 
+### Grouping, filters, and dependencies
+
+In Timeline, use the grouping selector to choose Hierarchy, Epic, or WorkGroup.
+The Section column identifies grouped work, including Standalone work and
+Ungrouped work. An Epic in several WorkGroups appears in each group; the summary
+counts each work item once. Sibling order and canonical work identities stay intact.
+
+Combine title search, work type, WorkGroup, and schedule-state filters. Filters
+match individual rows, so matching children can appear without their parents.
+**Clear filters** restores all work in the current grouping. These controls can
+be reached with Tab and operated using the keyboard.
+
+**Show dependency arrows** connects predecessor ends to successor starts:
+`A depends_on B` draws `B -> A`; `A blocks B` draws `A -> B`. Hierarchy and
+`related_to` links do not create dependency arrows. Select work to read its links
+in the keyboard-accessible details panel. Overlapping dates are explained there.
+
+Cyclic, filtered, partially scheduled, or outside-horizon endpoints have an
+explanation instead of an arrow. Both endpoints must also be on screen; scroll
+or choose a broader scale to see the connector. Multiple memberships show links
+within shared sections; links across sections use the first occurrences.
+Toggle arrows off to reduce visual clutter. No dates, estimates, relationships,
+or imported baselines are changed by these views.
+
+![Grouped Timeline in dark appearance](images/timeline-grouped-dark.png)
+
 Timeline scales retain selection and date context without editing the plan.
 Week and month views are available in both appearances; narrow period labels
 are shortened, with exact dates available in header tooltips.

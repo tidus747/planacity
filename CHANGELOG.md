@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Timeline grouping by hierarchy, Epic, or WorkGroup, with title, type,
+  WorkGroup, and schedule-state filters and explicit ungrouped sections.
+- Directional dependency arrows with readable relationship details, filter and
+  schedule explanations, and cycle detection. Arrows never change dates.
 - Day, week, and month Timeline scales with calendar-aligned periods, preserved
   selection and visible dates, and a remembered local scale preference.
 - A read-only desktop Timeline with aligned hierarchy labels, scheduled bars,
