@@ -157,13 +157,15 @@ def stylesheet(theme: Theme) -> str:
         QMenu::separator {{ height: 1px; background: {c.border}; margin: 5px; }}
         QStatusBar {{ border-top: 1px solid {c.border}; padding: 4px 12px; }}
         QStatusBar::item {{ border: none; }}
-        QTreeView {{
+        QTreeView, QTableView {{
             background: {c.surface}; alternate-background-color: {c.background};
             border: none; selection-background-color: {c.selected};
-            selection-color: {c.text}; outline: none;
+            selection-color: {c.text}; outline: none; gridline-color: {c.border};
         }}
-        QTreeView::item {{ padding: 10px; border-bottom: 1px solid {c.border}; }}
-        QTreeView::item:focus {{ border: 1px solid {c.accent}; }}
+        QTreeView::item, QTableView::item {{
+            padding: 10px; border-bottom: 1px solid {c.border};
+        }}
+        QTreeView::item:focus, QTableView::item:focus {{ border: 1px solid {c.accent}; }}
         QHeaderView {{ background: {c.surface}; }}
         QHeaderView::section {{
             background: {c.surface}; color: {c.muted};

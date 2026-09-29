@@ -27,6 +27,7 @@ from planacity.ui.pages import label
 from planacity.ui.project_actions import ProjectActions
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Theme, stylesheet
+from planacity.ui.timeline import TimelinePage
 
 
 class MainWindow(QMainWindow):
@@ -54,10 +55,12 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.pages, 1)
         self.setCentralWidget(central)
         self.plan_page = PlanPage(self.session)
+        self.timeline_page = TimelinePage(self.session)
         self.people_page = PeoplePage(self.session)
         for page in (
             OverviewPage(self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)),
             self.plan_page,
+            self.timeline_page,
             self.people_page,
             ImportPage(self.session),
             ChangesPage(self.session),
@@ -107,7 +110,9 @@ class MainWindow(QMainWindow):
         layout.addSpacing(17)
         group = QButtonGroup(self)
         group.setExclusive(True)
-        for index, name_text in enumerate(("Overview", "Plan", "People", "Import", "Changes")):
+        for index, name_text in enumerate(
+            ("Overview", "Plan", "Timeline", "People", "Import", "Changes")
+        ):
             button = QPushButton("  " + name_text)
             button.setAccessibleName(name_text)
             button.setProperty("role", "nav")
@@ -127,7 +132,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(label("PROJECT", "eyebrow"))
         self.project_label = label("No project open", "heading")
         layout.addWidget(self.project_label)
-        layout.addWidget(label("Jira Roundtrip\nv0.2 preview"))
+        layout.addWidget(label("Visual Planning\nv0.3 preview"))
         layout.addStretch()
         layout.addWidget(label("APPEARANCE", "eyebrow"))
         modes = QHBoxLayout()
@@ -175,9 +180,10 @@ class MainWindow(QMainWindow):
             self,
             "About Planacity",
             "<b>Planacity</b><p>Plan the work. "
-            "Respect the capacity.</p><p>Jira Roundtrip development preview. "
+            "Respect the capacity.</p><p>Visual Planning development preview. "
             "Create, edit, and save local Program Plans. "
-            "Import and export Jira CSV. Capacity remains planned for later versions.</p>",
+            "Import and export Jira CSV, and review work on the Timeline. "
+            "Capacity remains planned for later versions.</p>",
         )
 
     def _refresh_document(self) -> None:

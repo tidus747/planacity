@@ -15,7 +15,7 @@ def test_packaged_icons_load_from_another_directory(
     assert not image_icon("planacity-mark.png").isNull()
     assert image_pixmap("planacity-mark.png").hasAlphaChannel()
     assert image_pixmap("planacity-wordmark.png").hasAlphaChannel()
-    for name in ("Overview", "Plan", "People", "Import"):
+    for name in ("Overview", "Plan", "Timeline", "People", "Import"):
         for color in ("#142033", "#e7eef7"):
             assert not navigation_icon(name, color).pixmap(24, 24).isNull()
 

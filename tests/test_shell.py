@@ -19,7 +19,15 @@ def test_shell_navigation_and_close(app: QApplication, window: MainWindow) -> No
     assert brand.text() == ""
     assert brand.pixmap() is not None
     assert not brand.pixmap().isNull()
-    assert window.pages.count() == 5
+    assert window.pages.count() == 6
+    assert tuple(window.navigation) == (
+        "Overview",
+        "Plan",
+        "Timeline",
+        "People",
+        "Import",
+        "Changes",
+    )
     for index, button in enumerate(window.navigation.values()):
         QTest.mouseClick(button, Qt.MouseButton.LeftButton)
         app.processEvents()
