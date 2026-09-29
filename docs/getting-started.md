@@ -49,6 +49,10 @@ Use **File -> Restore JSON backup...** and choose
 file. Save it to a new `.planacity` path. The sample contains two Epics, Tasks and
 Subtasks, three people, hour estimates, dates, a WorkGroup, and dependencies.
 Missing estimates/dates are intentional examples of incomplete planning data.
+The expanded [example walkthrough](../examples/README.md#visual-planning-walkthrough)
+covers partial dates, outside-horizon work, grouping, dependency arrows, resizing,
+and saving a new project. The [v0.3 validation record](v0.3-validation.md) records
+the checks performed for this source preview.
 
 Use **File -> Export JSON backup...** for a portable backup. See
 [project-file-format.md](project-file-format.md) for validation and recovery.

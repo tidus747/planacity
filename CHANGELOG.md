@@ -4,6 +4,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+## [0.3.0] - Release candidate
+
 ### Added
 
 - Resize Timeline bar edges with day snapping, a date/duration preview, and

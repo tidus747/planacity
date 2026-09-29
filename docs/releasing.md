@@ -1,7 +1,8 @@
 # Release procedure
 
 Release tags identify reviewed commits on `main`. A branch name is not a release.
-Use `v0.1.0` for Planning Foundation and `v0.2.0` for Jira Roundtrip.
+Use `v0.1.0` for Planning Foundation, `v0.2.0` for Jira Roundtrip, and
+`v0.3.0` for Visual Planning. The current preparation is v0.3.0.
 
 1. Prepare the version in `pyproject.toml`, changelog, documentation, and notes in
    a pull request. Run lint, formatting, typing, tests, package and website builds.
@@ -16,15 +17,15 @@ Use `v0.1.0` for Planning Foundation and `v0.2.0` for Jira Roundtrip.
    git switch main
    git pull --ff-only
    git rev-parse HEAD
-   git tag -a v0.1.0 -m "Planacity v0.1.0"
-   git push origin v0.1.0
+   git tag -a v0.3.0 -m "Planacity v0.3.0"
+   git push origin v0.3.0
    ```
 
 5. Build from the tagged commit with `python -m build`. Create a GitHub Release
    using the existing tag, the reviewed notes, wheel, and source distribution.
    Clearly state that these are Python packages, not standalone installers.
    Verify installing the wheel and launching `python -m planacity` in a fresh
-virtual environment before attaching the artifacts.
+   virtual environment before attaching the artifacts.
    The running Windows application sets a Planacity process identity and window
    icon. A desktop icon for the executable itself requires the future standalone
    Windows package to embed an `.ico` resource.
@@ -32,6 +33,8 @@ virtual environment before attaching the artifacts.
    a new patch version. Start the next development version in a separate PR.
 
 ## v0.1.0 prepared notes
+
+Historical preparation; use the current v0.3.0 notes for Visual Planning.
 
 Planacity can create, edit, save, and reopen a small Program Plan locally.
 
@@ -50,6 +53,8 @@ actual release date in the reviewed release commit before tagging it.
 
 ## v0.2.0 prepared notes
 
+Historical preparation; use the current v0.3.0 notes for Visual Planning.
+
 Bring Jira work into a local Program Plan, edit its structure, and export the
 agreed plan as CSV.
 
@@ -65,7 +70,12 @@ editable. Exports omit unmapped columns, WorkGroups, and relationships; JSON
 backups retain the full plan. Jira APIs, reconciliation, capacity, and standalone
 installers remain deferred. No release has been published by this preparation.
 
-Package version `0.2.0` is prepared. Before publishing, finalize the changelog date
-in a reviewed commit. Run the same release checks, then tag the approved `main`
-commit using `v0.2.0` in the commands above. A v0.1.0 tag is optional if the first
-public release will be v0.2.0; never tag the same v0.2 commit as both versions.
+Package version `0.2.0` was prepared for Jira Roundtrip. Do not tag a current
+Visual Planning commit as v0.1.0 or v0.2.0.
+
+## v0.3.0 prepared notes
+
+Package version `0.3.0` and the [Visual Planning notes](releases/v0.3.0.md) are
+prepared for review. See the [validation record](v0.3-validation.md).
+No tag or release is published by this preparation. Finalize the changelog date
+in a reviewed commit before tagging the approved, tested `main` commit.

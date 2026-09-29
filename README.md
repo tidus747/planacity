@@ -35,6 +35,10 @@ Completed-version issue drafts have been retired; GitHub Issues and Milestones
 retain their history. Capacity and recurring reservations remain planned for v0.4.
 No stable packaged release is published yet.
 
+The v0.3.0 source candidate has [prepared release notes](docs/releases/v0.3.0.md)
+and a [validation record](docs/v0.3-validation.md). Publication requires a reviewed
+main commit, passing CI, and a separately approved release.
+
 ## Run from source
 
 Use Python 3.11 or newer. Windows is the initial desktop target.
