@@ -28,7 +28,7 @@ def test_tree_indexes_edits_and_structural_changes(app):
     plan = example()
     session.document.new(plan)
     session.changed.emit()
-    assert model.rowCount() == 3
+    assert model.rowCount() == len(plan.children(None)) == 6
     epic = model.index(0, 0)
     assert model.parent(epic) == QModelIndex()
     task = model.index(1, 0, epic)
