@@ -11,6 +11,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 - Use the supplied Planacity mark as the desktop window icon and the full
   wordmark in the application sidebar.
 
+### Changed
+
+- Match planning-horizon and inline date calendars to the active Planacity light
+  or dark appearance, including navigation, hover, focus, and selected dates.
+
 ### Fixed
 
 - Give the hosted Python process a Planacity identity so Windows can display the

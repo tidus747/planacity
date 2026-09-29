@@ -17,7 +17,6 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QAction, QKeyEvent
 from PySide6.QtWidgets import (
     QAbstractItemDelegate,
-    QCalendarWidget,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -31,6 +30,7 @@ from PySide6.QtWidgets import (
     QWidgetAction,
 )
 
+from planacity.ui.calendars import PlanacityCalendar
 from planacity.ui.icons import svg_icon
 from planacity.ui.plan_model import PlanModel
 
@@ -58,7 +58,7 @@ class CalendarLineEdit(QLineEdit):
             self._calendar_menu.close()
         menu = QMenu(self)
         menu.setAccessibleName("Date picker")
-        calendar = QCalendarWidget(menu)
+        calendar = PlanacityCalendar(menu)
         calendar.setAccessibleName("Date calendar")
         current = QDate.fromString(self.text().strip(), Qt.DateFormat.ISODate)
         calendar.setSelectedDate(current if current.isValid() else QDate.currentDate())

@@ -129,6 +129,7 @@ def test_inline_date_calendar_selects_and_commits_iso_date(app, window):
         app.processEvents()
         calendar = editor.findChild(QCalendarWidget)
         assert calendar is not None and calendar.isVisible()
+        assert calendar.objectName() == "dateCalendar"
         assert editor.property("calendarOpen")
         calendar.clicked.emit(QDate(2026, 10, 3))
         app.processEvents()
