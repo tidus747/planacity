@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from math import ceil
 from uuid import UUID
 
 from PySide6.QtCore import (
@@ -11,12 +12,15 @@ from PySide6.QtCore import (
     QPersistentModelIndex,
     QPointF,
     QRectF,
+    QSettings,
     Qt,
 )
 from PySide6.QtGui import QColor, QPainter, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
     QHeaderView,
+    QLabel,
     QSplitter,
     QStyle,
     QStyledItemDelegate,
@@ -31,6 +35,12 @@ from planacity.planning.timeline import (
     TimelineRow,
     project_timeline,
 )
+from planacity.planning.timeline_axis import (
+    TimelineAxis,
+    TimelinePeriod,
+    TimelineScale,
+    bar_span,
+)
 from planacity.ui.pages import WorkspacePage, label
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Colors, Theme
@@ -39,7 +49,9 @@ Index = QModelIndex | QPersistentModelIndex
 ROOT = QModelIndex()
 ROW_ROLE = int(Qt.ItemDataRole.UserRole) + 1
 DATE_ROLE = int(Qt.ItemDataRole.UserRole) + 2
+PERIOD_ROLE = int(Qt.ItemDataRole.UserRole) + 3
 DAY_WIDTH = 34
+SCALE_WIDTHS = {TimelineScale.DAY: DAY_WIDTH, TimelineScale.WEEK: 126, TimelineScale.MONTH: 168}
 ROW_HEIGHT = 36
 
 
@@ -115,50 +127,66 @@ class TimelineLabelsModel(QAbstractTableModel):
 
 
 class TimelineScheduleModel(QAbstractTableModel):
-    """Expose one display column per horizon day without copying plan state."""
+    """Expose calendar-aligned periods without copying plan state."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.projection: TimelineProjection | None = None
+        self.scale = TimelineScale.DAY
+        self.axis: TimelineAxis | None = None
 
     def set_projection(self, projection: TimelineProjection | None) -> None:
         self.beginResetModel()
         self.projection = projection
+        self.axis = TimelineAxis(projection.horizon, self.scale) if projection else None
         self.endResetModel()
+
+    def set_scale(self, scale: TimelineScale) -> None:
+        self.scale = scale
+        self.set_projection(self.projection)
 
     def rowCount(self, parent: Index = ROOT) -> int:
         return 0 if parent.isValid() or self.projection is None else len(self.projection.rows)
 
     def columnCount(self, parent: Index = ROOT) -> int:
-        return 0 if parent.isValid() or self.projection is None else self.projection.total_days
+        return 0 if parent.isValid() or self.axis is None else self.axis.columns
 
     def data(self, index: Index, role: int = Qt.ItemDataRole.DisplayRole) -> object:
-        if self.projection is None or not index.isValid():
+        if self.projection is None or self.axis is None or not index.isValid():
             return None
         row = self.projection.rows[index.row()]
-        day = self.projection.horizon.start + timedelta(days=index.column())
+        period = self.axis.period(index.column())
+        day = self.projection.horizon.start + timedelta(days=period.start_day)
+        end = self.projection.horizon.start + timedelta(days=period.end_day)
+        dates = day.isoformat() if day == end else f"{day.isoformat()} to {end.isoformat()}"
         if role == Qt.ItemDataRole.UserRole:
             return str(row.item_id)
         if role == ROW_ROLE:
             return row
+        if role == PERIOD_ROLE:
+            return period
         if role == DATE_ROLE:
             return day
         if role == Qt.ItemDataRole.ToolTipRole:
-            return f"{row.title}\n{day.isoformat()}\n{_schedule_text(row)}"
+            return f"{row.title}\n{dates}\n{_schedule_text(row)}"
         if role == Qt.ItemDataRole.AccessibleTextRole:
-            return f"{row.title}, {day.isoformat()}, {_schedule_text(row)}"
+            return f"{row.title}, {dates}, {_schedule_text(row)}"
         return None
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole
     ) -> object:
-        if self.projection is None or orientation != Qt.Orientation.Horizontal:
+        if self.projection is None or self.axis is None or orientation != Qt.Orientation.Horizontal:
             return None
-        day = self.projection.horizon.start + timedelta(days=section)
+        if not 0 <= section < self.axis.columns:
+            return None
+        period = self.axis.period(section)
+        day = self.projection.horizon.start + timedelta(days=period.start_day)
+        end = self.projection.horizon.start + timedelta(days=period.end_day)
         if role == Qt.ItemDataRole.DisplayRole:
-            return f"{day:%b} {day.day}" if section == 0 or day.day == 1 else str(day.day)
+            return period.label
         if role in (Qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleTextRole):
-            return day.isoformat()
+            return day.isoformat() if day == end else f"{day.isoformat()} to {end.isoformat()}"
         return None
 
     def flags(self, index: Index) -> Qt.ItemFlag:
@@ -189,7 +217,12 @@ class TimelineBarDelegate(QStyledItemDelegate):
         super().paint(painter, option, index)
         row = index.data(ROW_ROLE)
         day = index.data(DATE_ROLE)
-        if not isinstance(row, TimelineRow) or day is None:
+        period = index.data(PERIOD_ROLE)
+        if (
+            not isinstance(row, TimelineRow)
+            or not isinstance(period, TimelinePeriod)
+            or day is None
+        ):
             return
         widget = option.widget
         rect = option.rect
@@ -197,25 +230,39 @@ class TimelineBarDelegate(QStyledItemDelegate):
         colors = _theme_colors(widget)
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        if day.weekday() >= 5 and not state & QStyle.StateFlag.State_Selected:
+        if (
+            period.full_days == 1
+            and day.weekday() >= 5
+            and not state & QStyle.StateFlag.State_Selected
+        ):
             painter.fillRect(rect, QColor(colors.sidebar))
 
-        column = index.column()
         accent = QColor(colors.accent)
-        center = rect.center()
+        center = QPointF(rect.center())
         if (
             row.date_state == TimelineDateState.SCHEDULED
             and row.start_day is not None
             and row.end_day is not None
-            and max(0, row.start_day) <= column <= min(row.end_day, index.model().columnCount() - 1)
         ):
-            bar = QRectF(rect).adjusted(-1.0, 11.0, 1.0, -11.0)
-            painter.fillRect(bar, accent)
+            span = bar_span(row.start_day, row.end_day, period)
+            if span is not None:
+                left, right = span
+                bar = QRectF(
+                    rect.left() + left * rect.width(),
+                    rect.top() + 11,
+                    (right - left) * rect.width(),
+                    rect.height() - 22,
+                )
+                painter.fillRect(bar, accent)
         elif (
             row.date_state == TimelineDateState.START_ONLY
             and row.start_day is not None
-            and column == row.start_day
+            and period.start_day <= row.start_day <= period.end_day
         ):
+            center.setX(
+                rect.left()
+                + ((row.start_day - period.start_day + 0.5) / period.days) * rect.width()
+            )
             size = 7.0
             painter.setBrush(accent)
             painter.setPen(Qt.PenStyle.NoPen)
@@ -232,8 +279,11 @@ class TimelineBarDelegate(QStyledItemDelegate):
         elif (
             row.date_state == TimelineDateState.END_ONLY
             and row.end_day is not None
-            and column == row.end_day
+            and period.start_day <= row.end_day <= period.end_day
         ):
+            center.setX(
+                rect.left() + ((row.end_day - period.start_day + 0.5) / period.days) * rect.width()
+            )
             painter.setBrush(Qt.BrushStyle.NoBrush)
             pen = painter.pen()
             pen.setColor(accent)
@@ -246,14 +296,16 @@ class TimelineBarDelegate(QStyledItemDelegate):
 class TimelinePage(WorkspacePage):
     """Show the current plan through read-only synchronized label and schedule views."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, settings: QSettings | None = None) -> None:
         super().__init__(
             "Timeline",
             "See plan dates without changing the canonical Program Plan.",
         )
         self.session = session
+        self.settings = settings
         self.projection: TimelineProjection | None = None
         self._syncing_selection = False
+        self._resized_columns: set[int] = set()
         self.summary = label("Open a project to see its schedule.", "badge")
         self.summary.setAccessibleName("Timeline summary")
         self.content.addWidget(self.summary)
@@ -271,12 +323,29 @@ class TimelinePage(WorkspacePage):
         self.schedule.setObjectName("timelineSchedule")
         self.schedule.setAccessibleName("Timeline schedule by day")
         self.schedule_model = TimelineScheduleModel(self.schedule)
+        stored = settings.value("timeline/scale", "day") if settings is not None else "day"
+        scale = (
+            TimelineScale(stored)
+            if isinstance(stored, str) and stored in tuple(TimelineScale)
+            else TimelineScale.DAY
+        )
+        self.schedule_model.set_scale(scale)
+        self.scale_box = QComboBox()
+        self.scale_box.setAccessibleName("Timeline scale")
+        for choice in TimelineScale:
+            self.scale_box.addItem(choice.value.title(), choice.value)
+        self.scale_box.setCurrentIndex(self.scale_box.findData(scale.value))
+        scale_label = QLabel("&Scale")
+        scale_label.setBuddy(self.scale_box)
+        self.header.addWidget(scale_label)
+        self.header.addWidget(self.scale_box)
         self.schedule.setModel(self.schedule_model)
         self.schedule.setItemDelegate(TimelineBarDelegate(self.schedule))
         header = self.schedule.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         header.setDefaultSectionSize(DAY_WIDTH)
-        header.setMinimumSectionSize(DAY_WIDTH)
+        header.setMinimumSectionSize(1)
+        header.setTextElideMode(Qt.TextElideMode.ElideRight)
 
         for view in (self.labels, self.schedule):
             view.setAlternatingRowColors(True)
@@ -309,8 +378,74 @@ class TimelinePage(WorkspacePage):
         )
         self.labels.selectionModel().currentRowChanged.connect(self._labels_selected)
         self.schedule.selectionModel().currentRowChanged.connect(self._schedule_selected)
+        self.scale_box.currentIndexChanged.connect(self._change_scale)
         session.changed.connect(self.refresh)
         self.refresh()
+
+    def _size_periods(self) -> None:
+        header = self.schedule.horizontalHeader()
+        width = SCALE_WIDTHS[self.schedule_model.scale]
+        header.setDefaultSectionSize(width)
+        # Qt retains explicit widths after resets. Reset only columns we have
+        # customized, rather than iterating over every day in long horizons.
+        axis = self.schedule_model.axis
+        if axis is not None:
+            for column in self._resized_columns:
+                if column < axis.columns:
+                    header.resizeSection(column, width)
+            self._resized_columns.update((0, axis.columns - 1))
+            for column in {0, axis.columns - 1}:
+                period = axis.period(column)
+                # A horizon within one period still needs a readable scale header.
+                visible_width = (
+                    width if axis.columns == 1 else ceil(width * period.days / period.full_days)
+                )
+                header.resizeSection(column, max(1, visible_width))
+        self.schedule.setAccessibleName(f"Timeline schedule by {self.schedule_model.scale.value}")
+
+    def _change_scale(self) -> None:
+        scale = TimelineScale(self.scale_box.currentData())
+        if scale == self.schedule_model.scale:
+            return
+        axis = self.schedule_model.axis
+        selected_row = self.labels.currentIndex().row()
+        selected_column = max(0, self.schedule.currentIndex().column())
+        selected_day = axis.period(selected_column).start_day if axis is not None else 0
+        first_column = max(0, self.schedule.columnAt(0))
+        anchor = 0.0
+        if axis is not None:
+            period = axis.period(first_column)
+            fraction = -self.schedule.columnViewportPosition(
+                first_column
+            ) / self.schedule.columnWidth(first_column)
+            anchor = period.start_day + fraction * period.days
+        vertical = self.schedule.verticalScrollBar().value()
+        self._syncing_selection = True
+        self.schedule_model.set_scale(scale)
+        self._size_periods()
+        # Recompute scrollbar ranges before restoring the date anchor; Qt otherwise
+        # clamps it against the previous scale until the next layout event.
+        self.schedule.updateGeometries()
+        self._syncing_selection = False
+        axis = self.schedule_model.axis
+        if axis is not None:
+            if selected_row >= 0:
+                self._select_row(selected_row, axis.column_for_day(selected_day))
+            column = axis.column_for_day(int(anchor))
+            period = axis.period(column)
+            fraction = (anchor - period.start_day) / period.days
+            position = self.schedule.horizontalHeader().sectionPosition(column)
+            self.schedule.horizontalScrollBar().setValue(
+                round(position + fraction * self.schedule.columnWidth(column))
+            )
+            self.schedule.verticalScrollBar().setValue(vertical)
+        if self.settings is not None:
+            self.settings.setValue("timeline/scale", scale.value)
+            self.settings.sync()
+            if self.settings.status() != QSettings.Status.NoError:
+                self.summary.setText(
+                    self.summary.text() + " | Scale preference could not be saved."
+                )
 
     def _selected_id(self) -> UUID | None:
         for index in (self.labels.currentIndex(), self.schedule.currentIndex()):
@@ -356,6 +491,7 @@ class TimelinePage(WorkspacePage):
         self.projection = projection
         self.label_model.set_projection(projection)
         self.schedule_model.set_projection(projection)
+        self._size_periods()
         self._syncing_selection = False
 
         if projection is None:

@@ -1,8 +1,9 @@
 # Contributing
 
-Read the [architecture](docs/architecture.md) and [v0.1 breakdown](docs/v0.1-issues.md)
+Read the [architecture](docs/architecture.md) and [current roadmap](docs/v0.3-issues.md)
 before starting. Pick one focused issue.
-The current milestone is Planning Foundation; keep later features out of its PRs.
+The current milestone is Visual Planning. GitHub Issues track live status;
+keep later features out of current-milestone PRs.
 
 ## Branch and pull request workflow
 

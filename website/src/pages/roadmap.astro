@@ -1,7 +1,6 @@
 ---
 import Page from '../layouts/Page.astro';
 const releases = [
-  ['v0.3', 'Visual Planning', 'See the program on a timeline, with planned dependency arrows and bar-edge resizing to adjust scheduled dates without changing effort estimates.'],
   ['v0.4', 'Team & Capacity', 'Check realistic team availability, with guided recurring reservations for meetings and front-office duties per sprint.'],
   ['v0.5', 'Program Calendar', 'Understand work alongside leave, holidays, and program events.'],
   ['v0.6', 'Milestones & Deliveries', 'Track program outcomes and delivery readiness.'],
@@ -16,15 +15,16 @@ const releases = [
   <h1>Small releases. Useful progress.</h1>
   <p>This is a direction, not a delivery schedule. Planacity is a single-maintainer
     side project; scope stays focused on one useful increment at a time.</p>
-  <h2>Current target: v0.2 - Jira Roundtrip</h2>
-  <p>Bring Jira work into a local Program Plan and export the agreed structure.</p>
+  <h2>Current target: v0.3 - Visual Planning</h2>
+  <p>Review the program visually using the same local plan and preserved Jira baseline.</p>
   <ul>
-    <li>CSV column and people mapping, validation, and import preview</li>
-    <li>Reusable local mapping profiles and preserved imported baselines</li>
-    <li>Changes view and configurable Jira CSV export</li>
-    <li>Manual planning, local save/open, and JSON backups from v0.1</li>
+    <li>Available: read-only Timeline with day, week, and month scales</li>
+    <li>Planned: grouping, filtering, and directional dependency arrows</li>
+    <li>Planned: drag bar edges to adjust dates without changing effort hours</li>
+    <li>Implemented foundations: manual planning, Jira CSV roundtrip, and local persistence</li>
   </ul>
-  <p class="status">The source preview supports the CSV roundtrip workflow. Release review remains;
+  <p class="status">The earlier planning and Jira implementation milestones are complete. Visual Planning
+    remains in progress;
     no stable release is published yet. Jira APIs and re-import reconciliation are deferred.</p>
   <h2>Later milestones</h2>
   <ul>

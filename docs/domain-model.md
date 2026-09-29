@@ -1,6 +1,6 @@
 # Planning Foundation domain model
 
-V01-02 through V01-05 provide a small canonical model and editing API independent of
+The planning foundation provides a canonical model and editing API independent of
 Qt, file formats, and external tools. The desktop editor and versioned local
 project/backup adapters use these APIs.
 
