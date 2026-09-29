@@ -7,7 +7,8 @@ and offline-capable. Planning data stays local by default.
 
 ## Current status
 
-The **v0.2 - Jira Roundtrip** source preview can create, edit, save, and reopen
+The source preview includes the **v0.1 planning foundation**, **v0.2 Jira roundtrip**,
+and the developing **v0.3 Visual Planning** milestone. Create, edit, save, and reopen
 local Program Plans. It includes a hierarchical Plan editor, a people roster,
 WorkGroups, relationships, estimates in hours, optional dates, and JSON backups.
 See [Getting started](docs/getting-started.md) for the complete workflow and example.
@@ -19,18 +20,19 @@ editor and local files use this same validated model.
 
 Switch between **Light** and **Dark** at the bottom of the sidebar or through
 **View -> Appearance**. The choice is saved locally for the next launch. The first
-launch uses the system appearance when Qt can detect it. Use **Ctrl+1-4** or the
-View menu to switch pages. Use **Ctrl+5** for Changes. Import now supports Jira
-CSV mapping, preview, saved profiles, and CSV export; capacity remains planned for v0.4. New workspaces start empty; a fictional example is
+launch uses the system appearance when Qt can detect it. Use **Ctrl+1-6** or the
+View menu to switch pages: Overview, Plan, Timeline, People, Import, and Changes.
+Import supports Jira CSV mapping, preview, saved profiles, and CSV export;
+capacity remains planned for v0.4. New workspaces start empty; a fictional example is
 available separately in `examples/aurora.planacity.json`.
 
-The v0.1 goal is to build a small Program Plan manually, close Planacity, reopen it,
-and continue working. See the [issue breakdown](docs/v0.1-issues.md) for review
-status. Jira CSV roundtrip is implemented for v0.2 review; timelines, capacity
-calculations, and recurring-capacity wizards remain later work. Read the
-[import guide](docs/jira-import.md), [export guide](docs/jira-export.md), and
-[v0.2 issue breakdown](docs/v0.2-issues.md). Visual Planning is tracked in the
-[v0.3 issue breakdown](docs/v0.3-issues.md). No stable packaged release is published yet.
+Manual planning and Jira CSV roundtrip are implemented. The Timeline shows work
+using the same canonical plan; the current [v0.3 roadmap](docs/v0.3-issues.md)
+tracks scales, grouping, dependency arrows, and direct date editing. Read the
+[import guide](docs/jira-import.md) and [export guide](docs/jira-export.md).
+Completed-version issue drafts have been retired; GitHub Issues and Milestones
+retain their history. Capacity and recurring reservations remain planned for v0.4.
+No stable packaged release is published yet.
 
 ## Run from source
 
