@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 
 from planacity.domain.availability import AvailabilityEvent
 from planacity.domain.horizon import PlanningHorizon as PlanningHorizon
+from planacity.domain.reservations import ReservationRule
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
 
 
@@ -192,6 +193,7 @@ class ProgramPlan:
     work_calendars: tuple[WorkCalendar, ...] = ()
     person_calendars: tuple[PersonCalendar, ...] = ()
     availability_events: tuple[AvailabilityEvent, ...] = ()
+    reservation_rules: tuple[ReservationRule, ...] = ()
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Program Plan ID")
@@ -237,6 +239,15 @@ class ProgramPlan:
             raise ValueError("Availability event IDs must be unique within a plan.")
         for event in self.availability_events:
             self.person(event.person_id)
+        if not isinstance(self.reservation_rules, tuple) or any(
+            not isinstance(rule, ReservationRule) for rule in self.reservation_rules
+        ):
+            raise ValueError("Reservation rules must be a tuple of ReservationRule objects.")
+        if len({rule.id for rule in self.reservation_rules}) != len(self.reservation_rules):
+            raise ValueError("Reservation rule IDs must be unique within a plan.")
+        for rule in self.reservation_rules:
+            for person_id in rule.person_ids:
+                self.person(person_id)
         if not isinstance(self.imports, tuple) or any(
             not isinstance(source, ImportSnapshot) for source in self.imports
         ):

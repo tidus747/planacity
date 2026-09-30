@@ -108,6 +108,7 @@ def test_old_schemas_open_unchanged_and_save_as_four(version, tmp_path):
     data = json.loads(dumps(plan))
     data["schema_version"] = version
     data["plan"].pop("availability_events")
+    data["plan"].pop("reservation_rules")
     if version < 3:
         data["plan"].pop("work_calendars")
         data["plan"].pop("person_calendars")
@@ -129,7 +130,7 @@ def test_old_schemas_open_unchanged_and_save_as_four(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     connection = sqlite3.connect(path)
-    assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
     connection.close()
 
 

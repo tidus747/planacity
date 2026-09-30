@@ -148,7 +148,7 @@ AvailabilityEvent is an immutable calculation input with a stable UUID, person
 reference, inclusive period, and Decimal unavailable fraction. It records no
 absence reason. Overlaps use the strongest daily fraction and return reviewable
 periods and event IDs. ProgramPlan owns the events, validates their roster
-references, and persists them in schema 4. People edits them while preserving IDs.
+references, and persists them in schema 5. People edits them while preserving IDs.
 Person removal requires explicit confirmation to remove associated entries.
 The [availability API](capacity-model.md#availability-calculation-api)
 documents these boundaries and the partial-day interpretation.
@@ -157,8 +157,12 @@ documents these boundaries and the partial-day interpretation.
 
 ReservationRule is a separate domain entity for fixed hours per selected person
 per anchored sprint. It is not a WorkItem, Allocation, or AvailabilityEvent.
-The current pure calculation API consumes explicit daily capacity and derives
-occurrences; rules are not yet part of ProgramPlan storage or desktop editing.
+The calculation API consumes explicit daily capacity and derives occurrences.
+ProgramPlan stores rules in schema 5 and validates their roster references.
+Lifecycle services return immutable candidates for preview before confirmation;
+edits preserve IDs and order. Removing a person requires explicit resolution:
+retain shared rules for remaining people and delete rules left empty.
+The reservation editor/wizard remains a separate follow-up.
 See [recurring reservations](capacity-wizards.md#calculation-api-8) for proration
 and zero-capacity rules.
 

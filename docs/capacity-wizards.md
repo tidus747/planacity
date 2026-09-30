@@ -1,8 +1,8 @@
 # Recurring capacity reservations
 
 Planned for v0.4, Team & Capacity. The reservation calculation API is implemented
-for #8. Reservation storage (#9) and the wizard (#10) are not yet available in
-the desktop. Calendars, availability, and reservation persistence must be wired
+for #8, and rules persist through schema 5 (#9). The wizard (#10) is not yet
+available in the desktop. Calendars, availability, and reservation persistence must be wired
 to the preview before the wizard becomes an enabled command. Allocations consume
 remaining capacity later; they are not reservation inputs.
 
@@ -51,7 +51,9 @@ Initially, users can select different people in separate effective date ranges.
 A reservation is separate from a WorkItem, Allocation, and absence. It reserves
 capacity without creating task estimates or assigning project work. Reference
 people by stable UUIDs. Removing a referenced person must require an explicit
-resolution when reservation persistence is added in #9.
+resolution. The confirmation names affected rules. Shared rules retain other
+people and their identities; rules left with no people are removed. Calendar
+removal retains the rules, since missing capacity is not equivalent to zero.
 
 Store one rule with a stable ID, person IDs, label, hours per person, recurrence
 anchor/interval, and effective dates. Derive occurrences deterministically for
@@ -138,10 +140,26 @@ assert result.reserved_hours == Fraction(6)
 assert result.remaining_hours == Fraction(24)
 ```
 
-This is a pure domain/calculation API. Rules are not yet part of ProgramPlan or
-schema 4, and People still shows availability before reservations. The API does
+This is a pure domain/calculation API. ProgramPlan now stores the rules in
+schema 5, while People still shows availability before reservations. The API does
 not fetch calendars, create program events, assign work, or enable a menu command.
-The next persistence and UI slices must retain these boundaries explicitly.
+The UI slice must retain these boundaries explicitly.
+
+## Persistence and lifecycle (#9)
+
+`ProgramPlan.reservation_rules` contains the canonical rules. SQLite and JSON
+round-trip IDs, selected people, dates, intervals, and exact Decimal hours.
+Schemas 1-4 load without rules; saving upgrades to schema 5. Keep a backup or
+use Save As if an older build must still read the plan.
+
+`add_reservation`, `update_reservation`, and `remove_reservation` return validated
+candidate plans without mutating the original. Updating replaces the same ID in
+the same position; it cannot silently create a missing rule. Preview a candidate
+with `preview_reservations(candidate, capacities)` before applying it. Cancelling
+discards it, and failed validation/preview leaves the original untouched. Removing
+a rule removes only its own contribution on the next calculation. Jira baselines
+and exports are unchanged. Generated occurrences are never persisted or appended
+on reopen, edit, or preview. The wizard will expose this workflow in #10.
 
 ## Trackable implementation slices
 

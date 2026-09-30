@@ -126,7 +126,7 @@ keyboard date form uses the same canonical setter and stale-snapshot check.
 `planning/work_calendar.py` calculates nominal hours for an inclusive horizon in
 constant space using seven weekday counts. It preserves Decimal precision without
 modifying the caller's arithmetic context. ProgramPlan owns calendars and separate
-PersonCalendar references. Schema 4 stores both collections, leaving imported
+PersonCalendar references. Schema 5 stores both collections, leaving imported
 Person snapshots untouched. Schema 1/2 loads with empty collections. Lifecycle
 services validate references and require explicit unassignment when deleting a
 referenced calendar. The People view delegates editing and calculation to these services.
@@ -136,7 +136,7 @@ applies the strongest active fraction, and reports overlaps by stable event IDs.
 It avoids expanding long horizons into daily lists and preserves exact Decimal
 products. Callers supply an explicit calendar and one person's events; mismatched
 references and duplicate IDs are rejected. ProgramPlan owns availability events;
-schema 4 persists them and reads schemas 1-3 without inferred entries. Lifecycle
+schema 5 persists them and reads schemas 1-3 without inferred entries. Lifecycle
 services preserve IDs and guard person deletion. People delegates previews and
 totals to the planning layer, with validated date/share forms and stale-draft
 protection. PlanningHorizon lives in a shared domain module to avoid a circular
@@ -152,5 +152,9 @@ shares from explicit daily capacity after availability and program events.
 This input boundary keeps the engine independent of a future calendar/event UI.
 It requires full-period data for correct proration, returns overlap/overload
 details, and uses Fraction for non-terminating decimal shares. It never mutates
-or persists generated occurrences. Storage, roster lifecycle, and the wizard
-remain #9/#10; ProgramPlan and schema 4 are unchanged by this API.
+or persists generated occurrences. ProgramPlan owns reservation rules and schema 5
+stores their exact Decimal inputs. Schemas 1-4 load without rules. The lifecycle
+services in `reservation_settings.py` return validated immutable candidates and
+preview them over explicit adjusted capacity. UI code can discard a candidate
+without side effects. Person deletion requires explicit resolution of affected
+rules; shared rules retain IDs and other people. The wizard remains #10.

@@ -41,8 +41,10 @@ No stable packaged release is published yet.
 The v0.3.0 source candidate has [prepared release notes](docs/releases/v0.3.0.md)
 and a [validation record](docs/v0.3-validation.md). Publication requires a reviewed
 main commit, passing CI, and a separately approved release.
-Current source is `0.4.0.dev0` and saves schema 4. Schema 1/2/3 files open without
-inferred availability; keep a backup or use Save As for compatibility with older builds.
+Current source is `0.4.0.dev0` and saves schema 5, retaining reservation rules.
+Schemas 1-4 open without inferred rules; keep a backup or use Save As for older builds.
+The reservation wizard remains planned. [Plan filters matching Timeline](https://github.com/tidus747/planacity/issues/65)
+are also tracked as a v0.4 usability improvement.
 
 ## Run from source
 
