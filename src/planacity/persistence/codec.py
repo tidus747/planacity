@@ -9,10 +9,12 @@ from uuid import UUID
 
 from planacity.domain import (
     Person,
+    PersonCalendar,
     PlanningHorizon,
     ProgramPlan,
     Relationship,
     RelationshipType,
+    WorkCalendar,
     WorkGroup,
     WorkItem,
     WorkItemType,
@@ -20,7 +22,8 @@ from planacity.domain import (
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3)
 
 
 def _encode(value: object) -> str:
@@ -96,9 +99,9 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         )
         if root["format"] != FORMAT:
             raise ValueError("This is not a Planacity backup.")
-        if type(root["schema_version"]) is not int or root["schema_version"] not in (
-            1,
-            SCHEMA_VERSION,
+        if (
+            type(root["schema_version"]) is not int
+            or root["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS
         ):
             raise ValueError(
                 "Unsupported schema version. Open this file with a compatible Planacity."
@@ -114,7 +117,8 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         p = _object(
             root["plan"],
             "id name description horizon work_items people work_groups relationships"
-            + (" imports" if root["schema_version"] == 2 else ""),
+            + (" imports" if root["schema_version"] in (2, 3) else "")
+            + (" work_calendars person_calendars" if root["schema_version"] == 3 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -153,9 +157,27 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             work_groups=tuple(groups),
             relationships=tuple(links),
             imports=tuple(_source(value) for value in _rows(p.get("imports", []))),
+            work_calendars=tuple(_calendar(value) for value in _rows(p.get("work_calendars", []))),
+            person_calendars=tuple(
+                _assignment(value) for value in _rows(p.get("person_calendars", []))
+            ),
         )
     except (ValueError, InvalidOperation, RecursionError) as error:
         raise ValueError(f"Cannot read plan: {error}") from error
+
+
+def _calendar(value: object) -> WorkCalendar:
+    row = _object(value, "id name weekday_hours")
+    return WorkCalendar(
+        id=_id(row["id"]),
+        name=_text(row["name"]),
+        weekday_hours=tuple(Decimal(_text(value)) for value in _rows(row["weekday_hours"])),
+    )
+
+
+def _assignment(value: object) -> PersonCalendar:
+    row = _object(value, "person_id calendar_id")
+    return PersonCalendar(person_id=_id(row["person_id"]), calendar_id=_id(row["calendar_id"]))
 
 
 def _work(value: object) -> WorkItem:

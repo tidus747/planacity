@@ -1,9 +1,33 @@
 # Work calendars and nominal capacity
 
-The v0.4 calculation foundation defines explicit nominal working hours. It is a
-Python domain API, not yet an editable or persisted desktop feature. No default
-calendar is assigned to existing plans or people, and no capacity is inferred
-from roster membership.
+The v0.4 development preview supports named work calendars, explicit per-person
+assignments, and nominal hours for the planning horizon. No default calendar is
+assigned to existing plans or people; missing assignment means unknown, not zero.
+
+## Desktop workflow
+
+In People, choose **Work calendars...**, then Add. Enter a name and hours for all
+seven weekdays, using 0 for non-working days. Add/Edit forms validate before
+applying; cancelling a form leaves its draft unapplied. Closing the calendar
+manager retains changes already confirmed in individual forms.
+
+Select a person and choose **Assign calendar...**. Preview their nominal hours
+for the horizon, then confirm, or select Not configured to clear the assignment.
+Shared calendar edits update every assigned person's nominal hours. Deleting a
+referenced calendar names the affected people and asks before clearing their
+assignments. Removing a person also removes their assignment, not the calendar
+or imported Person snapshots. All controls support keyboard navigation and both
+appearances. Changes persist in projects and JSON backups.
+
+Schema 1/2 files open without calendars and save as schema 3. Keep a backup or use
+Save As if the file must remain readable in Planacity v0.3 or earlier.
+
+Screenshots using an explicitly configured example schedule:
+
+- People: [light](images/people-calendars-light.png),
+  [dark](images/people-calendars-dark.png).
+- Calendar editor: [light](images/calendar-editor-light.png),
+  [dark](images/calendar-editor-dark.png).
 
 ## Weekly pattern
 
@@ -70,8 +94,7 @@ Allocations then consume planning capacity. The current API does not calculate
 remaining hours, overload, availability reductions, or team totals. These must
 not be labelled as nominal capacity or inferred without explicit inputs.
 
-Next slices must add calendar persistence, person/calendar assignment and editing,
-then availability/event deductions with clear overlap rules. Recurring
+Next slices must add availability/event deductions with clear overlap rules. Recurring
 reservations (#8), lifecycle (#9), and the wizard (#10) depend on those inputs.
-The existing project schema, Jira hour estimates, and import baselines are
-unchanged by this foundation. See [recurring reservations](capacity-wizards.md).
+Calendar data uses schema 3, while Jira hour estimates and import baselines are
+unchanged. See [recurring reservations](capacity-wizards.md).

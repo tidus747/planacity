@@ -19,12 +19,14 @@ from PySide6.QtWidgets import (
 
 from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType
 from planacity.planning.people import add_person, remove_person, rename_person
+from planacity.planning.work_calendar import nominal_capacity
 from planacity.planning.work_items import add_work_item, move_work_item, remove_work_item
 from planacity.ui.forms import ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.plan_model import PlanModel
 from planacity.ui.session import Session
 from planacity.ui.structure_dialogs import manage_structure
+from planacity.ui.work_calendars import choose_person_calendar, manage_work_calendars
 
 
 class PlanPage(WorkspacePage):
@@ -234,16 +236,18 @@ class PlanPage(WorkspacePage):
 
 class PeoplePage(WorkspacePage):
     def __init__(self, session: Session) -> None:
-        super().__init__(
-            "People", "The program team. Capacity and recurring reservations are planned for v0.4."
-        )
+        super().__init__("People", "Nominal calendar hours before leave, events, and reservations.")
         self.session = session
+        self.horizon_notice = label("")
+        self.content.addWidget(self.horizon_notice)
         self.table = QTreeView()
         self.table.setAccessibleName("People roster")
         self.table.setRootIsDecorated(False)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.model = QStandardItemModel(0, 1, self.table)
-        self.model.setHorizontalHeaderLabels(["Person"])
+        self.model = QStandardItemModel(0, 4, self.table)
+        self.model.setHorizontalHeaderLabels(
+            ["Person", "Work calendar", "Nominal hours", "Working days"]
+        )
         self.table.setModel(self.model)
         self.content.addWidget(self.table, 1)
         buttons = QHBoxLayout()
@@ -258,23 +262,67 @@ class PeoplePage(WorkspacePage):
             buttons.addWidget(button)
             self.buttons.append(button)
         buttons.addStretch()
+        self.calendar_button = QPushButton("Work calendars...")
+        self.calendar_button.clicked.connect(lambda: manage_work_calendars(self, self.session))
+        buttons.addWidget(self.calendar_button)
+        self.buttons.append(self.calendar_button)
+        self.assign_button = QPushButton("Assign calendar...")
+        self.assign_button.clicked.connect(self.assign_calendar)
+        buttons.addWidget(self.assign_button)
         self.content.addLayout(buttons)
         session.changed.connect(self.refresh)
+        self.table.selectionModel().currentChanged.connect(
+            lambda: self.assign_button.setEnabled(
+                bool(self.table.currentIndex().data(Qt.ItemDataRole.UserRole))
+            )
+        )
         self.refresh()
 
     def refresh(self) -> None:
         selected = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
         self.model.removeRows(0, self.model.rowCount())
         plan = self.session.document.plan
+        self.horizon_notice.setText(
+            f"Planning horizon: {plan.horizon.start} to {plan.horizon.end}. "
+            "Unknown means no calendar is assigned."
+            if plan
+            else "Open a plan to configure calendars."
+        )
         for button in self.buttons:
             button.setEnabled(plan is not None)
         if plan:
+            assigned = {
+                value.person_id: plan.work_calendar(value.calendar_id)
+                for value in plan.person_calendars
+            }
             for person in plan.people:
-                item = QStandardItem(person.name)
-                item.setData(str(person.id), Qt.ItemDataRole.UserRole)
-                self.model.appendRow(item)
+                calendar = assigned.get(person.id)
+                capacity = nominal_capacity(calendar, plan.horizon) if calendar else None
+                row = [
+                    QStandardItem(value)
+                    for value in (
+                        person.name,
+                        calendar.name if calendar else "Not configured",
+                        str(capacity.total_hours) if capacity else "Unknown",
+                        str(capacity.working_days) if capacity else "Unknown",
+                    )
+                ]
+                for item in row:
+                    item.setData(str(person.id), Qt.ItemDataRole.UserRole)
+                    item.setEditable(False)
+                self.model.appendRow(row)
                 if str(person.id) == selected:
-                    self.table.setCurrentIndex(item.index())
+                    self.table.setCurrentIndex(row[0].index())
+        self.assign_button.setEnabled(
+            bool(self.table.currentIndex().data(Qt.ItemDataRole.UserRole))
+        )
+        for column in range(4):
+            self.table.resizeColumnToContents(column)
+
+    def assign_calendar(self) -> None:
+        selected = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
+        if selected:
+            choose_person_calendar(self, self.session, UUID(selected))
 
     def edit(self, operation: str) -> None:
         plan = self.session.document.plan
@@ -289,7 +337,7 @@ class PeoplePage(WorkspacePage):
                 QMessageBox.question(
                     self,
                     "Remove person?",
-                    f"Remove '{person.name}' from the roster?",
+                    f"Remove '{person.name}' from the roster and clear their calendar assignment?",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.No,
                 )

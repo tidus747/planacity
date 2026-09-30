@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from planacity.domain import ProgramPlan
-from planacity.persistence.codec import SCHEMA_VERSION, dumps, loads
+from planacity.persistence.codec import SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSIONS, dumps, loads
 
 APPLICATION_ID = 0x504C414E
 
@@ -33,7 +33,7 @@ def load_project(path: Path) -> ProgramPlan:
             if connection.execute("PRAGMA application_id").fetchone()[0] != APPLICATION_ID:
                 raise ValueError("This file is not a Planacity project.")
             project_version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if project_version not in (1, SCHEMA_VERSION):
+            if project_version not in SUPPORTED_SCHEMA_VERSIONS:
                 raise ValueError("Unsupported project version. Use a compatible Planacity version.")
             tables = connection.execute(
                 "SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'"

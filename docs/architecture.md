@@ -125,7 +125,10 @@ keyboard date form uses the same canonical setter and stale-snapshot check.
 `domain/work_calendar.py` defines an immutable, explicit weekly hours pattern.
 `planning/work_calendar.py` calculates nominal hours for an inclusive horizon in
 constant space using seven weekday counts. It preserves Decimal precision without
-modifying the caller's arithmetic context. The model is not yet attached to a
-ProgramPlan or Person and does not change the persisted schema or desktop UI.
+modifying the caller's arithmetic context. ProgramPlan owns calendars and separate
+PersonCalendar references. Schema 3 stores both collections, leaving imported
+Person snapshots untouched. Schema 1/2 loads with empty collections. Lifecycle
+services validate references and require explicit unassignment when deleting a
+referenced calendar. The People view delegates editing and calculation to these services.
 Availability deductions, reservations, and allocations are separate future
 inputs. See [the capacity model](capacity-model.md) for the public API and limits.

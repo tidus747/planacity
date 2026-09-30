@@ -134,6 +134,15 @@ Automatic scheduling and capacity remain future work. Storage is documented in
 `python -m pytest tests/domain`;
 neither these tests nor the model require importing Qt.
 
+## Work calendars (v0.4 development)
+
+ProgramPlan contains named WorkCalendars and separate PersonCalendar references.
+A calendar has an ID, name, and seven explicit Decimal weekday hours. An
+assignment links one roster Person to one calendar; a calendar may be shared.
+Imported Person snapshots do not contain these assignments and remain unchanged.
+People shows nominal horizon hours, before reductions or allocations. See the
+[capacity model](capacity-model.md) for lifecycle rules and future deductions.
+
 ## Timeline projection (v0.3)
 
 `planning/timeline.py` derives immutable rows from a complete `ProgramPlan` for

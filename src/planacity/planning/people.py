@@ -18,6 +18,12 @@ def rename_person(plan: ProgramPlan, person_id: UUID, name: str) -> ProgramPlan:
 
 
 def remove_person(plan: ProgramPlan, person_id: UUID) -> ProgramPlan:
-    """Remove a roster entry; v0.1 has no allocations or capacity references."""
+    """Remove a roster entry and its calendar assignment, preserving source snapshots."""
     plan.person(person_id)
-    return replace(plan, people=tuple(person for person in plan.people if person.id != person_id))
+    return replace(
+        plan,
+        people=tuple(person for person in plan.people if person.id != person_id),
+        person_calendars=tuple(
+            value for value in plan.person_calendars if value.person_id != person_id
+        ),
+    )

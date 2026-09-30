@@ -23,21 +23,26 @@ Switch between **Light** and **Dark** at the bottom of the sidebar or through
 launch uses the system appearance when Qt can detect it. Use **Ctrl+1-6** or the
 View menu to switch pages: Overview, Plan, Timeline, People, Import, and Changes.
 Import supports Jira CSV mapping, preview, saved profiles, and CSV export;
-capacity remains planned for v0.4. New workspaces start empty; a fictional example is
+People supports explicit calendars and nominal horizon hours. Availability,
+allocations, and recurring reservations remain planned for v0.4.
+New workspaces start empty; a fictional example is
 available separately in `examples/aurora.planacity.json`.
 
 Manual planning and Jira CSV roundtrip are implemented. The Timeline shows work
 using the same canonical plan, with scales, grouping, filters, and dependency
 arrows. Drag bar edges or use Edit dates to adjust dates without changing effort
-hours. The current [v0.3 roadmap](docs/v0.3-issues.md) tracks release validation. Read the
+hours. Development now targets v0.4 Team & Capacity. Read the
 [import guide](docs/jira-import.md) and [export guide](docs/jira-export.md).
 Completed-version issue drafts have been retired; GitHub Issues and Milestones
-retain their history. Capacity and recurring reservations remain planned for v0.4.
+retain their history. See [calendar setup](docs/capacity-model.md) for the current
+workflow and remaining capacity work.
 No stable packaged release is published yet.
 
 The v0.3.0 source candidate has [prepared release notes](docs/releases/v0.3.0.md)
 and a [validation record](docs/v0.3-validation.md). Publication requires a reviewed
 main commit, passing CI, and a separately approved release.
+Current source is `0.4.0.dev0` and saves schema 3. Schema 1/2 files open without
+inferred calendars; keep a backup or use Save As for compatibility with v0.3 or earlier.
 
 ## Run from source
 
