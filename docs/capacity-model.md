@@ -115,7 +115,9 @@ only; neither API calculates remaining planning hours, overload, or team totals.
 The desktop shows nominal hours alongside unavailability deductions and available hours.
 
 Next slices must add program-event deductions.
-Recurring reservations (#8), lifecycle (#9), and the wizard (#10) depend on those inputs.
+The recurring reservation API (#8) now consumes explicit daily capacity after
+these deductions. Persistence (#9) and the wizard (#10) must supply those inputs
+through a desktop workflow before reservations appear in People.
 Calendar and availability data use schema 4, while Jira hour estimates and import baselines are
 unchanged. See [recurring reservations](capacity-wizards.md).
 
