@@ -143,3 +143,14 @@ protection. PlanningHorizon lives in a shared domain module to avoid a circular
 dependency between ProgramPlan and its availability events. Program-event deductions, reservations,
 and allocations remain separate inputs. See [the capacity model](capacity-model.md)
 for the public API and limits.
+
+## Recurring reservation calculation
+
+`domain/reservations.py` defines fixed per-person duties and their anchored
+recurrence. `planning/reservations.py` derives complete sprint periods and exact
+shares from explicit daily capacity after availability and program events.
+This input boundary keeps the engine independent of a future calendar/event UI.
+It requires full-period data for correct proration, returns overlap/overload
+details, and uses Fraction for non-terminating decimal shares. It never mutates
+or persists generated occurrences. Storage, roster lifecycle, and the wizard
+remain #9/#10; ProgramPlan and schema 4 are unchanged by this API.

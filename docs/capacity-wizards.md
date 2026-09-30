@@ -1,17 +1,20 @@
 # Recurring capacity reservations
 
-Planned for v0.4, Team & Capacity. This is a design and issue breakdown, not a
-feature available in the current desktop preview. The v0.1 people roster is a
-prerequisite; calendars, allocations, persistence, and capacity calculations
-must be ready before this wizard becomes an enabled command.
+Planned for v0.4, Team & Capacity. The reservation calculation API is implemented
+for #8. Reservation storage (#9) and the wizard (#10) are not yet available in
+the desktop. Calendars, availability, and reservation persistence must be wired
+to the preview before the wizard becomes an enabled command. Allocations consume
+remaining capacity later; they are not reservation inputs.
 
 The [work-calendar calculation foundation](capacity-model.md) is implemented for
 review in [#56](https://github.com/tidus747/planacity/issues/56). It accepts an
 explicit seven-day pattern and calculates nominal hours only. Calendar storage,
 assignment, and editing are implemented for review in #58. The unavailable-share
 calculation and overlap reports follow in #60, with persisted editing in #62.
-Program-event deductions remain prerequisites for #8 and the wizard. Existing
-plans have no inferred calendar.
+The reservation engine consumes explicit daily capacity after availability and
+program-event deductions. It does not implement a program-event editor or infer
+those deductions. Existing plans have no inferred calendar. The desktop adapter
+must supply complete, correctly adjusted daily inputs before enabling the wizard.
 
 ## Purpose and entry point
 
@@ -48,7 +51,7 @@ Initially, users can select different people in separate effective date ranges.
 A reservation is separate from a WorkItem, Allocation, and absence. It reserves
 capacity without creating task estimates or assigning project work. Reference
 people by stable UUIDs. Removing a referenced person must require an explicit
-resolution once reservations are implemented; v0.1 currently has no references.
+resolution when reservation persistence is added in #9.
 
 Store one rule with a stable ID, person IDs, label, hours per person, recurrence
 anchor/interval, and effective dates. Derive occurrences deterministically for
@@ -63,12 +66,82 @@ Allocations consume planning capacity. Duties recorded as reservations must not
 also be deducted as calendar events or project allocations. Explain this in the
 wizard and show overlapping reservations; never silently merge or discard them.
 
-Before implementing calculations, define partial-period behavior explicitly.
-Recommended initial rule: distribute period hours across the person's eligible
-working days in that complete period, then include only dates within the
-effective range and queried horizon. Show prorated boundary totals in preview.
-Keep exact decimal arithmetic, document rounding, flag zero eligible days, and
-report negative remaining capacity instead of hiding it by clamping to zero.
+Distribute each period's hours equally across the person's positive-capacity
+days in that complete period, then include only dates within the effective range
+and queried horizon. A partially available day counts as one eligible day, so its
+share may exceed its available hours; this is reported as a daily overload.
+Full-day leave, holidays, and events with zero remaining capacity are not eligible.
+Boundary totals are prorated by eligible-day count, not calendar duration or hours.
+
+Rule hours remain exact Decimal values. Derived shares use standard-library
+Fraction values: a 1-hour duty over three eligible days is exactly 1/3 hour per
+day, without rounding drift. No display rounding is fed back into calculations.
+Negative remaining hours are preserved. A period with zero eligible days has
+unknown reserved hours and marks the person's remaining total unknown, rather
+than pretending the duty was successfully reserved as zero. The occurrence still
+reports the full requested hours for review.
+
+## Calculation API (#8)
+
+`ReservationRule` contains a stable ID, name, distinct person IDs, positive
+Decimal hours per person, date anchor, positive integer interval in weeks, and
+inclusive effective dates. Anchors align sprints in both directions; effective
+dates determine when the rule is active. Occurrences are derived, never persisted.
+
+`reserve_capacity(rules, horizon, capacities)` accepts explicit `PersonCapacity`
+inputs. Each contains `CapacityDay` records with date and Decimal available hours
+from 0 to 24, **after** unavailability and capacity-affecting events and **before**
+reservations or allocations. A known non-working day must be supplied as zero;
+missing capacity is an error. Every selected person must have an input, including
+people whose rule is outside the current query. Duplicate rules, people, or daily
+dates are rejected. Supplied inputs remain unchanged.
+
+Provide every queried date and every complete relevant sprint, even outside the
+effective range or query. `reservation_periods(rule, horizon)` returns those full
+sprints for the caller. A full sprint extending beyond date.min/date.max is
+rejected with an actionable error; missing dates are never assigned guessed hours.
+
+The result contains one `ReservationCapacity` per supplied person, including
+daily available/reserved/remaining hours and per-rule occurrences. `overlaps`
+identifies days with multiple applied rules, while `overloaded_days` reports
+negative daily remaining capacity even when the horizon total is positive.
+Rules are additive and never automatically deduplicated by name or dates.
+The caller must avoid recording a duty again as an event or allocation.
+
+```python
+from datetime import date, timedelta
+from decimal import Decimal
+from fractions import Fraction
+from uuid import uuid4
+
+from planacity.domain import PlanningHorizon, ReservationRule
+from planacity.planning.reservations import CapacityDay, PersonCapacity, reserve_capacity
+
+person = uuid4()
+start = date(2026, 1, 5)
+week = PlanningHorizon(start, start + timedelta(days=6))
+duty = ReservationRule(
+    name="Meetings",
+    person_ids=(person,),
+    hours_per_person=Decimal(6),
+    anchor=start,
+    interval_weeks=1,
+    effective=week,
+)
+# Explicit example inputs, already adjusted for any availability/events.
+capacity = PersonCapacity(
+    person,
+    tuple(CapacityDay(start + timedelta(days=i), Decimal(6 if i < 5 else 0)) for i in range(7)),
+)
+result = reserve_capacity((duty,), week, (capacity,))[0]
+assert result.reserved_hours == Fraction(6)
+assert result.remaining_hours == Fraction(24)
+```
+
+This is a pure domain/calculation API. Rules are not yet part of ProgramPlan or
+schema 4, and People still shows availability before reservations. The API does
+not fetch calendars, create program events, assign work, or enable a menu command.
+The next persistence and UI slices must retain these boundaries explicitly.
 
 ## Trackable implementation slices
 
@@ -76,7 +149,7 @@ report negative remaining capacity instead of hiding it by clamping to zero.
    Explicit weekly hours and exact nominal-capacity calculations, independent of
    Qt and persistence. Calendar storage/assignment/editing follows in #58;
    availability calculation follows in #60 and persisted editing in #62.
-   Program-event deductions precede recurring reservation calculations.
+   Reservation inputs must include any applicable program-event deductions.
 1. **[Reservation rules and calculations (#8)](https://github.com/tidus747/planacity/issues/8):** Validate recurrence, hours and person
    references. Test full/partial periods, non-Monday anchors, leap years, leave,
    holidays, zero availability, overlapping rules, and deterministic expansion.

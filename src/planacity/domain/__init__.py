@@ -11,9 +11,11 @@ from planacity.domain.models import (
     WorkItem,
     WorkItemType,
 )
+from planacity.domain.reservations import ReservationRule
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
 
 __all__ = [
+    "ReservationRule",
     "AvailabilityEvent",
     "Person",
     "PersonCalendar",

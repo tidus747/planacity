@@ -153,6 +153,15 @@ Person removal requires explicit confirmation to remove associated entries.
 The [availability API](capacity-model.md#availability-calculation-api)
 documents these boundaries and the partial-day interpretation.
 
+## Recurring reservations (v0.4 calculation API)
+
+ReservationRule is a separate domain entity for fixed hours per selected person
+per anchored sprint. It is not a WorkItem, Allocation, or AvailabilityEvent.
+The current pure calculation API consumes explicit daily capacity and derives
+occurrences; rules are not yet part of ProgramPlan storage or desktop editing.
+See [recurring reservations](capacity-wizards.md#calculation-api-8) for proration
+and zero-capacity rules.
+
 ## Timeline projection (v0.3)
 
 `planning/timeline.py` derives immutable rows from a complete `ProgramPlan` for
