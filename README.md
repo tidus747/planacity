@@ -24,7 +24,9 @@ launch uses the system appearance when Qt can detect it. Use **Ctrl+1-6** or the
 View menu to switch pages: Overview, Plan, Timeline, People, Import, and Changes.
 Import supports Jira CSV mapping, preview, saved profiles, and CSV export;
 People supports calendars, dated availability editing, and horizon totals with
-overlap reporting. Program events, allocations, and recurring reservations remain planned.
+overlap reporting. **Planning -> Reserve capacity...** opens a recurring-duty
+wizard with per-person previews and confirmation. Program events and allocations
+remain planned; reservation previews are explicitly before those inputs.
 New workspaces start empty; a fictional example is
 available separately in `examples/aurora.planacity.json`.
 
@@ -43,7 +45,8 @@ and a [validation record](docs/v0.3-validation.md). Publication requires a revie
 main commit, passing CI, and a separately approved release.
 Current source is `0.4.0.dev0` and saves schema 5, retaining reservation rules.
 Schemas 1-4 open without inferred rules; keep a backup or use Save As for older builds.
-The reservation wizard remains planned. [Plan filters matching Timeline](https://github.com/tidus747/planacity/issues/65)
+See the [reservation wizard guide](docs/capacity-wizards.md).
+[Plan filters matching Timeline](https://github.com/tidus747/planacity/issues/65)
 are also tracked as a v0.4 usability improvement.
 
 ## Run from source

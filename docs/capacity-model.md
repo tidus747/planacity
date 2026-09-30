@@ -117,8 +117,10 @@ The desktop shows nominal hours alongside unavailability deductions and availabl
 
 Next slices must add program-event deductions.
 The recurring reservation API (#8) now consumes explicit daily capacity after
-these deductions. Rules now persist (#9); the wizard (#10) must supply those inputs
-through a desktop workflow before reservation totals appear in People.
+these deductions. Rules persist (#9), and the wizard (#10) previews saved calendars
+and entered availability before reservations. Program-event deductions are not yet
+modeled in the desktop; the preview labels that limitation. People's table remains
+before reservations; use Reserve capacity to review reservation totals.
 Calendar and availability data use schema 5, while Jira hour estimates and import baselines are
 unchanged. See [recurring reservations](capacity-wizards.md).
 

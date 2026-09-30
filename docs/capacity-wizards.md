@@ -1,20 +1,20 @@
 # Recurring capacity reservations
 
-Planned for v0.4, Team & Capacity. The reservation calculation API is implemented
-for #8, and rules persist through schema 5 (#9). The wizard (#10) is not yet
-available in the desktop. Calendars, availability, and reservation persistence must be wired
-to the preview before the wizard becomes an enabled command. Allocations consume
-remaining capacity later; they are not reservation inputs.
+Available in the v0.4 Team & Capacity development preview. The two-step wizard
+uses the calculation API (#8) and schema 5 rules (#9). It previews before applying
+any change. The desktop preview uses explicit work calendars and recorded
+availability only. Program events and work allocations are not yet modeled;
+the preview clearly labels its remaining hours as before those inputs.
 
 The [work-calendar calculation foundation](capacity-model.md) is implemented for
 review in [#56](https://github.com/tidus747/planacity/issues/56). It accepts an
 explicit seven-day pattern and calculates nominal hours only. Calendar storage,
 assignment, and editing are implemented for review in #58. The unavailable-share
 calculation and overlap reports follow in #60, with persisted editing in #62.
-The reservation engine consumes explicit daily capacity after availability and
-program-event deductions. It does not implement a program-event editor or infer
-those deductions. Existing plans have no inferred calendar. The desktop adapter
-must supply complete, correctly adjusted daily inputs before enabling the wizard.
+The engine can consume explicit daily capacity after any upstream deductions.
+The desktop adapter currently supplies saved calendar hours minus recorded
+availability, including dates outside the horizon needed for complete sprints.
+It does not infer program-event deductions. Existing plans have no default calendar.
 
 ## Purpose and entry point
 
@@ -24,9 +24,10 @@ Reserve time for recurring duties before allocating delivery work. Examples:
 - A selected front-office person reserves 12 hours each sprint for support.
 
 Use `Planning -> Reserve capacity...` in the top menu, plus a `Reserve capacity`
-button in People & Capacity. Both open the same wizard. Preserve light/dark
-appearance and keyboard navigation; use normal form controls and explicit units.
-Do not add a nonfunctional menu entry to the current shell.
+button in People. Both open the same wizard. Controls support light/dark appearance,
+Tab navigation, Space to check people, and typed ISO dates or calendar pickers.
+The command is disabled without an open plan. Commit or correct an active Plan
+cell edit before opening the wizard from the menu.
 
 ## Wizard steps
 
@@ -41,6 +42,31 @@ Do not add a nonfunctional menu entry to the current shell.
    overlaps, and reservations that exceed available hours before applying.
 5. Confirm once to save the rule. Cancel leaves the plan unchanged. Reopening
    and editing a rule replaces its effect; it must not generate duplicates.
+
+The first page also has a Rule selector. Choose an existing rule to edit it, or
+choose **Preview deletion** to see the plan without it. Confirm applies the
+deletion; Back or Cancel does not. Confirm is unavailable until Preview succeeds.
+If the plan changes while the dialog is open, reopen it to avoid overwriting
+newer edits. Closing the wizard without Confirm leaves all drafts unapplied.
+
+The preview shows all stored rules, not just the edited duty, so combined overlaps
+and overloads are visible. Assign a calendar to every referenced person first.
+Missing calendars or complete-period data block a save preview. Deletion remains
+possible when other rules cannot be calculated, with the limitation shown.
+Rules outside the current horizon remain stored and are identified in the preview.
+Zero eligible days produce Unknown remaining hours; overloads stay negative.
+Use Back to revise a rule, or confirm it with those risks visible.
+
+To keep the desktop responsive, previews are limited to 100,000 person-days,
+including full-sprint padding. Larger previews ask you to shorten the horizon or
+interval, or select fewer people. This is a preview limit, not a file-format limit.
+People's table continues to show availability before reservations; its rule count
+points to this wizard for reservation totals. Saving/reopening retains the rules.
+
+Real screenshots: [configure light](images/reservation-wizard-light.png),
+[configure dark](images/reservation-wizard-dark.png),
+[preview light](images/reservation-preview-light.png),
+[preview dark](images/reservation-preview-dark.png).
 
 Start with fixed hours per period. Percentage reservations, automatic front-office
 rotation, and complex calendar recurrence can be separate later enhancements.
@@ -143,7 +169,7 @@ assert result.remaining_hours == Fraction(24)
 This is a pure domain/calculation API. ProgramPlan now stores the rules in
 schema 5, while People still shows availability before reservations. The API does
 not fetch calendars, create program events, assign work, or enable a menu command.
-The UI slice must retain these boundaries explicitly.
+The wizard uses a separate desktop adapter and retains these boundaries explicitly.
 
 ## Persistence and lifecycle (#9)
 
@@ -159,7 +185,7 @@ with `preview_reservations(candidate, capacities)` before applying it. Cancellin
 discards it, and failed validation/preview leaves the original untouched. Removing
 a rule removes only its own contribution on the next calculation. Jira baselines
 and exports are unchanged. Generated occurrences are never persisted or appended
-on reopen, edit, or preview. The wizard will expose this workflow in #10.
+on reopen, edit, or preview. The wizard exposes this workflow in #10.
 
 ## Trackable implementation slices
 

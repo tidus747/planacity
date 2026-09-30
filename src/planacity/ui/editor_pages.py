@@ -26,6 +26,7 @@ from planacity.ui.availability import manage_availability
 from planacity.ui.forms import ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.plan_model import PlanModel
+from planacity.ui.reservations import reserve_capacity_dialog
 from planacity.ui.session import Session
 from planacity.ui.structure_dialogs import manage_structure
 from planacity.ui.work_calendars import choose_person_calendar, manage_work_calendars
@@ -287,6 +288,10 @@ class PeoplePage(WorkspacePage):
         self.availability_button = QPushButton("Availability...")
         self.availability_button.clicked.connect(self.edit_availability)
         buttons.addWidget(self.availability_button)
+        self.reserve_button = QPushButton("Reserve capacity...")
+        self.reserve_button.clicked.connect(lambda: reserve_capacity_dialog(self, self.session))
+        buttons.addWidget(self.reserve_button)
+        self.buttons.append(self.reserve_button)
         buttons.addStretch()
         self.content.addLayout(buttons)
         session.changed.connect(self.refresh)
@@ -299,7 +304,9 @@ class PeoplePage(WorkspacePage):
         plan = self.session.document.plan
         self.horizon_notice.setText(
             f"Planning horizon: {plan.horizon.start} to {plan.horizon.end}. "
-            "Unknown means no calendar is assigned."
+            "Unknown means no calendar is assigned. "
+            f"{len(plan.reservation_rules)} reservation rules; "
+            "use Reserve capacity to review totals."
             if plan
             else "Open a plan to configure calendars."
         )
