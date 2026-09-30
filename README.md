@@ -43,8 +43,9 @@ and a [validation record](docs/v0.3-validation.md). Publication requires a revie
 main commit, passing CI, and a separately approved release.
 Current source is `0.4.0.dev0` and saves schema 5, retaining reservation rules.
 Schemas 1-4 open without inferred rules; keep a backup or use Save As for older builds.
-The reservation wizard remains planned. [Plan filters matching Timeline](https://github.com/tidus747/planacity/issues/65)
-are also tracked as a v0.4 usability improvement.
+The reservation wizard remains planned.
+Plan now has [filters matching Timeline](docs/getting-started.md#filter-the-plan),
+with ancestor context and safe hierarchy editing.
 
 ## Run from source
 

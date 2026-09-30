@@ -20,11 +20,14 @@ from PySide6.QtWidgets import (
 from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType
 from planacity.planning.availability_settings import person_availability
 from planacity.planning.people import add_person, remove_person, rename_person
+from planacity.planning.timeline import TimelineDateState
+from planacity.planning.timeline_view import TimelineFilters
 from planacity.planning.work_calendar import nominal_capacity
 from planacity.planning.work_items import add_work_item, move_work_item, remove_work_item
 from planacity.ui.availability import manage_availability
 from planacity.ui.forms import ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
+from planacity.ui.plan_filter_model import PlanFilterModel
 from planacity.ui.plan_model import PlanModel
 from planacity.ui.session import Session
 from planacity.ui.structure_dialogs import manage_structure
@@ -37,7 +40,8 @@ class PlanPage(WorkspacePage):
             "Plan", "Structure the work. Estimates are in hours; dates use YYYY-MM-DD."
         )
         self.session = session
-        self.model = PlanModel(session)
+        self.source_model = PlanModel(session)
+        self.model = PlanFilterModel(self.source_model)
         self.table = QTreeView()
         self.table.setObjectName("Plan work items")
         self.table.setAccessibleName("Plan work items")
@@ -53,6 +57,33 @@ class PlanPage(WorkspacePage):
         for column in (2, 3, 4):
             self.table.setColumnWidth(column, 130)
         self.table.setMinimumHeight(260)
+        filters = QHBoxLayout()
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Search work titles...")
+        self.kind_filter = QComboBox()
+        self.kind_filter.addItem("All types", "")
+        for kind in WorkItemType:
+            self.kind_filter.addItem(kind.value.title(), kind.value)
+        self.group_filter = QComboBox()
+        self.state_filter = QComboBox()
+        self.state_filter.addItem("All schedules", "")
+        for state in TimelineDateState:
+            self.state_filter.addItem(state.value.replace("_", " ").title(), state.value)
+        self.clear_filters_button = QPushButton("Clear filters")
+        for widget, name in (
+            (self.search, "Search titles"),
+            (self.kind_filter, "Work type"),
+            (self.group_filter, "WorkGroup"),
+            (self.state_filter, "Schedule state"),
+        ):
+            widget.setAccessibleName(name)
+            widget.setToolTip(name)
+            filters.addWidget(widget)
+        filters.addWidget(self.clear_filters_button)
+        self.content.addLayout(filters)
+        self.filter_summary = label("")
+        self.filter_summary.setAccessibleName("Plan filter summary")
+        self.content.addWidget(self.filter_summary)
         self.toolbar = QHBoxLayout()
         self.content.addLayout(self.toolbar)
         self.buttons: list[QPushButton] = []
@@ -90,8 +121,72 @@ class PlanPage(WorkspacePage):
         self.expanded_ids: list[UUID] = []
         self.model.modelAboutToBeReset.connect(self.remember_selection)
         self.model.modelReset.connect(self.restore_selection)
+        self.model.filters_about_to_change.connect(self.remember_selection)
+        self.model.filters_changed.connect(self.filters_changed)
+        self.search.textChanged.connect(self.apply_filters)
+        for combo in (self.kind_filter, self.group_filter, self.state_filter):
+            combo.currentIndexChanged.connect(self.apply_filters)
+        self.clear_filters_button.clicked.connect(lambda: self.change_filters(TimelineFilters()))
         session.changed.connect(self.refresh)
         self.refresh()
+
+    def apply_filters(self) -> None:
+        kind = self.kind_filter.currentData()
+        group = self.group_filter.currentData()
+        state = self.state_filter.currentData()
+        self.change_filters(
+            TimelineFilters(
+                text=self.search.text(),
+                kind=WorkItemType(kind) if kind else None,
+                group_id=UUID(group) if group else None,
+                state=TimelineDateState(state) if state else None,
+            )
+        )
+
+    def change_filters(self, filters: TimelineFilters) -> None:
+        if not self.commit_editor():
+            self.sync_filters()
+            return
+        self.error.clear()
+        self.model.set_filters(filters)
+
+    def sync_filters(self) -> None:
+        controls = (self.search, self.kind_filter, self.group_filter, self.state_filter)
+        for control in controls:
+            control.blockSignals(True)
+            control.setEnabled(self.model.plan is not None)
+        current = self.model.filters
+        self.search.setText(current.text)
+        self.kind_filter.setCurrentIndex(
+            self.kind_filter.findData(current.kind.value if current.kind else "")
+        )
+        self.group_filter.clear()
+        self.group_filter.addItem("All WorkGroups", "")
+        if self.model.plan:
+            for group in self.model.plan.work_groups:
+                self.group_filter.addItem(group.name, str(group.id))
+        self.group_filter.setCurrentIndex(
+            self.group_filter.findData(str(current.group_id) if current.group_id else "")
+        )
+        self.state_filter.setCurrentIndex(
+            self.state_filter.findData(current.state.value if current.state else "")
+        )
+        for control in controls:
+            control.blockSignals(False)
+        self.clear_filters_button.setEnabled(self.model.plan is not None)
+        result = self.model.result
+        self.filter_summary.setText(
+            f"{len(result.matches)} of {result.total} work items match"
+            f"; {len(result.visible - result.matches)} ancestors shown for context."
+        )
+
+    def filters_changed(self) -> None:
+        self.restore_selection()
+        if self.model.filters != TimelineFilters():
+            self.table.expandAll()
+        self.sync_filters()
+        self.selection_changed()
+        self.table.viewport().update()
 
     def commit_editor(self) -> bool:
         editor = self.table.findChild(QLineEdit)
@@ -126,11 +221,16 @@ class PlanPage(WorkspacePage):
     def restore_selection(self) -> None:
         for item_id in self.expanded_ids:
             self.table.setExpanded(self.model.index_for_id(item_id), True)
-        self.table.setCurrentIndex(self.model.index_for_id(self.selected_id))
+        current = self.model.item(self.table.currentIndex())
+        if current is None or current.id != self.selected_id:
+            self.table.setCurrentIndex(self.model.index_for_id(self.selected_id))
 
     def refresh(self) -> None:
         for button in self.buttons:
             button.setEnabled(self.session.document.plan is not None)
+        self.sync_filters()
+        if self.model.filters != TimelineFilters():
+            self.table.expandAll()
         self.selection_changed()
 
     def selection_changed(
@@ -141,6 +241,12 @@ class PlanPage(WorkspacePage):
             self.detail.setText(
                 "Select work to edit it. F2 edits a cell. Add Tasks under a selected Epic, "
                 "or Subtasks under a selected Task."
+            )
+        elif item.id not in self.model.result.matches:
+            self.detail.setText(
+                f"{item.title}\n\nAncestor context, not a filter match. "
+                "Clear or change filters to edit cells. Structural actions apply "
+                "to the full subtree, including hidden work."
             )
         else:
             self.detail.setText(
@@ -179,7 +285,7 @@ class PlanPage(WorkspacePage):
             self.session.apply(updated)
             self.table.setExpanded(self.model.index_for_id(parent_id), True)
             self.table.setCurrentIndex(self.model.index_for_id(item_id[0]))
-            self.error.clear()
+            self.report_hidden(item_id[0])
 
     def move_item(self) -> None:
         if not self.commit_editor():
@@ -209,6 +315,14 @@ class PlanPage(WorkspacePage):
             self.session.apply(updated)
             self.table.expand(self.model.index_for_id(updated.work_item(item.id).parent_id))
             self.table.setCurrentIndex(self.model.index_for_id(item.id))
+            self.report_hidden(item.id)
+
+    def report_hidden(self, item_id: UUID) -> None:
+        self.error.setText(
+            "The work was saved but is hidden by the current filters. Clear filters to see it."
+            if not self.model.index_for_id(item_id).isValid()
+            else ""
+        )
 
     def delete_item(self) -> None:
         if not self.commit_editor():
@@ -222,11 +336,14 @@ class PlanPage(WorkspacePage):
         memberships = sum(len(g.epic_ids) for g in plan.work_groups) - sum(
             len(g.epic_ids) for g in updated.work_groups
         )
+        removed = {work.id for work in plan.work_items} - {work.id for work in updated.work_items}
+        hidden = len(removed - self.model.result.visible)
         if (
             QMessageBox.question(
                 self,
                 "Delete work?",
                 f"Delete '{item.title}' and its subtree ({count} work item(s))?\n"
+                f"Includes {hidden} work item(s) hidden by filters.\n"
                 f"This also removes {links} relationship(s) and {memberships} group membership(s).",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,

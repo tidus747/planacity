@@ -6,6 +6,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Plan filters for title, work type, WorkGroup, and schedule state, matching
+  Timeline. Matching descendants retain marked ancestor context; a count and
+  Clear filters action explain the view. Deletion previews include hidden work.
 - Dated availability editing in People with keyboard entry, calendar pickers,
   live totals, and explicit overlap previews. Entries persist with the plan;
   available hours are shown before program events, reservations, and allocations.
