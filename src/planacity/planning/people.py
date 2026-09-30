@@ -18,12 +18,22 @@ def rename_person(plan: ProgramPlan, person_id: UUID, name: str) -> ProgramPlan:
 
 
 def remove_person(
-    plan: ProgramPlan, person_id: UUID, *, remove_availability: bool = False
+    plan: ProgramPlan,
+    person_id: UUID,
+    *,
+    remove_availability: bool = False,
+    remove_reservations: bool = False,
 ) -> ProgramPlan:
-    """Remove a person and calendar link; availability removal needs explicit consent."""
+    """Remove a person; availability and reservation changes need explicit consent.
+
+    Shared reservations keep their IDs and other people. Rules with no remaining
+    people are removed rather than retained as invalid, empty rules.
+    """
     plan.person(person_id)
     if not remove_availability and any(e.person_id == person_id for e in plan.availability_events):
         raise ValueError("Confirm removing this person's availability entries first.")
+    if not remove_reservations and any(person_id in r.person_ids for r in plan.reservation_rules):
+        raise ValueError("Confirm removing this person from their reservation rules first.")
     return replace(
         plan,
         people=tuple(person for person in plan.people if person.id != person_id),
@@ -31,4 +41,11 @@ def remove_person(
             value for value in plan.person_calendars if value.person_id != person_id
         ),
         availability_events=tuple(e for e in plan.availability_events if e.person_id != person_id),
+        reservation_rules=tuple(
+            replace(rule, person_ids=tuple(p for p in rule.person_ids if p != person_id))
+            if person_id in rule.person_ids
+            else rule
+            for rule in plan.reservation_rules
+            if rule.person_ids != (person_id,)
+        ),
     )

@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 4)
+# Project files and JSON backups (schema 5)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 4` is the schema version.
+- `PRAGMA user_version = 5` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,11 +26,11 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`4`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`5`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
-and `availability_events`.
+`availability_events`, and `reservation_rules`.
 Fields match [the domain model](domain-model.md).
 
 Each work calendar stores `id`, `name`, and seven `weekday_hours` Decimal strings,
@@ -42,6 +42,13 @@ Each availability event stores `id`, `person_id`, an inclusive `period` with
 `start`/`end`, and `unavailable_fraction` as a Decimal string from 0 to 1.
 IDs must be unique and people must exist in the roster. Entries may extend beyond
 the horizon; they are retained unchanged. No absence reason is stored.
+
+Each reservation rule stores `id`, `name`, `person_ids`, `hours_per_person` as a
+positive Decimal string, `anchor` as an ISO date, `interval_weeks` as a positive
+integer, and `effective` with inclusive `start`/`end`. Person references must exist
+and be distinct and non-empty. Rule IDs are unique. Only rules are stored, never
+generated occurrences, Fraction results, or cached deductions. Rule order and
+selected-person order are preserved.
 
 - UUIDs are strings. Identity is preserved on load, save, and backup restore.
 - Dates are ISO `YYYY-MM-DD` strings, without timestamps or timezones.
@@ -73,7 +80,8 @@ the current document intact. Keep backups separately from the working project.
 Schema 1 files are read with an empty imports collection. Schema 1 and 2 files
 open without calendars or assignments; no default hours are invented. Opening
 does not modify the file. Schemas 1-3 open with empty availability collections.
-Saving writes schema 4; older builds cannot open the upgraded file. Keep a
+Schemas 1-4 open without reservation rules; schema 4 retains its availability.
+Saving writes schema 5; older builds cannot open the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.

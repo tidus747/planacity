@@ -15,6 +15,7 @@ from planacity.domain import (
     ProgramPlan,
     Relationship,
     RelationshipType,
+    ReservationRule,
     WorkCalendar,
     WorkGroup,
     WorkItem,
@@ -23,8 +24,8 @@ from planacity.domain import (
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 4
-SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4)
+SCHEMA_VERSION = 5
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5)
 
 
 def _encode(value: object) -> str:
@@ -118,9 +119,10 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         p = _object(
             root["plan"],
             "id name description horizon work_items people work_groups relationships"
-            + (" imports" if root["schema_version"] in (2, 3, 4) else "")
-            + (" work_calendars person_calendars" if root["schema_version"] in (3, 4) else "")
-            + (" availability_events" if root["schema_version"] == 4 else ""),
+            + (" imports" if root["schema_version"] in (2, 3, 4, 5) else "")
+            + (" work_calendars person_calendars" if root["schema_version"] in (3, 4, 5) else "")
+            + (" availability_events" if root["schema_version"] in (4, 5) else "")
+            + (" reservation_rules" if root["schema_version"] == 5 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -166,9 +168,29 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             availability_events=tuple(
                 _availability(value) for value in _rows(p.get("availability_events", []))
             ),
+            reservation_rules=tuple(
+                _reservation(value) for value in _rows(p.get("reservation_rules", []))
+            ),
         )
     except (ValueError, InvalidOperation, RecursionError) as error:
         raise ValueError(f"Cannot read plan: {error}") from error
+
+
+def _reservation(value: object) -> ReservationRule:
+    row = _object(value, "id name person_ids hours_per_person anchor interval_weeks effective")
+    effective = _object(row["effective"], "start end")
+    interval = row["interval_weeks"]
+    if type(interval) is not int:
+        raise ValueError("Reservation interval must be a whole number of weeks.")
+    return ReservationRule(
+        id=_id(row["id"]),
+        name=_text(row["name"]),
+        person_ids=tuple(_id(value) for value in _rows(row["person_ids"])),
+        hours_per_person=Decimal(_text(row["hours_per_person"])),
+        anchor=_date(row["anchor"]),
+        interval_weeks=interval,
+        effective=PlanningHorizon(_date(effective["start"]), _date(effective["end"])),
+    )
 
 
 def _availability(value: object) -> AvailabilityEvent:

@@ -14,9 +14,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Changed
 
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 4
-  to retain calendars and availability. Schema 1/2/3 files still open without
-  inferred entries; keep a backup or use Save As for compatibility with older builds.
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 5
+  to retain calendars, availability, and reservation rules. Schemas 1-4 still
+  open without inferred rules; keep a backup or use Save As for older builds.
+- Removing a person now identifies affected reservation rules before confirmation.
+  Shared rules retain their other people; rules left empty are removed.
 
 ## [0.3.0] - Release candidate
 

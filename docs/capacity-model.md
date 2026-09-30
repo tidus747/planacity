@@ -36,7 +36,8 @@ retains availability; reassigning one recalculates it. Confirming an edit retain
 its ID, while cancellation leaves the draft unapplied. Deleting a person asks
 before clearing their availability entries. Imported snapshots remain unchanged.
 
-Schema 1/2/3 files open without availability and save as schema 4. Keep a backup
+Schemas 1-3 open without availability; schemas 1-4 open without reservations.
+Saving writes schema 5. Keep a backup
 or use Save As if the file must remain readable in an older build.
 
 Screenshots using an explicitly configured example schedule:
@@ -116,9 +117,9 @@ The desktop shows nominal hours alongside unavailability deductions and availabl
 
 Next slices must add program-event deductions.
 The recurring reservation API (#8) now consumes explicit daily capacity after
-these deductions. Persistence (#9) and the wizard (#10) must supply those inputs
-through a desktop workflow before reservations appear in People.
-Calendar and availability data use schema 4, while Jira hour estimates and import baselines are
+these deductions. Rules now persist (#9); the wizard (#10) must supply those inputs
+through a desktop workflow before reservation totals appear in People.
+Calendar and availability data use schema 5, while Jira hour estimates and import baselines are
 unchanged. See [recurring reservations](capacity-wizards.md).
 
 ## Availability calculation API

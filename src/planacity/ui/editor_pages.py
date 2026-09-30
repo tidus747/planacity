@@ -361,19 +361,31 @@ class PeoplePage(WorkspacePage):
         person = plan.person(UUID(selected)) if selected else None
         if operation == "remove" and person:
             entries = sum(e.person_id == person.id for e in plan.availability_events)
+            rules = [rule.name for rule in plan.reservation_rules if person.id in rule.person_ids]
+            reservation_notice = (
+                "\nAlso remove them from these reservation rules: "
+                + ", ".join(rules)
+                + ". Rules with no remaining people will be deleted."
+                if rules
+                else ""
+            )
             if (
                 QMessageBox.question(
                     self,
                     "Remove person?",
                     f"Remove '{person.name}' from the roster and clear their calendar assignment "
-                    f"and {entries} availability entries?",
+                    f"and {entries} availability entries?" + reservation_notice,
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.No,
                 )
                 == QMessageBox.StandardButton.Yes
             ):
                 if self.session.document.plan is plan:
-                    self.session.apply(remove_person(plan, person.id, remove_availability=True))
+                    self.session.apply(
+                        remove_person(
+                            plan, person.id, remove_availability=True, remove_reservations=True
+                        )
+                    )
             return
         name = QLineEdit(person.name if person and operation == "rename" else "")
 
