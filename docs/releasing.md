@@ -2,7 +2,7 @@
 
 Release tags identify reviewed commits on `main`. A branch name is not a release.
 Use `v0.1.0` for Planning Foundation, `v0.2.0` for Jira Roundtrip, and
-`v0.3.0` for Visual Planning. Current development is `0.4.0.dev0` with schema 3;
+`v0.3.0` for Visual Planning. Current development is `0.4.0.dev0` with schema 4;
 the v0.3.0 preparation below records the earlier schema 2 candidate. Never tag
 the current v0.4 development commit as v0.3.0. Release approval must identify
 the exact reviewed commit containing the intended version.

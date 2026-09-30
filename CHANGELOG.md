@@ -6,14 +6,17 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Dated availability editing in People with keyboard entry, calendar pickers,
+  live totals, and explicit overlap previews. Entries persist with the plan;
+  available hours are shown before program events, reservations, and allocations.
 - Named work calendars with explicit weekday hours, per-person assignments,
   and nominal horizon hours in People, before leave, events, or reservations.
 
 ### Changed
 
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 3
-  to retain calendars. Schema 1/2 files still open without inferred assignments;
-  keep a backup or use Save As for compatibility with v0.3 and earlier.
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 4
+  to retain calendars and availability. Schema 1/2/3 files still open without
+  inferred entries; keep a backup or use Save As for compatibility with older builds.
 
 ## [0.3.0] - Release candidate
 

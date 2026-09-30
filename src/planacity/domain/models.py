@@ -6,6 +6,8 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID, uuid4
 
+from planacity.domain.availability import AvailabilityEvent
+from planacity.domain.horizon import PlanningHorizon as PlanningHorizon
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
 
 
@@ -17,20 +19,6 @@ def _require_text(value: str, field_name: str) -> None:
 def _require_id(value: UUID, field_name: str) -> None:
     if not isinstance(value, UUID):
         raise ValueError(f"{field_name} must be a UUID.")
-
-
-@dataclass(frozen=True)
-class PlanningHorizon:
-    """An inclusive date range; times and timezone conversion are not inferred."""
-
-    start: date
-    end: date
-
-    def __post_init__(self) -> None:
-        if type(self.start) is not date or type(self.end) is not date:
-            raise ValueError("Planning horizon start and end must be dates without a time.")
-        if self.end < self.start:
-            raise ValueError("Planning horizon end must be on or after its start.")
 
 
 class WorkItemType(StrEnum):
@@ -203,6 +191,7 @@ class ProgramPlan:
     imports: tuple[ImportSnapshot, ...] = ()
     work_calendars: tuple[WorkCalendar, ...] = ()
     person_calendars: tuple[PersonCalendar, ...] = ()
+    availability_events: tuple[AvailabilityEvent, ...] = ()
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Program Plan ID")
@@ -240,6 +229,14 @@ class ProgramPlan:
         for assignment in self.person_calendars:
             self.person(assignment.person_id)
             self.work_calendar(assignment.calendar_id)
+        if not isinstance(self.availability_events, tuple) or any(
+            not isinstance(event, AvailabilityEvent) for event in self.availability_events
+        ):
+            raise ValueError("Availability events must be a tuple of AvailabilityEvent objects.")
+        if len({event.id for event in self.availability_events}) != len(self.availability_events):
+            raise ValueError("Availability event IDs must be unique within a plan.")
+        for event in self.availability_events:
+            self.person(event.person_id)
         if not isinstance(self.imports, tuple) or any(
             not isinstance(source, ImportSnapshot) for source in self.imports
         ):

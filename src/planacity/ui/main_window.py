@@ -184,7 +184,8 @@ class MainWindow(QMainWindow):
             "Create, edit, and save local Program Plans. "
             "Import and export Jira CSV, and review work on the Timeline. "
             "Configure work calendars and review nominal hours. "
-            "Availability deductions and recurring reservations remain planned.</p>",
+            "Edit dated availability and review overlaps. "
+            "Program events, allocations, and recurring reservations remain planned.</p>",
         )
 
     def _refresh_document(self) -> None:

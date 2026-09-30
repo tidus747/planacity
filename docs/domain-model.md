@@ -140,14 +140,17 @@ ProgramPlan contains named WorkCalendars and separate PersonCalendar references.
 A calendar has an ID, name, and seven explicit Decimal weekday hours. An
 assignment links one roster Person to one calendar; a calendar may be shared.
 Imported Person snapshots do not contain these assignments and remain unchanged.
-People shows nominal horizon hours, before reductions or allocations. See the
+People shows nominal, unavailable, and available horizon hours, before program
+events, reservations, or allocations. See the
 [capacity model](capacity-model.md) for lifecycle rules and future deductions.
 
 AvailabilityEvent is an immutable calculation input with a stable UUID, person
 reference, inclusive period, and Decimal unavailable fraction. It records no
 absence reason. Overlaps use the strongest daily fraction and return reviewable
-periods and event IDs. Events are not yet attached to ProgramPlan, persisted, or
-editable in the desktop. The [availability API](capacity-model.md#availability-calculation-api)
+periods and event IDs. ProgramPlan owns the events, validates their roster
+references, and persists them in schema 4. People edits them while preserving IDs.
+Person removal requires explicit confirmation to remove associated entries.
+The [availability API](capacity-model.md#availability-calculation-api)
 documents these boundaries and the partial-day interpretation.
 
 ## Timeline projection (v0.3)

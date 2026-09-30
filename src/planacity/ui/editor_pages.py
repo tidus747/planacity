@@ -18,9 +18,11 @@ from PySide6.QtWidgets import (
 )
 
 from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType
+from planacity.planning.availability_settings import person_availability
 from planacity.planning.people import add_person, remove_person, rename_person
 from planacity.planning.work_calendar import nominal_capacity
 from planacity.planning.work_items import add_work_item, move_work_item, remove_work_item
+from planacity.ui.availability import manage_availability
 from planacity.ui.forms import ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.plan_model import PlanModel
@@ -236,7 +238,10 @@ class PlanPage(WorkspacePage):
 
 class PeoplePage(WorkspacePage):
     def __init__(self, session: Session) -> None:
-        super().__init__("People", "Nominal calendar hours before leave, events, and reservations.")
+        super().__init__(
+            "People",
+            "Calendar hours and availability before program events, reservations, and allocations.",
+        )
         self.session = session
         self.horizon_notice = label("")
         self.content.addWidget(self.horizon_notice)
@@ -244,9 +249,17 @@ class PeoplePage(WorkspacePage):
         self.table.setAccessibleName("People roster")
         self.table.setRootIsDecorated(False)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.model = QStandardItemModel(0, 4, self.table)
+        self.model = QStandardItemModel(0, 7, self.table)
         self.model.setHorizontalHeaderLabels(
-            ["Person", "Work calendar", "Nominal hours", "Working days"]
+            [
+                "Person",
+                "Work calendar",
+                "Nominal hours",
+                "Working days",
+                "Unavailable hours",
+                "Available hours",
+                "Overlap periods",
+            ]
         )
         self.table.setModel(self.model)
         self.content.addWidget(self.table, 1)
@@ -262,6 +275,8 @@ class PeoplePage(WorkspacePage):
             buttons.addWidget(button)
             self.buttons.append(button)
         buttons.addStretch()
+        self.content.addLayout(buttons)
+        buttons = QHBoxLayout()
         self.calendar_button = QPushButton("Work calendars...")
         self.calendar_button.clicked.connect(lambda: manage_work_calendars(self, self.session))
         buttons.addWidget(self.calendar_button)
@@ -269,13 +284,13 @@ class PeoplePage(WorkspacePage):
         self.assign_button = QPushButton("Assign calendar...")
         self.assign_button.clicked.connect(self.assign_calendar)
         buttons.addWidget(self.assign_button)
+        self.availability_button = QPushButton("Availability...")
+        self.availability_button.clicked.connect(self.edit_availability)
+        buttons.addWidget(self.availability_button)
+        buttons.addStretch()
         self.content.addLayout(buttons)
         session.changed.connect(self.refresh)
-        self.table.selectionModel().currentChanged.connect(
-            lambda: self.assign_button.setEnabled(
-                bool(self.table.currentIndex().data(Qt.ItemDataRole.UserRole))
-            )
-        )
+        self.table.selectionModel().currentChanged.connect(self._selection_changed)
         self.refresh()
 
     def refresh(self) -> None:
@@ -298,6 +313,7 @@ class PeoplePage(WorkspacePage):
             for person in plan.people:
                 calendar = assigned.get(person.id)
                 capacity = nominal_capacity(calendar, plan.horizon) if calendar else None
+                available = person_availability(plan, person.id)
                 row = [
                     QStandardItem(value)
                     for value in (
@@ -305,6 +321,9 @@ class PeoplePage(WorkspacePage):
                         calendar.name if calendar else "Not configured",
                         str(capacity.total_hours) if capacity else "Unknown",
                         str(capacity.working_days) if capacity else "Unknown",
+                        str(available.unavailable_hours) if available else "Unknown",
+                        str(available.available_hours) if available else "Unknown",
+                        str(len(available.overlaps)) if available else "Unknown",
                     )
                 ]
                 for item in row:
@@ -313,11 +332,19 @@ class PeoplePage(WorkspacePage):
                 self.model.appendRow(row)
                 if str(person.id) == selected:
                     self.table.setCurrentIndex(row[0].index())
-        self.assign_button.setEnabled(
-            bool(self.table.currentIndex().data(Qt.ItemDataRole.UserRole))
-        )
-        for column in range(4):
+        self._selection_changed()
+        for column in range(7):
             self.table.resizeColumnToContents(column)
+
+    def _selection_changed(self) -> None:
+        selected = bool(self.table.currentIndex().data(Qt.ItemDataRole.UserRole))
+        self.assign_button.setEnabled(selected)
+        self.availability_button.setEnabled(selected)
+
+    def edit_availability(self) -> None:
+        selected = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
+        if selected:
+            manage_availability(self, self.session, UUID(selected))
 
     def assign_calendar(self) -> None:
         selected = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
@@ -333,17 +360,20 @@ class PeoplePage(WorkspacePage):
             return
         person = plan.person(UUID(selected)) if selected else None
         if operation == "remove" and person:
+            entries = sum(e.person_id == person.id for e in plan.availability_events)
             if (
                 QMessageBox.question(
                     self,
                     "Remove person?",
-                    f"Remove '{person.name}' from the roster and clear their calendar assignment?",
+                    f"Remove '{person.name}' from the roster and clear their calendar assignment "
+                    f"and {entries} availability entries?",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.No,
                 )
                 == QMessageBox.StandardButton.Yes
             ):
-                self.session.apply(remove_person(plan, person.id))
+                if self.session.document.plan is plan:
+                    self.session.apply(remove_person(plan, person.id, remove_availability=True))
             return
         name = QLineEdit(person.name if person and operation == "rename" else "")
 

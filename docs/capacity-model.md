@@ -1,7 +1,7 @@
-# Work calendars and nominal capacity
+# Work calendars and availability
 
 The v0.4 development preview supports named work calendars, explicit per-person
-assignments, and nominal hours for the planning horizon. No default calendar is
+assignments, and dated availability for the planning horizon. No default calendar is
 assigned to existing plans or people; missing assignment means unknown, not zero.
 
 ## Desktop workflow
@@ -19,8 +19,25 @@ assignments. Removing a person also removes their assignment, not the calendar
 or imported Person snapshots. All controls support keyboard navigation and both
 appearances. Changes persist in projects and JSON backups.
 
-Schema 1/2 files open without calendars and save as schema 3. Keep a backup or use
-Save As if the file must remain readable in Planacity v0.3 or earlier.
+Select a person and choose **Availability...** to add, edit, or delete dated
+unavailability. Enter inclusive start/end dates (typed as YYYY-MM-DD or picked
+from a calendar) and a share from 0 to 1: 1 means a full day, 0.5 half, and 0 none.
+The share applies to each date's calendar hours, not a fixed 8-hour day.
+No reason for the absence is requested. The live preview shows horizon totals
+and overlapping periods/entry numbers matching the manager's list. Overlaps use
+the largest share, not the sum;
+combine distinct partial absences into one share if they should add up.
+
+People shows nominal, unavailable, and available hours, plus overlap counts.
+Available hours are before program events, reservations, and allocations.
+Entries outside the horizon are retained; only intersecting dates contribute.
+Without a calendar, hours and overlap reports remain Unknown. Clearing a calendar
+retains availability; reassigning one recalculates it. Confirming an edit retains
+its ID, while cancellation leaves the draft unapplied. Deleting a person asks
+before clearing their availability entries. Imported snapshots remain unchanged.
+
+Schema 1/2/3 files open without availability and save as schema 4. Keep a backup
+or use Save As if the file must remain readable in an older build.
 
 Screenshots using an explicitly configured example schedule:
 
@@ -28,6 +45,8 @@ Screenshots using an explicitly configured example schedule:
   [dark](images/people-calendars-dark.png).
 - Calendar editor: [light](images/calendar-editor-light.png),
   [dark](images/calendar-editor-dark.png).
+- Availability editor: [light](images/availability-editor-light.png),
+  [dark](images/availability-editor-dark.png).
 
 ## Weekly pattern
 
@@ -93,11 +112,11 @@ Nominal capacity is the first input to the future calculation:
 Allocations then consume planning capacity. The nominal-calendar API does not
 apply reductions. The separate availability API below applies unavailability
 only; neither API calculates remaining planning hours, overload, or team totals.
-The desktop continues to show nominal hours, before all reductions.
+The desktop shows nominal hours alongside unavailability deductions and available hours.
 
-Next slices must persist and edit availability and add program-event deductions.
+Next slices must add program-event deductions.
 Recurring reservations (#8), lifecycle (#9), and the wizard (#10) depend on those inputs.
-Calendar data uses schema 3, while Jira hour estimates and import baselines are
+Calendar and availability data use schema 4, while Jira hour estimates and import baselines are
 unchanged. See [recurring reservations](capacity-wizards.md).
 
 ## Availability calculation API
@@ -107,8 +126,8 @@ accepts explicit AvailabilityEvents for one person. Each event has an identity,
 person UUID, inclusive PlanningHorizon, and unavailable fraction from 0 to 1.
 For example, 0.5 removes half of each date's nominal hours; 1 removes all of them.
 No 8-hour day or reason for the absence is inferred or stored. Fractions must be
-finite Decimal values. This is a calculation API only: events are not saved in
-projects, editable in People, or included in its displayed nominal hours yet.
+finite Decimal values. ProgramPlan now stores these events, and People exposes
+the calculation through its availability editor and horizon totals (#62).
 
 ```python
 from datetime import date
