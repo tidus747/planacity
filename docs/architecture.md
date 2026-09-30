@@ -100,3 +100,22 @@ without Qt or a list of every date. Partial first/last periods stay within the
 planning horizon, including the supported minimum and maximum dates. Rendering
 uses fractional bar spans within those periods; canonical dates never change.
 The desktop stores `timeline/scale` in local QSettings, independently of projects.
+
+`planning/timeline_view.py` filters individual rows and arranges them by canonical
+hierarchy, Epic, or WorkGroup. Grouped rows retain the work UUID and add a section
+UUID for stable display selection. Multiple WorkGroup memberships produce display
+occurrences of the same work; summary counts deduplicate UUIDs.
+
+`planning/timeline_dependencies.py` resolves predecessor/successor direction from
+Relationships, detects cyclic links, and explains unavailable endpoints. Its
+orthogonal connector geometry is independently testable. The Qt schedule view
+maps day coordinates to visible cells and draws arrows only when both actual
+endpoints are on screen. Cross-section links use the first occurrence when no
+shared section exists. None of these operations changes the canonical plan.
+
+Timeline editing is separate from projection and painting. `timeline_resize.py`
+in planning snaps period fractions to inclusive days and delegates validation to
+`set_work_dates`. The UI holds the original immutable snapshot throughout a drag,
+previews candidates, and applies once on release only if that snapshot is still
+current. Escape, view changes, and invalid drops discard the candidate. The
+keyboard date form uses the same canonical setter and stale-snapshot check.

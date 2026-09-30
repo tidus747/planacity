@@ -1,4 +1,4 @@
-"""Read-only desktop Timeline backed by the canonical timeline projection."""
+"""Desktop Timeline backed by the canonical projection and validated date edits."""
 
 from __future__ import annotations
 
@@ -18,9 +18,14 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QPainter, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QCheckBox,
     QComboBox,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
+    QPlainTextEdit,
+    QPushButton,
     QSplitter,
     QStyle,
     QStyledItemDelegate,
@@ -29,6 +34,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from planacity.domain import WorkItemType
 from planacity.planning.timeline import (
     TimelineDateState,
     TimelineProjection,
@@ -41,9 +47,12 @@ from planacity.planning.timeline_axis import (
     TimelineScale,
     bar_span,
 )
+from planacity.planning.timeline_dependencies import timeline_dependencies
+from planacity.planning.timeline_view import TimelineFilters, TimelineGrouping, arrange_timeline
 from planacity.ui.pages import WorkspacePage, label
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Colors, Theme
+from planacity.ui.timeline_resize import ResizeScheduleView, edit_timeline_dates
 
 Index = QModelIndex | QPersistentModelIndex
 ROOT = QModelIndex()
@@ -76,7 +85,7 @@ def _schedule_text(row: TimelineRow) -> str:
 class TimelineLabelsModel(QAbstractTableModel):
     """Expose hierarchy labels and schedule state from one immutable projection."""
 
-    headers = ("Work item", "Schedule")
+    headers = ("Work item", "Schedule", "Section")
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -100,10 +109,16 @@ class TimelineLabelsModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return f"{'    ' * row.depth}{row.title}"
+            if index.column() == 2:
+                return row.section
             return _schedule_text(row)
         if role == Qt.ItemDataRole.ToolTipRole:
+            if index.column() == 2:
+                return row.section
             return f"{row.kind.value.title()}: {row.title}\n{_schedule_text(row)}"
         if role == Qt.ItemDataRole.AccessibleTextRole:
+            if index.column() == 2:
+                return row.section
             if index.column() == 0:
                 return f"{row.kind.value.title()}: {row.title}"
             return _schedule_text(row)
@@ -294,12 +309,12 @@ class TimelineBarDelegate(QStyledItemDelegate):
 
 
 class TimelinePage(WorkspacePage):
-    """Show the current plan through read-only synchronized label and schedule views."""
+    """Synchronize schedule views and apply explicit date edits to the shared plan."""
 
     def __init__(self, session: Session, settings: QSettings | None = None) -> None:
         super().__init__(
             "Timeline",
-            "See plan dates without changing the canonical Program Plan.",
+            "Explore the schedule. Drag a bar edge or edit dates to adjust planned work.",
         )
         self.session = session
         self.settings = settings
@@ -309,6 +324,35 @@ class TimelinePage(WorkspacePage):
         self.summary = label("Open a project to see its schedule.", "badge")
         self.summary.setAccessibleName("Timeline summary")
         self.content.addWidget(self.summary)
+        self.grouping_box = QComboBox()
+        for grouping_choice in TimelineGrouping:
+            self.grouping_box.addItem(grouping_choice.value.title(), grouping_choice.value)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Search work titles...")
+        self.kind_filter = QComboBox()
+        self.kind_filter.addItem("All types", "")
+        for kind in WorkItemType:
+            self.kind_filter.addItem(kind.value.title(), kind.value)
+        self.group_filter = QComboBox()
+        self.group_filter.addItem("All WorkGroups", "")
+        self.state_filter = QComboBox()
+        self.state_filter.addItem("All schedules", "")
+        for state in TimelineDateState:
+            self.state_filter.addItem(state.value.replace("_", " ").title(), state.value)
+        filters = QHBoxLayout()
+        for name, control in (
+            ("Group by", self.grouping_box),
+            ("Search titles", self.search),
+            ("Work type", self.kind_filter),
+            ("WorkGroup", self.group_filter),
+            ("Schedule state", self.state_filter),
+        ):
+            control.setAccessibleName(name)
+            control.setToolTip(name)
+            filters.addWidget(control)
+        self.clear_filters = QPushButton("Clear filters")
+        filters.addWidget(self.clear_filters)
+        self.content.addLayout(filters)
 
         self.labels = QTableView()
         self.labels.setObjectName("timelineLabels")
@@ -317,9 +361,11 @@ class TimelinePage(WorkspacePage):
         self.labels.setModel(self.label_model)
         self.labels.setColumnWidth(0, 280)
         self.labels.setColumnWidth(1, 210)
+        self.labels.setColumnWidth(2, 150)
+        self.labels.setColumnHidden(2, True)
         self.labels.horizontalHeader().setStretchLastSection(True)
 
-        self.schedule = QTableView()
+        self.schedule = ResizeScheduleView(session)
         self.schedule.setObjectName("timelineSchedule")
         self.schedule.setAccessibleName("Timeline schedule by day")
         self.schedule_model = TimelineScheduleModel(self.schedule)
@@ -339,6 +385,10 @@ class TimelinePage(WorkspacePage):
         scale_label.setBuddy(self.scale_box)
         self.header.addWidget(scale_label)
         self.header.addWidget(self.scale_box)
+        self.edit_dates = QPushButton("Edit &dates...")
+        self.edit_dates.setEnabled(False)
+        self.edit_dates.clicked.connect(self._edit_dates)
+        self.header.addWidget(self.edit_dates)
         self.schedule.setModel(self.schedule_model)
         self.schedule.setItemDelegate(TimelineBarDelegate(self.schedule))
         header = self.schedule.horizontalHeader()
@@ -369,6 +419,21 @@ class TimelinePage(WorkspacePage):
         split.setStretchFactor(1, 1)
         self.splitter = split
         self.content.addWidget(split, 1)
+        self.resize_preview = label(
+            "Drag a bar edge to resize dates. Escape cancels. Effort is unchanged."
+        )
+        self.resize_preview.setAccessibleName("Date resize preview")
+        self.content.addWidget(self.resize_preview)
+        self.schedule.preview_changed.connect(self.resize_preview.setText)
+        self.dependency_toggle = QCheckBox("Show dependency arrows")
+        self.dependency_toggle.setChecked(True)
+        self.dependency_toggle.toggled.connect(self._toggle_dependencies)
+        self.content.addWidget(self.dependency_toggle)
+        self.dependency_details = QPlainTextEdit()
+        self.dependency_details.setReadOnly(True)
+        self.dependency_details.setAccessibleName("Dependency details")
+        self.dependency_details.setMaximumHeight(90)
+        self.content.addWidget(self.dependency_details)
 
         self.labels.verticalScrollBar().valueChanged.connect(
             self.schedule.verticalScrollBar().setValue
@@ -379,10 +444,25 @@ class TimelinePage(WorkspacePage):
         self.labels.selectionModel().currentRowChanged.connect(self._labels_selected)
         self.schedule.selectionModel().currentRowChanged.connect(self._schedule_selected)
         self.scale_box.currentIndexChanged.connect(self._change_scale)
+        for box in (self.grouping_box, self.kind_filter, self.group_filter, self.state_filter):
+            box.currentIndexChanged.connect(self.refresh)
+        self.search.textChanged.connect(self.refresh)
+        self.clear_filters.clicked.connect(self._clear_filters)
         session.changed.connect(self.refresh)
         self.refresh()
 
+    def _clear_filters(self) -> None:
+        for control in (self.search, self.kind_filter, self.group_filter, self.state_filter):
+            control.blockSignals(True)
+        self.search.clear()
+        for box in (self.kind_filter, self.group_filter, self.state_filter):
+            box.setCurrentIndex(0)
+        for control in (self.search, self.kind_filter, self.group_filter, self.state_filter):
+            control.blockSignals(False)
+        self.refresh()
+
     def _size_periods(self) -> None:
+        self.schedule.axis = self.schedule_model.axis
         header = self.schedule.horizontalHeader()
         width = SCALE_WIDTHS[self.schedule_model.scale]
         header.setDefaultSectionSize(width)
@@ -404,6 +484,7 @@ class TimelinePage(WorkspacePage):
         self.schedule.setAccessibleName(f"Timeline schedule by {self.schedule_model.scale.value}")
 
     def _change_scale(self) -> None:
+        self.schedule.cancel_resize()
         scale = TimelineScale(self.scale_box.currentData())
         if scale == self.schedule_model.scale:
             return
@@ -473,6 +554,7 @@ class TimelinePage(WorkspacePage):
         self.labels.scrollTo(label_index)
         self.schedule.scrollTo(schedule_index)
         self._syncing_selection = False
+        self._update_dependency_details()
 
     def _labels_selected(self, current: QModelIndex, previous: QModelIndex) -> None:
         if not self._syncing_selection and current.isValid():
@@ -483,12 +565,52 @@ class TimelinePage(WorkspacePage):
             self._select_row(current.row(), current.column())
 
     def refresh(self) -> None:
+        self.schedule.cancel_resize()
         selected_id = self._selected_id()
+        selected = self.labels.currentIndex().data(ROW_ROLE)
+        section_id = selected.section_id if isinstance(selected, TimelineRow) else None
         selected_column = max(0, self.schedule.currentIndex().column())
         plan = self.session.document.plan
         projection = project_timeline(plan) if plan is not None else None
+        current_group = self.group_filter.currentData()
+        self.group_filter.blockSignals(True)
+        self.group_filter.clear()
+        self.group_filter.addItem("All WorkGroups", "")
+        if projection is not None:
+            for group in projection.groups:
+                self.group_filter.addItem(group.name, str(group.id))
+        self.group_filter.setCurrentIndex(max(0, self.group_filter.findData(current_group)))
+        self.group_filter.blockSignals(False)
+        grouping = TimelineGrouping(self.grouping_box.currentData())
+        if projection is not None:
+            kind, group_id, state = (
+                self.kind_filter.currentData(),
+                self.group_filter.currentData(),
+                self.state_filter.currentData(),
+            )
+            projection = arrange_timeline(
+                projection,
+                grouping,
+                TimelineFilters(
+                    text=self.search.text(),
+                    kind=WorkItemType(kind) if kind else None,
+                    group_id=UUID(group_id) if group_id else None,
+                    state=TimelineDateState(state) if state else None,
+                ),
+            )
+        grouped = grouping != TimelineGrouping.HIERARCHY
+        if self.labels.isColumnHidden(2) == grouped:
+            self.labels.setColumnHidden(2, not grouped)
+            self.labels.setColumnWidth(0, 190 if grouped else 280)
+            self.labels.setColumnWidth(1, 170 if grouped else 210)
         self._syncing_selection = True
         self.projection = projection
+        self.schedule.projection = projection
+        self.schedule.dependencies = (
+            timeline_dependencies(plan, projection)
+            if plan is not None and projection is not None
+            else ()
+        )
         self.label_model.set_projection(projection)
         self.schedule_model.set_projection(projection)
         self._size_periods()
@@ -499,17 +621,16 @@ class TimelinePage(WorkspacePage):
         elif not projection.rows:
             self.summary.setText(
                 f"{projection.horizon.start.isoformat()} to "
-                f"{projection.horizon.end.isoformat()} | No work items"
+                f"{projection.horizon.end.isoformat()} | No matching work items"
             )
         else:
-            scheduled = sum(
-                row.date_state == TimelineDateState.SCHEDULED for row in projection.rows
-            )
+            unique_rows = {row.item_id: row for row in projection.rows}.values()
+            scheduled = sum(row.date_state == TimelineDateState.SCHEDULED for row in unique_rows)
             partial = sum(
                 row.date_state in (TimelineDateState.START_ONLY, TimelineDateState.END_ONLY)
-                for row in projection.rows
+                for row in unique_rows
             )
-            unscheduled = len(projection.rows) - scheduled - partial
+            unscheduled = len(unique_rows) - scheduled - partial
             self.summary.setText(
                 f"{projection.horizon.start.isoformat()} to "
                 f"{projection.horizon.end.isoformat()} | {scheduled} scheduled | "
@@ -520,8 +641,53 @@ class TimelinePage(WorkspacePage):
         self.schedule.setEnabled(enabled)
         if selected_id is not None and projection is not None:
             selected_row = next(
-                (index for index, row in enumerate(projection.rows) if row.item_id == selected_id),
+                (
+                    index
+                    for index, row in enumerate(projection.rows)
+                    if row.item_id == selected_id and row.section_id == section_id
+                ),
                 None,
             )
+            if selected_row is None:
+                selected_row = next(
+                    (
+                        index
+                        for index, row in enumerate(projection.rows)
+                        if row.item_id == selected_id
+                    ),
+                    None,
+                )
             if selected_row is not None:
                 self._select_row(selected_row, selected_column)
+        self._update_dependency_details()
+        self.schedule.viewport().update()
+
+    def _toggle_dependencies(self, checked: bool) -> None:
+        self.schedule.show_dependencies = checked
+        self.schedule.viewport().update()
+
+    def _update_dependency_details(self) -> None:
+        selected = self._selected_id()
+        self.edit_dates.setEnabled(selected is not None)
+        links = [
+            link
+            for link in self.schedule.dependencies
+            if selected is None or selected in (link.predecessor, link.successor)
+        ]
+        lines = [link.description + (" | " + link.reason if link.reason else "") for link in links]
+        self.dependency_details.setPlainText(
+            "\n".join(lines)
+            if lines
+            else "No dependencies for the selected work."
+            if selected is not None
+            else "No dependencies in this plan."
+        )
+        self.dependency_details.setToolTip(
+            "Predecessor end -> successor start. Select work to inspect its links. "
+            "Arrows require both endpoints on screen. Dates are never changed."
+        )
+
+    def _edit_dates(self) -> None:
+        selected = self._selected_id()
+        if selected is not None:
+            edit_timeline_dates(self, self.session, selected)

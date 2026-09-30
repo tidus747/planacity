@@ -7,7 +7,7 @@
       "start": "2026-10-01",
       "end": "2026-11-30"
     },
-    "description": "Fictional example. Prepare a laboratory test bench and its control software. People form a roster; work allocations and capacity calculations are not part of v0.1.",
+    "description": "Fictional Visual Planning example. Prepare a laboratory test bench and its control software. Partial and outside-horizon dates are intentional. People form a roster, not work allocations; capacity calculations remain future work.",
     "id": "d4b07f6b-ebba-5c26-a6b6-94e3bb7027a8",
     "work_items": [
       {
@@ -81,6 +81,33 @@
         "estimate_hours": "3",
         "start": "2026-10-26",
         "end": "2026-10-26"
+      },
+      {
+        "title": "Arrange fixture transport",
+        "kind": "task",
+        "id": "1a2c6fa4-1050-4b13-9d6a-1df4c7f61100",
+        "parent_id": null,
+        "estimate_hours": "2",
+        "start": "2026-10-12",
+        "end": null
+      },
+      {
+        "title": "Receive calibration certificate",
+        "kind": "task",
+        "id": "1a2c6fa4-1050-4b13-9d6a-1df4c7f61101",
+        "parent_id": null,
+        "estimate_hours": "1",
+        "start": null,
+        "end": "2026-11-16"
+      },
+      {
+        "title": "Prepare early procurement",
+        "kind": "task",
+        "id": "1a2c6fa4-1050-4b13-9d6a-1df4c7f61102",
+        "parent_id": null,
+        "estimate_hours": "6",
+        "start": "2026-09-28",
+        "end": "2026-10-02"
       },
       {
         "title": "Write handover notes",

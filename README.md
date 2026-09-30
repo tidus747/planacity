@@ -27,12 +27,17 @@ capacity remains planned for v0.4. New workspaces start empty; a fictional examp
 available separately in `examples/aurora.planacity.json`.
 
 Manual planning and Jira CSV roundtrip are implemented. The Timeline shows work
-using the same canonical plan; the current [v0.3 roadmap](docs/v0.3-issues.md)
-tracks scales, grouping, dependency arrows, and direct date editing. Read the
+using the same canonical plan, with scales, grouping, filters, and dependency
+arrows. Drag bar edges or use Edit dates to adjust dates without changing effort
+hours. The current [v0.3 roadmap](docs/v0.3-issues.md) tracks release validation. Read the
 [import guide](docs/jira-import.md) and [export guide](docs/jira-export.md).
 Completed-version issue drafts have been retired; GitHub Issues and Milestones
 retain their history. Capacity and recurring reservations remain planned for v0.4.
 No stable packaged release is published yet.
+
+The v0.3.0 source candidate has [prepared release notes](docs/releases/v0.3.0.md)
+and a [validation record](docs/v0.3-validation.md). Publication requires a reviewed
+main commit, passing CI, and a separately approved release.
 
 ## Run from source
 

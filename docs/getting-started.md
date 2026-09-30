@@ -21,7 +21,7 @@ No account or network connection is needed while planning.
    retained and shown in the Planning notes column.
 6. Open **People** to add, rename, or remove roster members. Assignments, load
    calculations, and recurring capacity reservations are planned for v0.4.
-7. Open **Timeline** (`Ctrl+3`) for a read-only view of scheduled bars across the
+7. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling
    do not change the plan.
@@ -49,11 +49,67 @@ Use **File -> Restore JSON backup...** and choose
 file. Save it to a new `.planacity` path. The sample contains two Epics, Tasks and
 Subtasks, three people, hour estimates, dates, a WorkGroup, and dependencies.
 Missing estimates/dates are intentional examples of incomplete planning data.
+The expanded [example walkthrough](../examples/README.md#visual-planning-walkthrough)
+covers partial dates, outside-horizon work, grouping, dependency arrows, resizing,
+and saving a new project. The [v0.3 validation record](v0.3-validation.md) records
+the checks performed for this source preview.
 
 Use **File -> Export JSON backup...** for a portable backup. See
 [project-file-format.md](project-file-format.md) for validation and recovery.
 
 ## Validation record
+
+### Grouping, filters, and dependencies
+
+In Timeline, use the grouping selector to choose Hierarchy, Epic, or WorkGroup.
+The Section column identifies grouped work, including Standalone work and
+Ungrouped work. An Epic in several WorkGroups appears in each group; the summary
+counts each work item once. Sibling order and canonical work identities stay intact.
+
+Combine title search, work type, WorkGroup, and schedule-state filters. Filters
+match individual rows, so matching children can appear without their parents.
+**Clear filters** restores all work in the current grouping. These controls can
+be reached with Tab and operated using the keyboard.
+
+**Show dependency arrows** connects predecessor ends to successor starts:
+`A depends_on B` draws `B -> A`; `A blocks B` draws `A -> B`. Hierarchy and
+`related_to` links do not create dependency arrows. Select work to read its links
+in the keyboard-accessible details panel. Overlapping dates are explained there.
+
+Cyclic, filtered, partially scheduled, or outside-horizon endpoints have an
+explanation instead of an arrow. Both endpoints must also be on screen; scroll
+or choose a broader scale to see the connector. Multiple memberships show links
+within shared sections; links across sections use the first occurrences.
+Toggle arrows off to reduce visual clutter. Grouping, filtering, and arrow display
+do not change dates, estimates, relationships, or imported baselines.
+
+### Adjust dates from Timeline
+
+Drag the left or right handle of a fully scheduled bar. The dashed line snaps to
+calendar days at every scale. The preview shows original and proposed dates and
+inclusive calendar duration, which is separate from estimated effort hours.
+Release inside the schedule to apply one validated change. Escape, a reversed
+date range, or a drop outside the schedule preserves the original dates.
+Changing scale, filtering, leaving the view, or receiving a new plan cancels a drag.
+
+Scroll horizontally before dragging to bring the required dates into view. The
+view does not automatically pan when the pointer leaves the schedule, and retains
+its scroll position after a valid resize. Only actual visible date edges have
+handles; dates outside the horizon are never silently clamped.
+
+Select work and choose **Edit dates...** (`Alt+D`) to enter dates with the keyboard
+or calendar. Clear a field to leave it unset. This also works for partial and
+unscheduled work or dates outside the displayed horizon. The Plan view continues
+to offer the same keyboard date editing. Outside-horizon warnings remain visible.
+
+Date changes update Plan, Timeline, and Changes together and are included when
+you save the project. Effort hours, dependencies, other work, and imported
+baselines stay unchanged. Whole-bar moving and automatic scheduling remain future work.
+
+![Date resize preview in light appearance](images/timeline-resize-light.png)
+![Date resize preview in dark appearance](images/timeline-resize-dark.png)
+
+![Grouped Timeline in dark appearance](images/timeline-grouped-dark.png)
 
 Timeline scales retain selection and date context without editing the plan.
 Week and month views are available in both appearances; narrow period labels
