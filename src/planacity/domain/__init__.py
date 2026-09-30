@@ -10,6 +10,7 @@ from planacity.domain.models import (
     WorkItem,
     WorkItemType,
 )
+from planacity.domain.work_calendar import WorkCalendar
 
 __all__ = [
     "Person",
@@ -18,6 +19,7 @@ __all__ = [
     "Relationship",
     "RelationshipType",
     "WorkGroup",
+    "WorkCalendar",
     "WorkItem",
     "WorkItemType",
 ]
