@@ -25,6 +25,7 @@ from planacity.ui.jira_pages import ChangesPage, ImportPage
 from planacity.ui.overview import OverviewPage
 from planacity.ui.pages import label
 from planacity.ui.project_actions import ProjectActions
+from planacity.ui.reservations import reserve_capacity_dialog
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Theme, stylesheet
 from planacity.ui.timeline import TimelinePage
@@ -157,6 +158,10 @@ class MainWindow(QMainWindow):
         edit_menu.addAction("Plan properties...", self.file_actions.properties)
         edit_menu.addAction("Move selected work...", self.plan_page.move_item)
         edit_menu.addAction("Delete selected work...", self.plan_page.delete_item)
+        planning_menu = self.menuBar().addMenu("&Planning")
+        self.reserve_action = planning_menu.addAction("Reserve capacity...")
+        self.reserve_action.setEnabled(self.session.document.plan is not None)
+        self.reserve_action.triggered.connect(self._reserve_capacity)
         view_menu = self.menuBar().addMenu("&View")
         for index, name in enumerate(self.navigation):
             action = view_menu.addAction(name)
@@ -185,11 +190,13 @@ class MainWindow(QMainWindow):
             "Import and export Jira CSV, and review work on the Timeline. "
             "Configure work calendars and review nominal hours. "
             "Edit dated availability and review overlaps. "
-            "Program events, allocations, and recurring reservations remain planned.</p>",
+            "Reserve recurring capacity with a per-person preview. "
+            "Program events and allocations remain planned.</p>",
         )
 
     def _refresh_document(self) -> None:
         document = self.session.document
+        self.reserve_action.setEnabled(document.plan is not None)
         if document.plan is None:
             return
         self.project_label.setText(document.plan.name)
@@ -199,6 +206,10 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             f"{'Unsaved changes' if document.dirty else 'Saved'} | {location}"
         )
+
+    def _reserve_capacity(self) -> None:
+        if self.plan_page.commit_editor():
+            reserve_capacity_dialog(self, self.session)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.file_actions.guard():

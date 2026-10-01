@@ -25,7 +25,11 @@ No account or network connection is needed while planning.
    The table shows nominal, unavailable, and available hours, before program events,
    reservations, or allocations. Unassigned calendars show Unknown.
    See [calendar and availability setup](capacity-model.md).
-   Work allocations and recurring reservations remain future work.
+   Choose **Reserve capacity...** here or from the **Planning** menu for recurring
+   meetings or other duties. Enter hours per person, review sprint proration and
+   remaining hours, then Confirm. Select an existing rule to edit or preview its
+   deletion. See the [wizard guide](capacity-wizards.md). Program events and work
+   allocations remain future work.
 7. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling

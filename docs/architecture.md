@@ -157,4 +157,14 @@ stores their exact Decimal inputs. Schemas 1-4 load without rules. The lifecycle
 services in `reservation_settings.py` return validated immutable candidates and
 preview them over explicit adjusted capacity. UI code can discard a candidate
 without side effects. Person deletion requires explicit resolution of affected
-rules; shared rules retain IDs and other people. The wizard remains #10.
+rules; shared rules retain IDs and other people.
+
+`reservation_preview.py` builds complete daily sprint inputs from assigned
+calendars and recorded availability. Missing calendars and oversized previews
+produce actionable errors. It explicitly excludes future program events and
+allocations. `ui/reservations.py` implements the shared menu/People two-step
+dialog: field drafts -> validated candidate and preview -> one confirmation.
+Back invalidates the candidate, Cancel discards it, and a snapshot identity check
+prevents stale confirmation from overwriting a changed plan. Editing and deletion
+use the same lifecycle services as storage. Exact shares render as decimals when
+terminating and fractions otherwise; display rounding never changes rule hours.

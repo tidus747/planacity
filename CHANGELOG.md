@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Recurring capacity wizard from Planning and People for meetings, front-office
+  duties, or named reservations. Preview per-person/per-sprint hours, proration,
+  overlaps, and overloads before confirming creation, edits, or deletion.
+  The preview uses work calendars and recorded availability; program events and
+  work allocations are not yet included.
 - Dated availability editing in People with keyboard entry, calendar pickers,
   live totals, and explicit overlap previews. Entries persist with the plan;
   available hours are shown before program events, reservations, and allocations.
