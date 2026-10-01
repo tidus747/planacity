@@ -162,7 +162,9 @@ ProgramPlan stores rules in schema 5 and validates their roster references.
 Lifecycle services return immutable candidates for preview before confirmation;
 edits preserve IDs and order. Removing a person requires explicit resolution:
 retain shared rules for remaining people and delete rules left empty.
-The reservation editor/wizard remains a separate follow-up.
+The reservation wizard previews a candidate before applying it once on confirmation.
+The desktop adapter supplies saved calendars and availability; it does not infer
+program-event deductions or work allocations.
 See [recurring reservations](capacity-wizards.md#calculation-api-8) for proration
 and zero-capacity rules.
 
