@@ -24,6 +24,7 @@ from planacity.planning.timeline import TimelineDateState
 from planacity.planning.timeline_view import TimelineFilters
 from planacity.planning.work_calendar import nominal_capacity
 from planacity.planning.work_items import add_work_item, move_work_item, remove_work_item
+from planacity.ui.allocations import AllocationDialog, allocation_summary_text
 from planacity.ui.availability import manage_availability
 from planacity.ui.forms import ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
@@ -104,6 +105,9 @@ class PlanPage(WorkspacePage):
         detail = Panel("Selected work")
         self.detail = label("Create or open a plan from the File menu.")
         detail.content.addWidget(self.detail)
+        self.allocation_button = QPushButton("Work allocations...")
+        self.allocation_button.clicked.connect(self.edit_allocations)
+        detail.content.addWidget(self.allocation_button)
         for title, groups in (("WorkGroups...", True), ("Relationships...", False)):
             button = QPushButton(title)
             button.clicked.connect(partial(self.manage, groups))
@@ -238,6 +242,7 @@ class PlanPage(WorkspacePage):
         self, current: QModelIndex | None = None, previous: QModelIndex | None = None
     ) -> None:
         item = self.model.item(self.table.currentIndex())
+        self.allocation_button.setEnabled(item is not None)
         if item is None:
             self.detail.setText(
                 "Select work to edit it. F2 edits a cell. Add Tasks under a selected Epic, "
@@ -254,8 +259,22 @@ class PlanPage(WorkspacePage):
                 f"{item.title}\n\n{item.kind.value.title()}\n\n"
                 "Double-click a title, estimate, or date to edit. Use the calendar button or type "
                 "a date as YYYY-MM-DD. Clear a value to leave it unset. "
-                "Escape cancels an inline edit.\n\nAssignments and capacity are planned for v0.4."
+                "Escape cancels an inline edit."
             )
+        if item is not None and self.model.plan is not None:
+            self.detail.setText(
+                self.detail.text() + "\n\n" + allocation_summary_text(self.model.plan, item.id)
+            )
+
+    def edit_allocations(self) -> None:
+        if not self.commit_editor():
+            return
+        item = self.model.item(self.table.currentIndex())
+        if item is None:
+            return
+        dialog = AllocationDialog(self, self.session, item.id)
+        dialog.exec()
+        dialog.deleteLater()
 
     def add_item(self, kind: WorkItemType) -> None:
         if not self.commit_editor():
@@ -331,7 +350,9 @@ class PlanPage(WorkspacePage):
         plan, item = self.session.document.plan, self.model.item(self.table.currentIndex())
         if plan is None or item is None:
             return
-        updated = remove_work_item(plan, item.id, delete_descendants=True, remove_references=True)
+        updated = remove_work_item(
+            plan, item.id, delete_descendants=True, remove_references=True, remove_allocations=True
+        )
         count = len(plan.work_items) - len(updated.work_items)
         links = len(plan.relationships) - len(updated.relationships)
         memberships = sum(len(g.epic_ids) for g in plan.work_groups) - sum(
@@ -339,19 +360,22 @@ class PlanPage(WorkspacePage):
         )
         removed = {work.id for work in plan.work_items} - {work.id for work in updated.work_items}
         hidden = len(removed - self.model.result.visible)
+        allocations = len(plan.allocations) - len(updated.allocations)
         if (
             QMessageBox.question(
                 self,
                 "Delete work?",
                 f"Delete '{item.title}' and its subtree ({count} work item(s))?\n"
                 f"Includes {hidden} work item(s) hidden by filters.\n"
-                f"This also removes {links} relationship(s) and {memberships} group membership(s).",
+                f"This also removes {links} relationship(s), {memberships} group membership(s), "
+                f"and {allocations} work allocation(s).",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )
             == QMessageBox.StandardButton.Yes
         ):
-            self.session.apply(updated)
+            if self.session.document.plan is plan:
+                self.session.apply(updated)
 
 
 class PeoplePage(WorkspacePage):
@@ -498,7 +522,9 @@ class PeoplePage(WorkspacePage):
                     self,
                     "Remove person?",
                     f"Remove '{person.name}' from the roster and clear their calendar assignment "
-                    f"and {entries} availability entries?" + reservation_notice,
+                    f"and {entries} availability entries?\n"
+                    f"This removes {sum(a.person_id == person.id for a in plan.allocations)} "
+                    "work allocation(s)." + reservation_notice,
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.No,
                 )
@@ -507,7 +533,11 @@ class PeoplePage(WorkspacePage):
                 if self.session.document.plan is plan:
                     self.session.apply(
                         remove_person(
-                            plan, person.id, remove_availability=True, remove_reservations=True
+                            plan,
+                            person.id,
+                            remove_availability=True,
+                            remove_reservations=True,
+                            remove_allocations=True,
                         )
                     )
             return

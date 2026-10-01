@@ -1,4 +1,4 @@
-# Work allocation foundation
+# Work allocations
 
 An `Allocation` is an explicit link between one WorkItem and one Person, with
 its own UUID and finite, non-negative Decimal hours. Several people can share
@@ -34,8 +34,31 @@ Dates outside the horizon do not discard allocations from these whole-work
 totals. No calendar-hour defaults, date distribution, capacity comparison, or
 individual performance measure is implied.
 
-This API is not yet a desktop allocation workflow. Allocations are not stored in
-ProgramPlan or project files by this foundation. Persistence, migration, editing,
-and explicit deletion previews are tracked together in
-[#71](https://github.com/tidus747/planacity/issues/71). Capacity load and overload
-comparisons require a separate scheduling policy and remain later v0.4 work.
+## Edit allocations in Plan
+
+Select a work item, then choose **Work allocations...** in Selected work.
+Add a roster member and explicit hours, or select an existing row to Edit or
+Remove it. Hours remain hours even when Plan displays estimates in days or weeks.
+Save applies the complete draft. Cancel or Escape discards it. Use Tab to move
+between controls and Alt+A / Alt+E / Alt+R for allocation actions.
+
+The summary reports estimate, allocated effort, and remaining effort for this
+work. Missing estimates and allocations exceeding the estimate remain visible.
+These totals do not compare against calendar capacity or distribute work by date.
+
+Deletion of a person or work item previews affected allocations and requires
+confirmation. Deleting a parent includes hidden descendants. Surviving allocation
+IDs remain stable. Jira assignees never create allocations automatically, and
+allocation edits do not change imported baselines or Jira CSV effort units.
+
+ProgramPlan stores allocations in schema 7 SQLite projects and JSON backups.
+Schemas 1-6 load with an empty collection. Keep an original backup or use Save As
+if an older build must still open the project.
+
+![Work allocations in light appearance](images/work-allocations-light.png)
+![Work allocations in dark appearance](images/work-allocations-dark.png)
+
+For a quick evaluation, split a 100-hour task into 60 and 40 hours, save and reopen,
+then edit one entry and cancel. Check that the saved totals remain unchanged.
+Capacity load and overload comparisons require a scheduling policy and remain
+separate work.

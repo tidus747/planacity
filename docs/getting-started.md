@@ -181,3 +181,12 @@ testing remain release work. No release tag or application download is published
 ![Plan workspace in light appearance](images/plan-light.png)
 
 ![Plan workspace in dark appearance](images/plan-dark.png)
+
+## Split work between people
+
+In Plan, select work and choose **Work allocations...**. Add people from the
+roster with explicit hours, or edit/remove existing assignments. Review the
+estimate, allocated hours, and remaining effort before Save. Cancel discards all
+dialog edits. Allocation hours are independent of the estimate display unit.
+Save the project to retain assignments after reopening. See the
+[allocation guide](allocation-model.md) for screenshots and calculation limits.

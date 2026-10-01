@@ -194,6 +194,9 @@ tuple against a ProgramPlan and computes exact whole-work and per-person totals.
 It retains unknown estimates and signed remaining effort rather than correcting
 incomplete plans. Hierarchy does not imply rollups or inherited allocations.
 
-This foundation does not change project storage or desktop behavior. Persistence
-and editing are tracked in #71, after the estimate-preference migration. See
+ProgramPlan owns and validates allocations. Schema 7 persists exact hours and
+stable IDs; schemas 1-6 load without inferred assignments. Lifecycle services in
+`planning/allocation_settings.py` return validated immutable snapshots. The Plan
+dialog stages edits until Save and rejects stale snapshots. Person/work deletion
+requires explicit consent for affected allocations, including descendants. See
 [the allocation model](allocation-model.md) for calculation semantics and limits.

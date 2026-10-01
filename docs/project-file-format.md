@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 6)
+# Project files and JSON backups (schema 7)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 6` is the schema version.
+- `PRAGMA user_version = 7` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,11 +26,11 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`6`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`7`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
-`availability_events`, `reservation_rules`, and `estimate_preferences`.
+`availability_events`, `reservation_rules`, `estimate_preferences`, and `allocations`.
 Fields match [the domain model](domain-model.md).
 
 Each work calendar stores `id`, `name`, and seven `weekday_hours` Decimal strings,
@@ -56,6 +56,11 @@ existing calendar with positive working hours. Conversion factors derive from
 that calendar, never from person assignments or an implicit default. Work and
 imported baseline estimates remain Decimal hours; rounded display values and
 computed conversion factors are not persisted.
+
+Each allocation stores `id`, `work_item_id`, `person_id`, and `hours` as a
+finite non-negative Decimal string. References must exist in current work and
+the roster. IDs and work/person pairs must be unique. Order and precision survive
+save and restore. No computed totals or inferred Jira assignments are stored.
 
 - UUIDs are strings. Identity is preserved on load, save, and backup restore.
 - Dates are ISO `YYYY-MM-DD` strings, without timestamps or timezones.
@@ -89,7 +94,8 @@ open without calendars or assignments; no default hours are invented. Opening
 does not modify the file. Schemas 1-3 open with empty availability collections.
 Schemas 1-4 open without reservation rules; schema 4 retains its availability.
 Schemas 1-5 open with Hours and no estimate reference calendar.
-Saving writes schema 6; older builds cannot open the upgraded file. Keep a
+Schemas 1-6 open with no allocations; no assignments are inferred.
+Saving writes schema 7; older builds cannot open the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.

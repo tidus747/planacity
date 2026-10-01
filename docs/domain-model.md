@@ -47,8 +47,7 @@ children, allowing a future loader to resolve a complete snapshot before validat
 `plan.work_item(item_id)` retrieves an item or raises an actionable `ValueError`.
 
 WorkGroups and relationships are separate concepts, not extra hierarchy levels.
-Assignment will use separate Allocations when implemented; no single owner field
-is introduced here.
+Assignment uses separate Allocations; no single owner field is introduced.
 
 ## Editing
 
@@ -80,9 +79,8 @@ including references to descendants, and preserves surviving work and groups.
 
 `planning/people.py` provides `add_person`, `rename_person`, and `remove_person`.
 Names may repeat; IDs identify people. Renaming preserves identity and roster
-order. Removing a person currently affects only the roster. Future Allocations
-and recurring reservations must explicitly handle references before allowing
-removal; there are no capacity or assignment fields yet.
+order. Removing a person requires explicit consent for affected availability,
+reservation rules, and allocations. Surviving references retain their IDs.
 
 `estimate_hours` is `decimal.Decimal | None`. `None` means unknown; `Decimal(0)`
 means an explicit zero-hour estimate. Fractional precision is preserved, with no
@@ -192,8 +190,16 @@ never invents missing dates. This module has no Qt or Jira dependency.
 contains original headers and cells plus `ImportedWork` records with original
 WorkItems, external references, status, and person identity snapshots.
 The imported person mapping does not make `WorkItem.owner` part of the model and
-does not represent an Allocation. Capacity and allocation editing remain v0.4.
+does not represent an Allocation. Explicit allocation editing is separate.
 
 Baseline references need not exist in current work or the current roster after
 local deletion. The baseline validates its own original hierarchy independently.
 Computed Changes compares that original work with current work by stable UUID.
+
+## Allocations
+
+ProgramPlan owns an immutable tuple of Allocation values: `id`, `work_item_id`,
+`person_id`, and finite non-negative Decimal `hours`. Work and people must exist;
+IDs and work/person pairs are unique. Schema 7 persists these values. Lifecycle
+services preserve identity; deletion requires explicit consent for references.
+See [work allocations](allocation-model.md) for summary rules and desktop editing.
