@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 
 from planacity.ui.calendars import PlanacityCalendar
 from planacity.ui.icons import svg_icon
+from planacity.ui.plan_filter_model import PlanFilterModel
 from planacity.ui.plan_model import PlanModel
 
 T = TypeVar("T")
@@ -142,7 +143,7 @@ class ValidatedDelegate(QStyledItemDelegate):
         if not isinstance(index, QPersistentModelIndex) or not index.isValid():
             return True
         model = index.model()
-        if not isinstance(model, PlanModel):
+        if not isinstance(model, (PlanModel, PlanFilterModel)):
             return True
         try:
             model.candidate(index, editor.text())
@@ -167,7 +168,7 @@ class ValidatedDelegate(QStyledItemDelegate):
             index = editor.property("planIndex")
             if isinstance(index, QPersistentModelIndex):
                 model = index.model()
-                if isinstance(model, PlanModel):
+                if isinstance(model, (PlanModel, PlanFilterModel)):
                     model.error.emit("")
         if event.type() == QEvent.Type.FocusOut and bool(editor.property("calendarOpen")):
             return False

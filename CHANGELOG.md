@@ -6,6 +6,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Plan filters for title, work type, WorkGroup, and schedule state, matching
+  Timeline. Matching descendants retain marked ancestor context; a count and
+  Clear filters action explain the view. Deletion previews include hidden work.
 - Recurring capacity wizard from Planning and People for meetings, front-office
   duties, or named reservations. Preview per-person/per-sprint hours, proration,
   overlaps, and overloads before confirming creation, edits, or deletion.
