@@ -130,6 +130,15 @@ keyboard date form uses the same canonical setter and stale-snapshot check.
 
 ## Work-calendar foundation
 
+Estimate presentation is plan-scoped through `EstimatePreferences`. The pure
+`planning/estimate_units.py` service derives exact rational hour equivalents from
+an explicit reference calendar. A day uses the mean of positive-hour weekdays;
+a week uses their sum. The Plan model converts entry/display without modifying
+stored hours on preference changes. Non-terminating displays are marked, and
+editors fall back to exact hours to avoid writing back rounded display values.
+Schema 6 stores only the unit and calendar reference. Jira mappings remain
+independent, and schemas 1-5 default to hours without inferred conversion rates.
+
 `domain/work_calendar.py` defines an immutable, explicit weekly hours pattern.
 `planning/work_calendar.py` calculates nominal hours for an inclusive horizon in
 constant space using seven weekday counts. It preserves Decimal precision without

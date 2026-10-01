@@ -38,7 +38,7 @@ from planacity.ui.work_calendars import choose_person_calendar, manage_work_cale
 class PlanPage(WorkspacePage):
     def __init__(self, session: Session) -> None:
         super().__init__(
-            "Plan", "Structure the work. Estimates are in hours; dates use YYYY-MM-DD."
+            "Plan", "Structure the work. Choose estimate units from Planning; dates use YYYY-MM-DD."
         )
         self.session = session
         self.source_model = PlanModel(session)

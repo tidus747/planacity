@@ -21,11 +21,12 @@ from planacity.domain import (
     WorkItem,
     WorkItemType,
 )
+from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 5
-SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5)
+SCHEMA_VERSION = 6
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6)
 
 
 def _encode(value: object) -> str:
@@ -119,10 +120,11 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         p = _object(
             root["plan"],
             "id name description horizon work_items people work_groups relationships"
-            + (" imports" if root["schema_version"] in (2, 3, 4, 5) else "")
-            + (" work_calendars person_calendars" if root["schema_version"] in (3, 4, 5) else "")
-            + (" availability_events" if root["schema_version"] in (4, 5) else "")
-            + (" reservation_rules" if root["schema_version"] == 5 else ""),
+            + (" imports" if root["schema_version"] in (2, 3, 4, 5, 6) else "")
+            + (" work_calendars person_calendars" if root["schema_version"] in (3, 4, 5, 6) else "")
+            + (" availability_events" if root["schema_version"] in (4, 5, 6) else "")
+            + (" reservation_rules" if root["schema_version"] in (5, 6) else "")
+            + (" estimate_preferences" if root["schema_version"] == 6 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -171,9 +173,22 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             reservation_rules=tuple(
                 _reservation(value) for value in _rows(p.get("reservation_rules", []))
             ),
+            estimate_preferences=(
+                _estimate_preferences(p["estimate_preferences"])
+                if "estimate_preferences" in p
+                else EstimatePreferences()
+            ),
         )
     except (ValueError, InvalidOperation, RecursionError) as error:
         raise ValueError(f"Cannot read plan: {error}") from error
+
+
+def _estimate_preferences(value: object) -> EstimatePreferences:
+    row = _object(value, "unit calendar_id")
+    return EstimatePreferences(
+        unit=EstimateUnit(_text(row["unit"])),
+        calendar_id=_id(row["calendar_id"]) if row["calendar_id"] is not None else None,
+    )
 
 
 def _reservation(value: object) -> ReservationRule:

@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 5)
+# Project files and JSON backups (schema 6)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 5` is the schema version.
+- `PRAGMA user_version = 6` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,11 +26,11 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`5`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`6`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
-`availability_events`, and `reservation_rules`.
+`availability_events`, `reservation_rules`, and `estimate_preferences`.
 Fields match [the domain model](domain-model.md).
 
 Each work calendar stores `id`, `name`, and seven `weekday_hours` Decimal strings,
@@ -49,6 +49,13 @@ integer, and `effective` with inclusive `start`/`end`. Person references must ex
 and be distinct and non-empty. Rule IDs are unique. Only rules are stored, never
 generated occurrences, Fraction results, or cached deductions. Rule order and
 selected-person order are preserved.
+
+`estimate_preferences` stores `unit` (`hours`, `days`, or `weeks`) and
+`calendar_id` (a calendar UUID or null for hours). Days and weeks require an
+existing calendar with positive working hours. Conversion factors derive from
+that calendar, never from person assignments or an implicit default. Work and
+imported baseline estimates remain Decimal hours; rounded display values and
+computed conversion factors are not persisted.
 
 - UUIDs are strings. Identity is preserved on load, save, and backup restore.
 - Dates are ISO `YYYY-MM-DD` strings, without timestamps or timezones.
@@ -81,7 +88,8 @@ Schema 1 files are read with an empty imports collection. Schema 1 and 2 files
 open without calendars or assignments; no default hours are invented. Opening
 does not modify the file. Schemas 1-3 open with empty availability collections.
 Schemas 1-4 open without reservation rules; schema 4 retains its availability.
-Saving writes schema 5; older builds cannot open the upgraded file. Keep a
+Schemas 1-5 open with Hours and no estimate reference calendar.
+Saving writes schema 6; older builds cannot open the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.

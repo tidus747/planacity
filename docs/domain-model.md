@@ -6,6 +6,11 @@ project/backup adapters use these APIs.
 
 ## Entities
 
+ProgramPlan also owns `EstimatePreferences`: an Hours/Days/Weeks unit and an
+optional reference WorkCalendar ID. Days and weeks require positive calendar
+hours. This schema 6 preference never changes WorkItem or imported baseline
+estimates, which remain exact Decimal hours. See [estimate units](estimate-units.md).
+
 | Entity | Fields | Rules |
 | --- | --- | --- |
 | `PlanningHorizon` | `start`, `end` | Inclusive dates; end cannot precede start |
