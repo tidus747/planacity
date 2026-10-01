@@ -185,3 +185,15 @@ Back invalidates the candidate, Cancel discards it, and a snapshot identity chec
 prevents stale confirmation from overwriting a changed plan. Editing and deletion
 use the same lifecycle services as storage. Exact shares render as decimals when
 terminating and fractions otherwise; display rounding never changes rule hours.
+
+## Explicit work allocation foundation
+
+`domain/allocation.py` defines explicit work/person effort links, independently
+of ownership or external assignees. `planning/allocations.py` validates a candidate
+tuple against a ProgramPlan and computes exact whole-work and per-person totals.
+It retains unknown estimates and signed remaining effort rather than correcting
+incomplete plans. Hierarchy does not imply rollups or inherited allocations.
+
+This foundation does not change project storage or desktop behavior. Persistence
+and editing are tracked in #71, after the estimate-preference migration. See
+[the allocation model](allocation-model.md) for calculation semantics and limits.

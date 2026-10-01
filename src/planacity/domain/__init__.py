@@ -1,5 +1,6 @@
 """Canonical planning entities; independent of Qt and external tools."""
 
+from planacity.domain.allocation import Allocation
 from planacity.domain.availability import AvailabilityEvent
 from planacity.domain.models import (
     Person,
@@ -15,6 +16,7 @@ from planacity.domain.reservations import ReservationRule
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
 
 __all__ = [
+    "Allocation",
     "ReservationRule",
     "AvailabilityEvent",
     "Person",
