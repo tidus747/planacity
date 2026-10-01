@@ -62,8 +62,13 @@ class PlanFilterModel(QSortFilterProxyModel):
     def refresh_filters(self) -> None:
         self.pending = False
         self.filters_about_to_change.emit()
-        self.result = filter_plan(self.plan, self.filters)
-        self.invalidate()
+        result = filter_plan(self.plan, self.filters)
+        visibility_changed = result.visible != self.result.visible
+        self.result = result
+        # Cell edits that keep the same rows must preserve their proxy indexes.
+        # Invalidating them unnecessarily can leave editors with stale Qt pointers.
+        if visibility_changed:
+            self.invalidate()
         self.filters_changed.emit()
 
     def set_filters(self, filters: TimelineFilters) -> None:

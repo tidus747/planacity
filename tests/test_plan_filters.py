@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtTest import QAbstractItemModelTester, QTest
+from PySide6.QtTest import QAbstractItemModelTester, QSignalSpy, QTest
 from PySide6.QtWidgets import QComboBox, QDialogButtonBox, QLineEdit, QMessageBox
 from test_editor_forms import drive_dialog
 
@@ -166,6 +166,16 @@ def test_hidden_selection_does_not_jump_to_another_match(app, page, plan):
     page.table.setCurrentIndex(page.model.index_for_id(plan.work_items[2].id))
     page.clear_filters_button.click()
     assert page.model.item(page.table.currentIndex()).id == plan.work_items[2].id
+
+
+def test_cell_edits_preserve_indexes_when_visible_rows_do_not_change(app, page, plan):
+    index = page.model.index_for_id(plan.work_items[2].id).siblingAtColumn(4)
+    layouts = QSignalSpy(page.model.layoutChanged)
+    assert page.model.setData(index, "2026-10-03")
+    app.processEvents()
+    assert layouts.count() == 0
+    assert page.model.data(index, Qt.ItemDataRole.EditRole) == "2026-10-03"
+    assert page.model.item(index).id == plan.work_items[2].id
 
 
 def test_delete_previews_hidden_descendants_and_cancel_is_safe(page, plan, monkeypatch):
