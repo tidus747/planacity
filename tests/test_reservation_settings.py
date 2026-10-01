@@ -139,6 +139,7 @@ def test_older_schemas_open_without_rules_and_upgrade_on_save(version, tmp_path)
     data = json.loads(dumps(plan))
     data["schema_version"] = version
     data["plan"].pop("reservation_rules")
+    data["plan"].pop("estimate_preferences")
     if version < 4:
         data["plan"].pop("availability_events")
     if version < 3:
@@ -162,7 +163,7 @@ def test_older_schemas_open_without_rules_and_upgrade_on_save(version, tmp_path)
     save_project(plan, path)
     assert load_project(path) == plan
     connection = sqlite3.connect(path)
-    assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 6
     connection.close()
 
 

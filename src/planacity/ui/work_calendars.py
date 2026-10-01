@@ -55,6 +55,17 @@ def edit_work_calendar(parent: QWidget, session: Session, calendar_id: UUID | No
     fields.append(
         ("", label(f"Nominal hours before leave, events, or reservations. Used by {used} people."))
     )
+    if calendar is not None and plan.estimate_preferences.calendar_id == calendar.id:
+        fields.append(
+            (
+                "",
+                label(
+                    "This calendar defines estimate units. Changing it updates displayed "
+                    "equivalents "
+                    "and future entry conversions, but leaves stored hour estimates unchanged."
+                ),
+            )
+        )
 
     def build() -> ProgramPlan:
         _current(session, plan)
@@ -124,6 +135,14 @@ def manage_work_calendars(parent: QWidget, session: Session) -> None:
         if identifier is None or plan is None:
             return
         calendar = plan.work_calendar(identifier)
+        if plan.estimate_preferences.calendar_id == identifier:
+            QMessageBox.warning(
+                dialog,
+                "Calendar used by estimates",
+                "Choose another reference calendar or switch to Hours in "
+                "Planning -> Estimate units before deleting this calendar.",
+            )
+            return
         people = [
             plan.person(value.person_id).name
             for value in plan.person_calendars

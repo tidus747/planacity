@@ -7,6 +7,7 @@ from enum import StrEnum
 from uuid import UUID, uuid4
 
 from planacity.domain.availability import AvailabilityEvent
+from planacity.domain.estimate_units import EstimatePreferences
 from planacity.domain.horizon import PlanningHorizon as PlanningHorizon
 from planacity.domain.reservations import ReservationRule
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
@@ -194,6 +195,7 @@ class ProgramPlan:
     person_calendars: tuple[PersonCalendar, ...] = ()
     availability_events: tuple[AvailabilityEvent, ...] = ()
     reservation_rules: tuple[ReservationRule, ...] = ()
+    estimate_preferences: EstimatePreferences = field(default_factory=EstimatePreferences)
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Program Plan ID")
@@ -220,6 +222,9 @@ class ProgramPlan:
             raise ValueError("Work calendars must be a tuple of WorkCalendar objects.")
         if len({calendar.id for calendar in self.work_calendars}) != len(self.work_calendars):
             raise ValueError("WorkCalendar IDs must be unique within a plan.")
+        if not isinstance(self.estimate_preferences, EstimatePreferences):
+            raise ValueError("Estimate preferences must be an EstimatePreferences value.")
+        self.estimate_preferences.validate_calendars(self.work_calendars)
         if not isinstance(self.person_calendars, tuple) or any(
             not isinstance(assignment, PersonCalendar) for assignment in self.person_calendars
         ):

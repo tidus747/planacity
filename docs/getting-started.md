@@ -10,7 +10,9 @@ No account or network connection is needed while planning.
 2. Open **Plan**. Add an Epic, select it and add a Task, then select that Task and
    add a Subtask. With no Epic selected, Add Task creates a standalone Task.
 3. Double-click a title, estimate, start, or end cell, or press `F2` to edit.
-   Estimates use hours, including fractional hours. Clear a value to leave it
+   Estimates default to hours, including fractional hours. Choose days or weeks
+   in **Planning -> Estimate units...** with an explicit reference calendar.
+   See [estimate units](estimate-units.md) for conversions. Clear a value to leave it
    unset; zero hours is different from unknown. Invalid drafts stay editable;
    correct them or press `Escape` to cancel.
 4. Use **Move...** to select a different parent. **Delete...** previews the number

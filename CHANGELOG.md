@@ -6,6 +6,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Plan estimate entry/display in hours, days, or weeks from Planning -> Estimate
+  units. Choose an explicit reference work calendar; stored hours and Jira units
+  remain unchanged. Repeating display conversions are marked and edit as exact hours.
 - Recurring capacity wizard from Planning and People for meetings, front-office
   duties, or named reservations. Preview per-person/per-sprint hours, proration,
   overlaps, and overloads before confirming creation, edits, or deletion.
@@ -19,9 +22,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Changed
 
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 5
-  to retain calendars, availability, and reservation rules. Schemas 1-4 still
-  open without inferred rules; keep a backup or use Save As for older builds.
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 6
+  to retain calendars, availability, reservation rules, and estimate preferences.
+  Schemas 1-5 open with estimates displayed in hours; keep a backup or use Save As
+  for older builds.
 - Removing a person now identifies affected reservation rules before confirmation.
   Shared rules retain their other people; rules left empty are removed.
 

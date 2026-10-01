@@ -1,7 +1,6 @@
 """Qt hierarchy adapter over the canonical immutable plan."""
 
 from datetime import date
-from decimal import Decimal, InvalidOperation
 from typing import cast, overload
 from uuid import UUID
 
@@ -15,6 +14,7 @@ from PySide6.QtCore import (
 )
 
 from planacity.domain import ProgramPlan, WorkItem
+from planacity.planning.estimate_units import conversion_description, estimate_text, parse_estimate
 from planacity.planning.work_items import rename_work_item, set_work_dates, set_work_estimate
 from planacity.ui.session import Session
 
@@ -123,7 +123,7 @@ class PlanModel(QAbstractItemModel):
         values = (
             item.title,
             item.kind.value.title(),
-            "" if item.estimate_hours is None else str(item.estimate_hours),
+            estimate_text(self.plan, item.estimate_hours, editing=role == Qt.ItemDataRole.EditRole),
             "" if item.start is None else item.start.isoformat(),
             "" if item.end is None else item.end.isoformat(),
             "Outside planning horizon" if outside else "",
@@ -135,9 +135,15 @@ class PlanModel(QAbstractItemModel):
                 return "Not set"
             return value
         if role == Qt.ItemDataRole.ToolTipRole:
+            if index.column() == 2:
+                return (
+                    f"Stored estimate: {item.estimate_hours} h. "
+                    if item.estimate_hours is not None
+                    else "Estimate is not set. "
+                ) + conversion_description(self.plan)
             return (
                 values[5]
-                or "Dates: calendar button or YYYY-MM-DD. Estimates: hours. "
+                or "Dates: calendar button or YYYY-MM-DD. Estimates: use the column unit. "
                 "Clear a cell to leave it unset."
             )
         return None
@@ -146,6 +152,8 @@ class PlanModel(QAbstractItemModel):
         self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole
     ) -> object:
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+            if section == 2 and self.plan is not None:
+                return f"Estimate ({self.plan.estimate_preferences.unit.symbol})"
             return self.headers[section] if 0 <= section < len(self.headers) else None
         return None
 
@@ -163,28 +171,26 @@ class PlanModel(QAbstractItemModel):
             raise ValueError("Select an existing work item first.")
         if index.column() == 0:
             return rename_work_item(self.plan, item.id, text)
-        try:
-            if index.column() == 2:
-                return set_work_estimate(
-                    self.plan, item.id, Decimal(text) if text.strip() else None
-                )
-            if index.column() in (3, 4):
-                try:
-                    value = date.fromisoformat(text) if text.strip() else None
-                except ValueError as error:
-                    raise ValueError("Enter dates as YYYY-MM-DD.") from error
-                if value is not None and value.isoformat() != text:
-                    raise ValueError("Enter dates as YYYY-MM-DD.")
-                return set_work_dates(
-                    self.plan,
-                    item.id,
-                    start=value if index.column() == 3 else item.start,
-                    end=value if index.column() == 4 else item.end,
-                )
-        except InvalidOperation as error:
-            raise ValueError(
-                "Enter an estimate in hours, such as 1.5, or leave it blank."
-            ) from error
+        if index.column() == 2:
+            hours = parse_estimate(self.plan, text)
+            return (
+                self.plan
+                if hours == item.estimate_hours
+                else set_work_estimate(self.plan, item.id, hours)
+            )
+        if index.column() in (3, 4):
+            try:
+                value = date.fromisoformat(text) if text.strip() else None
+            except ValueError as error:
+                raise ValueError("Enter dates as YYYY-MM-DD.") from error
+            if value is not None and value.isoformat() != text:
+                raise ValueError("Enter dates as YYYY-MM-DD.")
+            return set_work_dates(
+                self.plan,
+                item.id,
+                start=value if index.column() == 3 else item.start,
+                end=value if index.column() == 4 else item.end,
+            )
         raise ValueError("This column is read-only.")
 
     def setData(self, index: Index, value: object, role: int = Qt.ItemDataRole.EditRole) -> bool:

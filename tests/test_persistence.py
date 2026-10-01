@@ -118,6 +118,7 @@ def test_mismatched_project_and_payload_versions_are_not_opened_or_overwritten(
     data["plan"].pop("person_calendars")
     data["plan"].pop("availability_events")
     data["plan"].pop("reservation_rules")
+    data["plan"].pop("estimate_preferences")
     if payload_version == 1:
         data["schema_version"] = 1
         data["plan"].pop("imports")

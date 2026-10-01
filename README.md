@@ -10,13 +10,17 @@ and offline-capable. Planning data stays local by default.
 The source preview includes the **v0.1 planning foundation**, **v0.2 Jira roundtrip**,
 and the developing **v0.3 Visual Planning** milestone. Create, edit, save, and reopen
 local Program Plans. It includes a hierarchical Plan editor, a people roster,
-WorkGroups, relationships, estimates in hours, optional dates, and JSON backups.
+WorkGroups, relationships, estimates, optional dates, and JSON backups.
 See [Getting started](docs/getting-started.md) for the complete workflow and example.
 
 The Python [domain model](docs/domain-model.md) now supports Program Plans,
 flexible horizons, validated Epic/Task/Subtask editing, a people roster, exact
 hour estimates, optional dates, WorkGroups, and basic relationships. The desktop
 editor and local files use this same validated model.
+
+**Planning -> Estimate units...** selects hours, days, or weeks for Plan entry and
+display, using an explicit reference calendar and preserving stored hours.
+See [estimate units](docs/estimate-units.md) for conversion and precision rules.
 
 Switch between **Light** and **Dark** at the bottom of the sidebar or through
 **View -> Appearance**. The choice is saved locally for the next launch. The first
@@ -43,8 +47,8 @@ No stable packaged release is published yet.
 The v0.3.0 source candidate has [prepared release notes](docs/releases/v0.3.0.md)
 and a [validation record](docs/v0.3-validation.md). Publication requires a reviewed
 main commit, passing CI, and a separately approved release.
-Current source is `0.4.0.dev0` and saves schema 5, retaining reservation rules.
-Schemas 1-4 open without inferred rules; keep a backup or use Save As for older builds.
+Current source is `0.4.0.dev0` and saves schema 6, retaining estimate preferences.
+Schemas 1-5 open in hours; keep a backup or use Save As for older builds.
 See the [reservation wizard guide](docs/capacity-wizards.md).
 [Plan filters matching Timeline](https://github.com/tidus747/planacity/issues/65)
 are also tracked as a v0.4 usability improvement.

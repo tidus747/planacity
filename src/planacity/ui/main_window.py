@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from planacity.ui.editor_pages import PeoplePage, PlanPage
+from planacity.ui.estimate_units import choose_estimate_units
 from planacity.ui.icons import image_icon, image_pixmap, navigation_icon
 from planacity.ui.jira_pages import ChangesPage, ImportPage
 from planacity.ui.overview import OverviewPage
@@ -159,6 +160,9 @@ class MainWindow(QMainWindow):
         edit_menu.addAction("Move selected work...", self.plan_page.move_item)
         edit_menu.addAction("Delete selected work...", self.plan_page.delete_item)
         planning_menu = self.menuBar().addMenu("&Planning")
+        self.estimate_units_action = planning_menu.addAction("Estimate units...")
+        self.estimate_units_action.setEnabled(self.session.document.plan is not None)
+        self.estimate_units_action.triggered.connect(self._estimate_units)
         self.reserve_action = planning_menu.addAction("Reserve capacity...")
         self.reserve_action.setEnabled(self.session.document.plan is not None)
         self.reserve_action.triggered.connect(self._reserve_capacity)
@@ -196,6 +200,7 @@ class MainWindow(QMainWindow):
 
     def _refresh_document(self) -> None:
         document = self.session.document
+        self.estimate_units_action.setEnabled(document.plan is not None)
         self.reserve_action.setEnabled(document.plan is not None)
         if document.plan is None:
             return
@@ -210,6 +215,10 @@ class MainWindow(QMainWindow):
     def _reserve_capacity(self) -> None:
         if self.plan_page.commit_editor():
             reserve_capacity_dialog(self, self.session)
+
+    def _estimate_units(self) -> None:
+        if self.plan_page.commit_editor():
+            choose_estimate_units(self, self.session)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.file_actions.guard():

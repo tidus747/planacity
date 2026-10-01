@@ -120,6 +120,7 @@ def test_legacy_schema_migrates_without_inventing_calendars(version, tmp_path):
     data["plan"].pop("person_calendars")
     data["plan"].pop("availability_events")
     data["plan"].pop("reservation_rules")
+    data["plan"].pop("estimate_preferences")
     if version == 1:
         data["plan"].pop("imports")
     payload = json.dumps(data)
@@ -137,7 +138,7 @@ def test_legacy_schema_migrates_without_inventing_calendars(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 6
     connection.close()
 
 
