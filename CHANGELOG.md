@@ -9,6 +9,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 - Plan estimate entry/display in hours, days, or weeks from Planning -> Estimate
   units. Choose an explicit reference work calendar; stored hours and Jira units
   remain unchanged. Repeating display conversions are marked and edit as exact hours.
+- Plan filters for title, work type, WorkGroup, and schedule state, matching
+  Timeline. Matching descendants retain marked ancestor context; a count and
+  Clear filters action explain the view. Deletion previews include hidden work.
 - Recurring capacity wizard from Planning and People for meetings, front-office
   duties, or named reservations. Preview per-person/per-sprint hours, proration,
   overlaps, and overloads before confirming creation, edits, or deletion.

@@ -106,6 +106,14 @@ hierarchy, Epic, or WorkGroup. Grouped rows retain the work UUID and add a secti
 UUID for stable display selection. Multiple WorkGroup memberships produce display
 occurrences of the same work; summary counts deduplicate UUIDs.
 
+`planning/plan_filters.py` reuses the Timeline predicates and inherited WorkGroup
+membership, adding ancestor UUIDs for context. `ui/plan_filter_model.py` is a
+Qt filtering proxy over the existing editable Plan model. Only matching rows
+allow inline edits. Structural actions still use the canonical plan, so deletion
+previews cover hidden descendants. Filtering after a cell commit is deferred
+until the delegate closes; selection restoration uses work UUIDs. Filters never
+enter the project or its imported snapshots.
+
 `planning/timeline_dependencies.py` resolves predecessor/successor direction from
 Relationships, detects cyclic links, and explains unavailable endpoints. Its
 orthogonal connector geometry is independently testable. The Qt schedule view

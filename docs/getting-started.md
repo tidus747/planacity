@@ -53,6 +53,35 @@ current plan has unsaved changes. **File -> Plan properties...** edits the name,
 description, and horizon. Both appearances remain available from the sidebar and
 **View -> Appearance**; this preference is stored separately from project data.
 
+## Filter the Plan
+
+Combine title search, work type, WorkGroup, and schedule state above the Plan
+table, using the same choices as Timeline. Title search ignores case and leading
+or trailing spaces. WorkGroup membership includes descendants of its Epics.
+The summary distinguishes actual matches from ancestors retained for context.
+Matching branches expand automatically; canonical sibling order stays unchanged.
+
+Context ancestors use italic text and show **Context only** in Planning notes.
+Their cells are read-only until they match the filters. Select them to add or
+move children, or clear the filters before editing their cells. **Delete...**
+always previews the full subtree, including the number of hidden work items.
+
+Use `Tab` to navigate filters and arrow keys in the choices. **Clear filters**
+restores all work. `F2`, `Enter`, and `Escape` retain the usual editing behavior.
+Invalid drafts must be corrected or cancelled before changing filters. A valid
+edit that stops matching hides the row and clears its selection. Added or moved
+work that becomes hidden gets an explicit message; clear filters to find it.
+
+Filters do not change dates, estimates, relationships, imported baselines, or the
+saved project. They are temporary view choices and reset when another plan opens.
+If a selected WorkGroup is removed, that filter returns to All WorkGroups.
+Plan and Timeline keep independent filter selections.
+
+Actual Plan filters in both appearances:
+
+![Plan filters in light mode](images/plan-filters-light.png)
+![Plan filters in dark mode](images/plan-filters-dark.png)
+
 ## Try the fictional example
 
 Use **File -> Restore JSON backup...** and choose
