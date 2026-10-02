@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Work allocations in Plan: split explicit hours between people, edit or remove
+  assignments, and review allocated/remaining effort and missing estimates. Save
+  applies the draft; Cancel discards it. Work/person deletion previews affected
+  allocations, including hidden descendants. Imported baselines remain unchanged.
 - Plan estimate entry/display in hours, days, or weeks from Planning -> Estimate
   units. Choose an explicit reference work calendar; stored hours and Jira units
   remain unchanged. Repeating display conversions are marked and edit as exact hours.
@@ -25,8 +29,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Changed
 
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 6
-  to retain calendars, availability, reservation rules, and estimate preferences.
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 7
+  to retain calendars, availability, reservation rules, estimate preferences, and
+  work allocations. Schemas 1-6 open without inferred allocations.
   Schemas 1-5 open with estimates displayed in hours; keep a backup or use Save As
   for older builds.
 - Removing a person now identifies affected reservation rules before confirmation.

@@ -6,6 +6,7 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID, uuid4
 
+from planacity.domain.allocation import Allocation, validate_allocation_references
 from planacity.domain.availability import AvailabilityEvent
 from planacity.domain.estimate_units import EstimatePreferences
 from planacity.domain.horizon import PlanningHorizon as PlanningHorizon
@@ -196,6 +197,7 @@ class ProgramPlan:
     availability_events: tuple[AvailabilityEvent, ...] = ()
     reservation_rules: tuple[ReservationRule, ...] = ()
     estimate_preferences: EstimatePreferences = field(default_factory=EstimatePreferences)
+    allocations: tuple[Allocation, ...] = ()
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Program Plan ID")
@@ -216,6 +218,11 @@ class ProgramPlan:
         if len({person.id for person in self.people}) != len(self.people):
             raise ValueError("Person IDs must be unique within a plan.")
         _validate_groups_and_relationships(self)
+        validate_allocation_references(
+            self.allocations,
+            {item.id for item in self.work_items},
+            {person.id for person in self.people},
+        )
         if not isinstance(self.work_calendars, tuple) or any(
             not isinstance(calendar, WorkCalendar) for calendar in self.work_calendars
         ):

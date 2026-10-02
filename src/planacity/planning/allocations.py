@@ -5,7 +5,7 @@ from decimal import Decimal, localcontext
 from uuid import UUID
 
 from planacity.domain import ProgramPlan
-from planacity.domain.allocation import Allocation
+from planacity.domain.allocation import Allocation, validate_allocation_references
 
 
 @dataclass(frozen=True)
@@ -43,29 +43,9 @@ def validate_allocations(plan: ProgramPlan, allocations: tuple[Allocation, ...])
     Estimates need not be known or fully covered: discrepancies are findings,
     not invalid references, and are never repaired by changing the user's hours.
     """
-    if not isinstance(allocations, tuple) or any(
-        not isinstance(a, Allocation) for a in allocations
-    ):
-        raise ValueError("Allocations must be a tuple of Allocation objects.")
-    people = {person.id for person in plan.people}
-    work = {item.id for item in plan.work_items}
-    ids: set[UUID] = set()
-    pairs: set[tuple[UUID, UUID]] = set()
-    for allocation in allocations:
-        if allocation.id in ids:
-            raise ValueError(f"Duplicate allocation ID: {allocation.id}.")
-        ids.add(allocation.id)
-        if allocation.work_item_id not in work:
-            raise ValueError(f"Allocation {allocation.id} references an unknown work item.")
-        if allocation.person_id not in people:
-            raise ValueError(f"Allocation {allocation.id} references an unknown person.")
-        pair = (allocation.work_item_id, allocation.person_id)
-        if pair in pairs:
-            raise ValueError(
-                "More than one allocation references the same work/person pair. "
-                "Edit the existing allocation instead."
-            )
-        pairs.add(pair)
+    validate_allocation_references(
+        allocations, {item.id for item in plan.work_items}, {person.id for person in plan.people}
+    )
 
 
 def _sum_hours(values: tuple[Decimal, ...]) -> Decimal:

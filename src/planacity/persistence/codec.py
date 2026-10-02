@@ -8,6 +8,7 @@ from typing import cast
 from uuid import UUID
 
 from planacity.domain import (
+    Allocation,
     AvailabilityEvent,
     Person,
     PersonCalendar,
@@ -25,8 +26,8 @@ from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 6
-SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6)
+SCHEMA_VERSION = 7
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7)
 
 
 def _encode(value: object) -> str:
@@ -120,11 +121,16 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         p = _object(
             root["plan"],
             "id name description horizon work_items people work_groups relationships"
-            + (" imports" if root["schema_version"] in (2, 3, 4, 5, 6) else "")
-            + (" work_calendars person_calendars" if root["schema_version"] in (3, 4, 5, 6) else "")
-            + (" availability_events" if root["schema_version"] in (4, 5, 6) else "")
-            + (" reservation_rules" if root["schema_version"] in (5, 6) else "")
-            + (" estimate_preferences" if root["schema_version"] == 6 else ""),
+            + (" imports" if root["schema_version"] in (2, 3, 4, 5, 6, 7) else "")
+            + (
+                " work_calendars person_calendars"
+                if root["schema_version"] in (3, 4, 5, 6, 7)
+                else ""
+            )
+            + (" availability_events" if root["schema_version"] in (4, 5, 6, 7) else "")
+            + (" reservation_rules" if root["schema_version"] in (5, 6, 7) else "")
+            + (" estimate_preferences" if root["schema_version"] in (6, 7) else "")
+            + (" allocations" if root["schema_version"] == 7 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -173,6 +179,7 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             reservation_rules=tuple(
                 _reservation(value) for value in _rows(p.get("reservation_rules", []))
             ),
+            allocations=tuple(_allocation(value) for value in _rows(p.get("allocations", []))),
             estimate_preferences=(
                 _estimate_preferences(p["estimate_preferences"])
                 if "estimate_preferences" in p
@@ -181,6 +188,16 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         )
     except (ValueError, InvalidOperation, RecursionError) as error:
         raise ValueError(f"Cannot read plan: {error}") from error
+
+
+def _allocation(value: object) -> Allocation:
+    row = _object(value, "id work_item_id person_id hours")
+    return Allocation(
+        id=_id(row["id"]),
+        work_item_id=_id(row["work_item_id"]),
+        person_id=_id(row["person_id"]),
+        hours=Decimal(_text(row["hours"])),
+    )
 
 
 def _estimate_preferences(value: object) -> EstimatePreferences:

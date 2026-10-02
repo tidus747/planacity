@@ -80,10 +80,13 @@ def remove_work_item(
     *,
     delete_descendants: bool = False,
     remove_references: bool = False,
+    remove_allocations: bool = False,
 ) -> ProgramPlan:
     """Refuse to discard descendants unless their removal is explicitly requested."""
     if type(delete_descendants) is not bool:
         raise ValueError("Confirming removal of descendants requires an explicit boolean value.")
+    if type(remove_allocations) is not bool:
+        raise ValueError("Confirming allocation removal requires an explicit boolean.")
     if type(remove_references) is not bool:
         raise ValueError("Confirming removal of references requires an explicit boolean value.")
     current = plan.work_item(item_id)
@@ -106,6 +109,12 @@ def remove_work_item(
         for link in plan.relationships
         if link.source_id in removed or link.target_id in removed
     )
+    allocations = tuple(a for a in plan.allocations if a.work_item_id in removed)
+    if allocations and not remove_allocations:
+        raise ValueError(
+            f"Removal affects {len(allocations)} work allocation(s). "
+            "Explicitly confirm removal of these allocations first."
+        )
     memberships = sum(len(removed.intersection(group.epic_ids)) for group in plan.work_groups)
     if (links or memberships) and not remove_references:
         raise ValueError(
@@ -115,6 +124,7 @@ def remove_work_item(
     return replace(
         plan,
         work_items=tuple(item for item in plan.work_items if item.id not in removed),
+        allocations=tuple(a for a in plan.allocations if a.work_item_id not in removed),
         relationships=tuple(
             link
             for link in plan.relationships
