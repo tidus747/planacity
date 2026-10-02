@@ -8,7 +8,8 @@ and offline-capable. Planning data stays local by default.
 ## Current status
 
 The source preview includes the **v0.1 planning foundation**, **v0.2 Jira roundtrip**,
-and the developing **v0.3 Visual Planning** milestone. Create, edit, save, and reopen
+**v0.3 Visual Planning**, and the **v0.4 Team & Capacity** foundations.
+Create, edit, save, and reopen
 local Program Plans. It includes a hierarchical Plan editor, a people roster,
 WorkGroups, relationships, estimates, optional dates, and JSON backups.
 See [Getting started](docs/getting-started.md) for the complete workflow and example.
@@ -55,6 +56,13 @@ Schemas 1-5 open in hours; keep a backup or use Save As for older builds.
 See the [reservation wizard guide](docs/capacity-wizards.md).
 Plan now has [filters matching Timeline](docs/getting-started.md#filter-the-plan),
 with ancestor context and safe hierarchy editing.
+
+The [implementation roadmap](docs/roadmap.md) now prioritizes reliable editing,
+shared capacity calculations, and clearer planning context before more Timeline
+layers. It includes the ordered v0.4/v0.5 backlog and release acceptance gates.
+[Planning decisions](docs/planning-decisions.md) define future hierarchy rollups,
+dependency enforcement, allocation scheduling, topics, and charts. Those changes
+are planned; the current preview does not yet calculate remaining team capacity.
 
 ## Run from source
 

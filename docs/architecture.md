@@ -1,4 +1,10 @@
-# Initial architecture
+# Architecture
+
+The sections below record implemented behavior and its evolution. The next
+implementation contract is in [planning decisions](planning-decisions.md), with
+sequencing in the [roadmap](roadmap.md). In particular, dependency enforcement,
+hierarchy rollups, and dated capacity integration are planned changes, not
+properties of the current schema 7 application.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
 people, estimates, dates, groups, and relationships. See

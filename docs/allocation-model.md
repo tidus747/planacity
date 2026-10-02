@@ -62,3 +62,9 @@ For a quick evaluation, split a 100-hour task into 60 and 40 hours, save and reo
 then edit one entry and cancel. Check that the saved totals remain unchanged.
 Capacity load and overload comparisons require a scheduling policy and remain
 separate work.
+
+The next [roadmap](roadmap.md) defines that work in R03-R06. Its
+[planning decisions](planning-decisions.md) introduce leaf-effort rollups,
+explicit handling of existing parent allocations, and dated capacity results.
+The current independent parent/child calculation above remains in place until
+those changes are implemented and validated.

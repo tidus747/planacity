@@ -6,8 +6,16 @@ Hours is the default for new plans and files from schemas 1-5.
 
 Days and Weeks require an explicit reference calendar. Create one in
 **People -> Work calendars...**, then select it in the estimate-units dialog.
-The preview explains the conversion before you confirm. No 8-hour day, 40-hour
+The selector is disabled while Hours is selected because no conversion is needed.
+Switch to Days or Weeks to choose a saved calendar. If none are listed, create
+one in People first. The preview explains the conversion before you confirm.
+No 8-hour day, 40-hour
 week, or individual person's calendar is assumed.
+
+The [roadmap](roadmap.md) prioritizes clearer setup from this dialog and checking
+the reported selection failure. A valid saved calendar being unavailable in
+Days/Weeks is not expected behavior and needs reproduction; the disabled Hours
+state alone does not establish that failure.
 
 - One week is the sum of the reference calendar's seven weekday hour values.
 - One day is that total divided by the number of weekdays with positive hours.
