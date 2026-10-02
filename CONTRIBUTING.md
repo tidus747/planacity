@@ -1,9 +1,9 @@
 # Contributing
 
-Read the [architecture](docs/architecture.md) and [current roadmap](docs/v0.3-issues.md)
-before starting. Pick one focused issue.
-The current milestone is Visual Planning. GitHub Issues track live status;
-keep later features out of current-milestone PRs.
+Read the [architecture](docs/architecture.md), [current roadmap](docs/roadmap.md),
+and [planning decisions](docs/planning-decisions.md) before starting.
+The current target is v0.4 Team & Capacity. Pick one focused issue from the next
+roadmap wave; GitHub Issues track live status. Keep later features out of the PR.
 
 ## Branch and pull request workflow
 

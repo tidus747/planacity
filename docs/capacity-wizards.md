@@ -3,7 +3,7 @@
 Available in the v0.4 Team & Capacity development preview. The two-step wizard
 uses the calculation API (#8) and schema 5 rules (#9). It previews before applying
 any change. The desktop preview uses explicit work calendars and recorded
-availability only. Program events and work allocations are not yet modeled;
+availability only. Program events and work allocations are not deducted here;
 the preview clearly labels its remaining hours as before those inputs.
 
 The [work-calendar calculation foundation](capacity-model.md) is implemented for
@@ -175,7 +175,7 @@ The wizard uses a separate desktop adapter and retains these boundaries explicit
 
 `ProgramPlan.reservation_rules` contains the canonical rules. SQLite and JSON
 round-trip IDs, selected people, dates, intervals, and exact Decimal hours.
-Schemas 1-4 load without rules; saving upgrades to schema 6. Keep a backup or
+Schemas 1-4 load without rules; saving upgrades to schema 7. Keep a backup or
 use Save As if an older build must still read the plan.
 
 `add_reservation`, `update_reservation`, and `remove_reservation` return validated
@@ -206,3 +206,6 @@ on reopen, edit, or preview. The wizard exposes this workflow in #10.
 
 These slices depend on the v0.4 calendar and capacity baseline. Jira CSV in v0.2
 must continue to map external people to the same canonical Person identities.
+
+The slices above describe the implemented foundation. Future integration into
+People, Overview, and Team Timeline is ordered in the [current roadmap](roadmap.md).

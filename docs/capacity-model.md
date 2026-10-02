@@ -115,7 +115,10 @@ apply reductions. The separate availability API below applies unavailability
 only; neither API calculates remaining planning hours, overload, or team totals.
 The desktop shows nominal hours alongside unavailability deductions and available hours.
 
-Next slices must add program-event deductions.
+The next [roadmap slices](roadmap.md) integrate existing calendars, availability,
+reservations, and work allocations into one result before adding charts.
+Program-event deductions follow in v0.5; they are not a prerequisite for showing
+the currently entered meetings and front-office reservations consistently.
 The recurring reservation API (#8) now consumes explicit daily capacity after
 these deductions. Rules persist (#9), and the wizard (#10) previews saved calendars
 and entered availability before reservations. Program-event deductions are not yet
@@ -123,6 +126,9 @@ modeled in the desktop; the preview labels that limitation. People's table remai
 before reservations; use Reserve capacity to review reservation totals.
 Calendar and availability data use schema 7, while Jira hour estimates and import baselines are
 unchanged. See [recurring reservations](capacity-wizards.md).
+The future distribution and missing-data rules are defined in
+[planning decisions](planning-decisions.md); they are not implemented by the
+current nominal/availability APIs.
 
 ## Availability calculation API
 
