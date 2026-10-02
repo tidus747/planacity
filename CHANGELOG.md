@@ -27,6 +27,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 - Named work calendars with explicit weekday hours, per-person assignments,
   and nominal horizon hours in People, before leave, events, or reservations.
 
+### Fixed
+
+- Estimate units explains when a reference calendar is needed and offers calendar
+  setup directly in the dialog. Calendar and unit drafts apply together with OK;
+  Cancel discards both. Calendars without working hours are clearly identified.
+
 ### Changed
 
 - Development continues as 0.4.0.dev0. Projects and backups now save as schema 7

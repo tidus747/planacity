@@ -50,5 +50,24 @@ preference, and imported baseline estimates are never rewritten.
 Saving writes schema 7. Keep a backup or use Save As when an older build must
 still open the original file. See [the file format](project-file-format.md).
 
+## Set up calendars without leaving the dialog
+
+The reference selector is disabled in Hours because no conversion is required.
+Select Days or Weeks, then choose an existing calendar. If the list is empty,
+choose **Work calendars...** directly in this dialog to add one. Closing the
+calendar manager refreshes the choices and preserves your selected unit and
+reference calendar when it still exists. Choose the new calendar explicitly.
+
+Calendars with no positive hours are labelled **(no working hours)** and cannot
+be used for Days/Weeks. Edit their hours or choose another calendar. This
+reference controls effort conversion only; people retain their own assignments.
+
+Calendar changes made through this dialog are drafts. **OK** applies both calendar
+and unit changes; **Cancel** discards both, including newly added calendars.
+This differs from opening the calendar manager directly from People, where
+confirming an individual calendar form applies its changes immediately. Existing
+reference-calendar deletion safeguards still apply: confirm another reference
+or Hours first, then reopen the manager to delete the old calendar.
+
 ![Estimate units in light mode](images/estimate-units-light.png)
 ![Estimate units in dark mode](images/estimate-units-dark.png)
