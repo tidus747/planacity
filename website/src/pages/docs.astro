@@ -1,0 +1,163 @@
+---
+import Page from "../layouts/Page.astro";
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const repo = "https://github.com/tidus747/planacity";
+const windows =
+  'git clone https://github.com/tidus747/planacity.git\ncd planacity\npy -3.11 -m venv .venv\n.venv\\Scripts\\python -m pip install -e ".[dev]"\n.venv\\Scripts\\python -m planacity';
+const linux =
+  "git clone https://github.com/tidus747/planacity.git\ncd planacity\npython3 -m venv .venv\n.venv/bin/python -m pip install -e '.[dev]'\n.venv/bin/python -m planacity";
+---
+
+<Page
+  title="Get started"
+  description="Run the Planacity source preview, open the fictional example, and build your first local program plan."
+>
+  <div class="shell">
+    <header class="page-intro">
+      <p class="eyebrow">GET STARTED</p>
+      <h1>Your first program plan.</h1>
+      <p>
+        Run the desktop preview, open a small example, and explore at your own
+        pace.
+      </p>
+    </header>
+    <div class="doc-grid">
+      <aside class="doc-nav" aria-label="On this page">
+        <p>On this page</p>
+        <a href="#install">Run from source</a>
+        <a href="#example">Open the example</a>
+        <a href="#first-plan">Make it your own</a>
+        <a href="#guides">Workflow guides</a>
+        <a href="#status">Preview status</a>
+      </aside>
+      <div class="prose">
+        <div class="notice">
+          <strong>A development preview, built in the open.</strong>
+          <p>
+            There is no stable installer yet. You will need Git and Python 3.11
+            or newer. Installing dependencies requires an internet connection;
+            planning afterwards works offline.
+          </p>
+        </div>
+        <section id="install">
+          <h2>01. Run from source</h2>
+          <p>Windows is the initial desktop target. In PowerShell, run:</p>
+          <pre><code>{windows}</code></pre>
+          <p>On Linux, with Python 3.11 or newer:</p>
+          <pre><code>{linux}</code></pre>
+          <p>
+            The application opens as a desktop window. Keep your plans in local{" "}
+            <code>.planacity</code> files. No account or web server is needed.
+          </p>
+        </section>
+        <section id="example">
+          <h2>02. Open the example</h2>
+          <p>
+            Choose <strong>File -&gt; Restore JSON backup...</strong> and open{" "}
+            <code>examples/aurora.planacity.json</code> from the repository you
+            just cloned.
+          </p>
+          <p>
+            Aurora is a fictional test-bench program with work, people, and
+            dates. Use <strong>File -&gt; Save As...</strong> to save your own{" "}
+            <code>.planacity</code> copy before experimenting.
+          </p>
+          <p>
+            <a href={`${repo}/blob/main/examples/aurora.planacity.json`}>
+              Inspect the example on GitHub
+            </a>
+          </p>
+        </section>
+        <section id="first-plan">
+          <h2>03. Make it your own</h2>
+          <ol>
+            <li>
+              <strong>Structure the work.</strong> In Plan, add Epics, Tasks,
+              and Subtasks. Use F2 to edit a title, estimate, or date.
+            </li>
+            <li>
+              <strong>See the schedule.</strong> Open Timeline, choose a scale,
+              and filter by work type or WorkGroup. Dependency arrows show
+              relationships; automatic dependency enforcement is still planned.
+            </li>
+            <li>
+              <strong>Set up your team.</strong> In People, create work
+              calendars and assign them explicitly. Add dated availability.
+              There is no assumed 8-hour day.
+            </li>
+            <li>
+              <strong>Reserve and allocate.</strong> Use Planning -&gt; Reserve
+              capacity... for recurring duties. In Plan, select work and open
+              Work allocations... to split its hours between people.
+            </li>
+            <li>
+              <strong>Save and continue.</strong> Save the project, close it,
+              and reopen it. Export a JSON backup for a separate copy.
+            </li>
+          </ol>
+          <p>
+            Light and dark appearance are available in the app's sidebar. For
+            Days or Weeks estimates, use{" "}
+            <strong>Planning -&gt; Estimate units...</strong> and choose a
+            reference calendar.
+          </p>
+        </section>
+        <section id="guides">
+          <h2>Go a little deeper</h2>
+          <ul>
+            <li>
+              <a href={`${repo}/blob/main/docs/getting-started.md`}>
+                Full editing and keyboard guide
+              </a>
+            </li>
+            <li>
+              <a href={`${repo}/blob/main/docs/jira-import.md`}>
+                Import Jira CSV and preserve a baseline
+              </a>
+            </li>
+            <li>
+              <a href={`${repo}/blob/main/docs/jira-export.md`}>
+                Export agreed work to Jira CSV
+              </a>
+            </li>
+            <li>
+              <a href={`${repo}/blob/main/docs/capacity-model.md`}>
+                Work calendars and availability
+              </a>
+            </li>
+            <li>
+              <a href={`${repo}/blob/main/docs/capacity-wizards.md`}>
+                Recurring meetings and front-office reservations
+              </a>
+            </li>
+            <li>
+              <a href={`${repo}/blob/main/docs/allocation-model.md`}>
+                Split work between people
+              </a>
+            </li>
+          </ul>
+        </section>
+        <section id="status">
+          <h2>Know the current boundaries</h2>
+          <p>
+            Current source is <strong>0.4.0.dev0</strong>. Calendars,
+            availability, recurring reservations, and allocations are editable,
+            but they do not yet form one combined remaining-capacity
+            calculation.
+          </p>
+          <p>
+            Projects save in schema 7. Older schemas remain readable; keep a
+            backup or use Save As if an older build must still open your
+            original file.
+          </p>
+          <p>
+            Next: stronger dependency checks, hierarchy effort totals, and
+            consistent capacity views.{" "}
+            <a href={`${base}/roadmap/`}>See the roadmap</a>, or{" "}
+            <a href={`${repo}/issues`}>report what you find</a>.
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</Page>

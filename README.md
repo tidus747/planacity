@@ -109,7 +109,8 @@ installed, as in CI. See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow guidanc
 - `docs/`: [architecture](docs/architecture.md), release issue breakdowns, and
   user guidance.
 - `examples/`: fictional Aurora program, loadable through Restore JSON backup.
-- `website/`: standalone Astro Home and Roadmap pages; see its [README](website/README.md).
+- `website/`: Astro product showcase, getting-started guide, and roadmap with
+  light/dark appearance; see its [README](website/README.md).
 - `.github/`: CI and contribution templates.
 - `assets/`: editable design originals; desktop runtime graphics belong in
   `src/planacity/resources/icons/` and `src/planacity/resources/images/`.

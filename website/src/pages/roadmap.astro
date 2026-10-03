@@ -1,39 +1,193 @@
 ---
-import Page from '../layouts/Page.astro';
-const releases = [
-  ['v0.5', 'Program Calendar', 'Understand work alongside leave, holidays, and program events.'],
-  ['v0.6', 'Milestones & Deliveries', 'Track program outcomes and delivery readiness.'],
-  ['v0.7', 'Communication', 'Share plans and reports outside the application.'],
-  ['v0.8', 'Scenarios & Reconciliation', 'Compare alternatives and reconcile Jira changes.'],
-  ['v0.9', 'Stabilisation', 'Improve reliability, usability, and desktop packaging.'],
-  ['v1.0', 'Stable', 'Complete the import-to-planning-to-export workflow.'],
+import Page from "../layouts/Page.astro";
+const repo = "https://github.com/tidus747/planacity";
+const later = [
+  [
+    "v0.6",
+    "Milestones & Deliveries",
+    "Represent program outcomes, readiness dependencies, and delivery risk.",
+  ],
+  [
+    "v0.7",
+    "Communication",
+    "Share timelines, capacity, calendars, and a Program Pack outside the application.",
+  ],
+  [
+    "v0.8",
+    "Scenarios & Reconciliation",
+    "Compare alternatives and reconcile Jira re-imports without losing the baseline.",
+  ],
+  [
+    "v0.9",
+    "Stabilisation",
+    "Focus on reliability, performance, keyboard access, migrations, and installers.",
+  ],
+  [
+    "v1.0",
+    "A dependable planning loop",
+    "Import, structure, schedule, allocate, validate, communicate, and export.",
+  ],
 ];
 ---
 
-<Page title="Roadmap">
-  <h1>Small releases. Useful progress.</h1>
-  <p>This is a direction, not a delivery schedule. Planacity is a single-maintainer
-    side project; scope stays focused on one useful increment at a time.</p>
-  <h2>Current target: v0.4 - Team &amp; Capacity</h2>
-  <p>Build toward realistic team capacity, starting with explicit work calendars.</p>
-  <ul>
-    <li>Available: Timeline with day, week, and month scales</li>
-    <li>Available: hierarchy, Epic, and WorkGroup grouping, filters, and dependency arrows</li>
-    <li>Available: drag bar edges or edit dates with the keyboard without changing effort hours</li>
-    <li>Available: named work calendars, person assignments, and dated availability with overlap previews</li>
-    <li>Available: recurring-capacity wizard with per-person previews, overlaps, and overload warnings</li>
-    <li>Available: Plan estimates in hours, days, or weeks using an explicit reference calendar</li>
-    <li>Available: explicit work allocations with split hours, draft editing, and saved assignments</li>
-    <li>Planned: program-event deductions and allocation load checks</li>
-    <li>Available: Plan filters matching Timeline, with ancestor context and hidden-work deletion previews</li>
-    <li>Implemented foundations: manual planning, Jira CSV roundtrip, and local persistence</li>
-  </ul>
-  <p class="status">This is a development preview. Available hours account for entered
-    unavailability; the reservation wizard previews recurring duties before program
-    events and work allocations.
-    No stable release is published yet. Jira APIs and re-import reconciliation are deferred.</p>
-  <h2>Later milestones</h2>
-  <ul>
-    {releases.map(([version, name, goal]) => <li><strong>{version} - {name}:</strong> {goal}</li>)}
-  </ul>
+<Page
+  title="Roadmap"
+  description="The Planacity roadmap: reliable planning, explainable capacity, team visibility, and small, reviewable releases."
+>
+  <div class="shell">
+    <header class="page-intro">
+      <p class="eyebrow">THE ROAD AHEAD</p>
+      <h1>
+        Small releases.
+        <br />
+        Useful progress.
+      </h1>
+      <p>
+        A clear direction, shaped by real planning work. Each step should make
+        one more part of the program easier to understand.
+      </p>
+    </header>
+    <div class="doc-grid">
+      <aside class="doc-nav" aria-label="Roadmap sections">
+        <p>In this roadmap</p>
+        <a href="#available">Available today</a>
+        <a href="#current">v0.4 / Current focus</a>
+        <a href="#next">v0.5 / Team visibility</a>
+        <a href="#later">Beyond the preview</a>
+        <a href={`${repo}/issues`}>Track GitHub issues</a>
+      </aside>
+      <div class="prose">
+        <div class="notice">
+          <strong>Current target: v0.4 Team &amp; Capacity</strong>
+          <p>
+            This is a development preview, not a published stable release. The
+            roadmap describes direction, not promised delivery dates.
+          </p>
+        </div>
+        <section id="available">
+          <h2>A working foundation</h2>
+          <p>Available in the source preview:</p>
+          <ul>
+            <li>
+              Local project files, JSON backups, a hierarchical Plan editor, and
+              filters.
+            </li>
+            <li>
+              Jira CSV import/export, field mappings, and imported baseline
+              comparison.
+            </li>
+            <li>
+              Timeline scales, grouping, filters, dependency arrows, and
+              bar-edge date editing.
+            </li>
+            <li>
+              People, work calendars, dated availability, recurring-duty
+              previews, and explicit work allocations.
+            </li>
+            <li>
+              Estimate units in hours, days, or weeks, with calendar setup in
+              the same dialog.
+            </li>
+          </ul>
+          <p>
+            These foundations are implemented. Combined workload checks and
+            remaining team capacity are still ahead.
+          </p>
+        </section>
+        <section id="current">
+          <h2>Next: make the numbers agree.</h2>
+          <p>
+            One calculation should explain the same plan in every view. We are
+            progressing through focused issues, one at a time.
+          </p>
+          <article class="release">
+            <span class="release-tag">v0.4 A</span>
+            <div>
+              <h3>Reliable editing</h3>
+              <p>
+                Estimate-calendar setup is complete. Next are guarded dependency
+                edits and hierarchy effort totals without double counting.
+              </p>
+              <a href={`${repo}/issues/77`}>
+                Next app issue: dependency protection
+              </a>
+            </div>
+          </article>
+          <article class="release">
+            <span class="release-tag">v0.4 B</span>
+            <div>
+              <h3>Explainable capacity</h3>
+              <p>
+                Combine calendars, availability, reservations, and dated
+                allocations. Surface overload and missing-data findings, with a
+                complete People breakdown.
+              </p>
+            </div>
+          </article>
+          <article class="release">
+            <span class="release-tag">v0.4 C</span>
+            <div>
+              <h3>Understand the plan</h3>
+              <p>
+                Add descriptions, labels, primary reporting groups, an editable
+                work inspector, and a compact Overview analysis selector.
+              </p>
+            </div>
+          </article>
+        </section>
+        <section id="next">
+          <h2>Then: bring the team into view.</h2>
+          <article class="release">
+            <span class="release-tag">v0.5 A</span>
+            <div>
+              <h3>Team visibility</h3>
+              <p>
+                Optional absence overlays, a Team Timeline mode for work and
+                duties, team coverage, and a small selected-work dependency
+                graph.
+              </p>
+            </div>
+          </article>
+          <article class="release">
+            <span class="release-tag">v0.5 B</span>
+            <div>
+              <h3>Program Calendar</h3>
+              <p>
+                Shared holidays and events, followed by generic availability CSV
+                and exported-file adapters. Existing absences and duties become
+                visible before new providers are added.
+              </p>
+            </div>
+          </article>
+        </section>
+        <section id="later">
+          <h2>Beyond the preview</h2>
+          {later.map(([version, title, description]) => (
+            <article class="release">
+              <span class="release-tag">{version}</span>
+              <div>
+                <h3>{title}</h3>
+                <p>{description}</p>
+              </div>
+            </article>
+          ))}
+        </section>
+        <div class="notice">
+          <strong>Follow the decisions, not just the feature list.</strong>
+          <p>
+            The{" "}
+            <a href={`${repo}/blob/main/docs/roadmap.md`}>
+              implementation roadmap
+            </a>{" "}
+            defines issue scope and acceptance.{" "}
+            <a href={`${repo}/blob/main/docs/planning-decisions.md`}>
+              Planning decisions
+            </a>{" "}
+            explain calculation rules and data integrity. Live progress belongs
+            in <a href={`${repo}/issues`}>GitHub Issues</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 </Page>
