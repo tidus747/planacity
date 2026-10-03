@@ -6,6 +6,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Product website with real application captures, a getting-started guide,
+  responsive light/dark appearance, and the current implementation roadmap.
 - Work allocations in Plan: split explicit hours between people, edit or remove
   assignments, and review allocated/remaining effort and missing estimates. Save
   applies the draft; Cancel discards it. Work/person deletion previews affected

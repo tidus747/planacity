@@ -1,32 +1,181 @@
 ---
-import Page from '../layouts/Page.astro';
+import Page from "../layouts/Page.astro";
+import AppScreenshot from "../components/AppScreenshot.astro";
+import planLight from "../../../docs/images/plan-filters-light.png";
+import planDark from "../../../docs/images/plan-filters-dark.png";
+import timelineLight from "../../../docs/images/timeline-month-light.png";
+import timelineDark from "../../../docs/images/timeline-month-dark.png";
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const features = [
+  [
+    "01",
+    "Give the work structure.",
+    "Build Epics, Tasks, and Subtasks. Organize work into groups, add estimates, and keep the details editable in a familiar table.",
+    "Plan & organize",
+  ],
+  [
+    "02",
+    "Make the schedule visible.",
+    "Explore day, week, and month timelines. Filter the work, follow dependency arrows, and adjust dates from the Gantt bars.",
+    "See the program",
+  ],
+  [
+    "03",
+    "Bring the team into the plan.",
+    "Define work calendars and availability. Reserve hours for recurring duties and split work between people with explicit allocations.",
+    "Prepare capacity",
+  ],
+];
 ---
 
-<Page title="Home">
-  <p>Open-source program planning for engineering teams.</p>
-  <h1>Plan the work.<br />Respect the capacity.</h1>
-  <p>Planacity is being built to help engineering teams structure work, build
-    realistic plans, and communicate commitments with Program Management.</p>
-  <p class="status"><strong>Early development - v0.4 Team &amp; Capacity preview.</strong>
-    The source preview can create, edit, save, and reopen local Program Plans,
-    including JSON backups. Jira CSV mapping, import preview, baseline comparison,
-    and CSV export are available. Timeline now offers day, week, and month
-    scales, grouping, filters, directional dependency arrows, and bar-edge date resizing.
-    People now supports named work calendars, dated availability editing, and overlap
-    previews. A recurring-capacity wizard previews meetings and other duties per
-    person and sprint before confirmation. Reservation previews use calendars and
-    recorded availability, before program events or work allocations.
-    Plan can split explicit work hours between people and save assignments, with
-    allocated and remaining effort shown before calendar capacity comparisons.
-    No stable packaged download is available yet.</p>
-  <h2>The first useful step</h2>
-  <p>Create a Program Plan with Epics, Tasks, Subtasks, people, estimates, and dates.
-    Save it locally, reopen it, and continue planning. Try the fictional example
-    using the <a href="https://github.com/tidus747/planacity/blob/main/docs/getting-started.md">getting-started guide</a>.</p>
-  <h2>The longer-term workflow</h2>
-  <p>Import -> Plan -> Balance -> Communicate -> Commit</p>
-  <p>CSV connects planning with Jira. Future releases will add
-    program-event deductions, allocation load checks, and program communication. Jira remains the execution
-    system of record.</p>
-  <p><a href="https://github.com/tidus747/planacity">Follow development on GitHub</a></p>
+<Page title="Plan the work. Respect the capacity.">
+  <section class="hero shell">
+    <a class="eyebrow-pill" href={`${base}/roadmap/`}>
+      <span class="live-dot" aria-hidden="true"></span> v0.4 development preview{" "}
+      <span aria-hidden="true">/</span> See what's next
+    </a>
+    <h1>
+      Plan the work.
+      <br />
+      <span>Respect the capacity.</span>
+    </h1>
+    <p class="hero-copy">
+      A planning workspace for engineering teams.
+      <br class="desktop-break" /> Bring structure to the work, see the program,
+      and make room for the people behind it.
+    </p>
+    <div class="button-row">
+      <a class="button primary" href={`${base}/docs/`}>
+        Try the source preview <span aria-hidden="true">-&gt;</span>
+      </a>
+      <a class="button secondary" href="https://github.com/tidus747/planacity">
+        Explore on GitHub
+      </a>
+    </div>
+    <p class="hero-note">
+      Free and open source. Runs on your desktop. No account required.
+    </p>
+    <AppScreenshot
+      light={planLight}
+      dark={planDark}
+      alt="Planacity Plan view with hierarchical work, estimates, dates, and filters"
+      caption="Your program, in one editable workspace. Shown with the fictional Aurora example."
+      eager
+    />
+  </section>
+  <section class="principles shell" aria-label="Product principles">
+    <p>
+      <strong>Local first</strong>
+      <span>Your plans stay in your files.</span>
+    </p>
+    <p>
+      <strong>Made for engineering</strong>
+      <span>Work, people, and program context.</span>
+    </p>
+    <p>
+      <strong>Works alongside Jira</strong>
+      <span>CSV in. An agreed plan out.</span>
+    </p>
+  </section>
+  <section class="section shell" id="features">
+    <div class="section-heading">
+      <p class="eyebrow">THE WORKSPACE</p>
+      <h2>
+        From a list of work
+        <br />
+        to a plan you can discuss.
+      </h2>
+      <p>Keep the structure, schedule, and team in the same local project.</p>
+    </div>
+    <div class="feature-grid">
+      {features.map(([number, title, description, label]) => (
+        <article class="feature-card">
+          <span class="feature-number">{number}</span>
+          <p class="eyebrow">{label}</p>
+          <h3>{title}</h3>
+          <p>{description}</p>
+        </article>
+      ))}
+    </div>
+    <p class="scope-note">
+      Capacity is growing: calendars, availability, reservations, and
+      allocations are available. Combined workload and remaining team capacity
+      are the next step. <a href={`${base}/roadmap/`}>Read the roadmap</a>.
+    </p>
+  </section>
+  <section class="section shell timeline-section">
+    <div class="section-heading">
+      <p class="eyebrow">A SHARED PICTURE</p>
+      <h2>See how the pieces fit.</h2>
+      <p>
+        Move between the work table and its Timeline. Same project, same work, a
+        different perspective.
+      </p>
+    </div>
+    <AppScreenshot
+      light={timelineLight}
+      dark={timelineDark}
+      alt="Planacity monthly Timeline showing scheduled work across the planning horizon"
+      caption="Switch between day, week, and month scales. Open the capture to explore it at full size."
+    />
+  </section>
+  <section class="section shell workflow-section">
+    <div class="section-heading">
+      <p class="eyebrow">THE DIRECTION</p>
+      <h2>One thoughtful planning loop.</h2>
+      <p>
+        Jira remains the execution system. Planacity is where the program comes
+        together.
+      </p>
+    </div>
+    <ol class="workflow">
+      <li>
+        <span>01</span>
+        <strong>Import</strong>
+        <p>Bring work from Jira CSV.</p>
+      </li>
+      <li>
+        <span>02</span>
+        <strong>Plan</strong>
+        <p>Structure and schedule it.</p>
+      </li>
+      <li>
+        <span>03</span>
+        <strong>Balance</strong>
+        <p>Build a picture of capacity.</p>
+      </li>
+      <li>
+        <span>04</span>
+        <strong>Communicate</strong>
+        <p>Review the plan together.</p>
+      </li>
+      <li>
+        <span>05</span>
+        <strong>Commit</strong>
+        <p>Export agreed work to CSV.</p>
+      </li>
+    </ol>
+    <p class="muted">
+      Automated load checks and shareable reports are planned. The preview
+      already supports manual planning and Jira CSV roundtrip.
+    </p>
+  </section>
+  <section class="section shell">
+    <div class="callout">
+      <div>
+        <p class="eyebrow">BUILT IN THE OPEN</p>
+        <h2>Start with a small program.</h2>
+        <p>
+          Try the fictional example, explore the workflow, and help shape what
+          comes next.
+        </p>
+        <p class="muted">
+          Source preview only. A stable installer is not available yet.
+        </p>
+      </div>
+      <a class="button primary" href={`${base}/docs/`}>
+        Get started <span aria-hidden="true">-&gt;</span>
+      </a>
+    </div>
+  </section>
 </Page>

@@ -60,7 +60,11 @@ each release; v0.9 is not the first time they are tested.
 These are backlog keys, not GitHub issue numbers. Promote the next wave to
 focused GitHub issues linked to the v0.4 milestone when implementation resumes.
 GitHub owns live status; this document owns scope, ordering, and acceptance.
-All slices below are planned, not implemented by this documentation change.
+R01 was completed in [#75](https://github.com/tidus747/planacity/issues/75) and
+merged through [#76](https://github.com/tidus747/planacity/pull/76). R02 is now
+tracked in [#77](https://github.com/tidus747/planacity/issues/77). The remaining
+slices are planned. Website showcase work is tracked separately in
+[#78](https://github.com/tidus747/planacity/issues/78), without changing app scope.
 
 ### R01 - Make estimate-calendar setup understandable
 

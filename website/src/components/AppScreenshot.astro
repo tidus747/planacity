@@ -1,0 +1,45 @@
+---
+import type { ImageMetadata } from "astro";
+interface Props {
+  light: ImageMetadata;
+  dark: ImageMetadata;
+  alt: string;
+  caption: string;
+  eager?: boolean;
+}
+const { light, dark, alt, caption, eager = false } = Astro.props;
+---
+
+<figure class="app-shot">
+  <div class="shot-label">
+    <span class="live-dot" aria-hidden="true"></span> Planacity desktop{" "}
+    <span>Actual application capture</span>
+  </div>
+  <a
+    class="shot-light"
+    href={light.src}
+    aria-label={`${alt}. Open full-size screenshot`}
+  >
+    <img
+      src={light.src}
+      width={light.width}
+      height={light.height}
+      alt={alt}
+      loading={eager ? "eager" : "lazy"}
+    />
+  </a>
+  <a
+    class="shot-dark"
+    href={dark.src}
+    aria-label={`${alt}. Open full-size screenshot`}
+  >
+    <img
+      src={dark.src}
+      width={dark.width}
+      height={dark.height}
+      alt={alt}
+      loading={eager ? "eager" : "lazy"}
+    />
+  </a>
+  <figcaption>{caption}</figcaption>
+</figure>
