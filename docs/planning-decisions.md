@@ -1,6 +1,6 @@
 # Planning consistency and visibility decisions
 
-Date: 2026-10-02. Status: selected direction for the next implementation slices.
+Revised: 2026-10-04. Status: direction for the next implementation slices.
 This document specifies future behavior. It does not change the current schema 7
 application. See the [roadmap](roadmap.md) for order and acceptance.
 
@@ -203,6 +203,103 @@ provides scene interaction; its
 supports drawing the simple cards, arrows, and bars. This is a design choice
 based on those capabilities, not a need for a new graph-layout dependency.
 Do not add Graphviz executables, Mermaid/browser rendering, or a web backend.
+
+## 9. People work groups are derived associations
+
+R10 derives a person's associations from positive allocations to work, using
+R07's effective group context. Do not persist a parallel membership list on
+Person. Show one roster row per person with all associated group names. Group
+filters and sorting organize that roster without duplicating capacity totals.
+People without allocations remain visible under an explicit no-assigned-work
+state. Zero-hour allocations do not imply active work in a group.
+
+Association labels describe the whole plan. Period hours use R04 and are labelled
+with the interval; undated demand remains separately visible. A person can belong
+to several context groups, but additive group-hour reporting uses the single
+primary topic or Ungrouped/Ambiguous bucket. Filtered work never becomes the
+entire competing workload used to calculate that person's remaining capacity.
+
+## 10. Priority is independent of scheduling criticality
+
+Use optional canonical levels Highest, High, Medium, Low, Lowest, in that order.
+Unset is a separate empty state, not an alias for Medium. No inheritance or
+automatic assignment when an Epic gains children. Priority edits change neither
+dates nor effort nor dependencies. Labels/icons must work without color alone.
+
+Jira ships these five defaults but allows administrators to change priorities
+and schemes. See [Atlassian's priority configuration documentation](https://support.atlassian.com/jira-cloud-administration/docs/configure-priorities-for-projects/).
+Therefore P02 maps CSV values explicitly, preserving source values and baselines;
+it must not hardcode Jira numeric IDs or assume every instance uses these names.
+P01 owns storage and editing; P02 owns previewed import/export mappings.
+
+## 11. Initial critical-path analysis contract
+
+V05 implements a deliberately bounded, pure dependency/duration analysis.
+V06 presents it as "Critical path (elapsed days)" with assumptions visible.
+This is a design choice for the first release, not a resource-feasible schedule
+or an analysis of working-day calendars. The
+[PMI CPM calculation explanation](https://www.pmi.org/learning/library/critical-path-method-calculations-scheduling-8040)
+describes early/late dates and total float. The rules below define Planacity's
+initial scope; they must be tested independently of Qt.
+
+### Inputs and coverage
+
+- Scope is all leaf work in the ProgramPlan, independent of horizon clipping,
+  filters, grouping, and priority. A leaf Epic is still work; a parent with
+  children is a summary and is not counted as a second activity.
+- Each leaf needs both dates. Duration is end ordinal - start ordinal + 1,
+  measured in elapsed days. A one-day task has duration 1. Hours and person
+  calendars do not define this duration; weekends inside the bar count.
+- Normalize/deduplicate finish-to-start links using R02. Ignore `related_to`.
+  Parent/child structure adds no edge. A dependency involving a container is
+  unsupported initially: report it, do not silently expand or discard it.
+- Missing dates, cycles, invalid references, or existing date conflicts prevent
+  a whole-plan result. Return affected IDs and reasons, not a best-looking
+  partial critical path. Empty work reports no analysis. Retain the ordinary
+  Timeline and dependency findings even when criticality cannot be evaluated.
+
+### Calculation and interpretation
+
+Use a synthetic source connected to every root and sink connected from every
+terminal leaf. They are internal calculation nodes, not persisted milestones.
+Take offset zero at the earliest entered leaf start. Start/end offsets below use
+exclusive finish boundaries internally; stored dates stay inclusive.
+
+    ES(task) = max(EF(predecessors)), or 0 for roots
+    EF(task) = ES(task) + duration(task)
+    finish = max(EF(all tasks))
+    LF(task) = min(LS(successors)), or finish for terminals
+    LS(task) = LF(task) - duration(task)
+    total_float(task) = LS(task) - ES(task)
+
+All zero-total-float activities are critical. A critical edge must also be tight:
+EF(predecessor) == ES(successor). Return all tied longest paths via their node
+and edge sets; do not enumerate exponentially many full paths. Disconnected
+shorter branches receive float against the common calculated finish.
+
+Entered start dates establish durations and the common origin, not individual
+release constraints. Gaps between entered bars are not modeled as dependencies
+or lag. Explain that calculated early/late dates are hypothetical offsets from
+that origin; float is analytical flexibility, not permission to drag past R02
+constraints or a promise about current scheduled gaps. The overlay marks the
+calculated critical chain on the existing bars without moving any of them.
+No calendar levelling, deadline constraints, lag, or actual-time tracking here.
+
+Example: A lasts 2 days; B lasts 3 and C lasts 1, both after A; D lasts 2 after
+both B and C. Finish is offset 7. A/B/D have zero float, C has 2 days float.
+Only A -> B -> D is critical. If C also lasts 3, both branches are critical.
+Making C Highest priority changes neither result. Scheduled gaps may make the
+entered completion later than this earliest dependency-only completion.
+
+### Presentation
+
+Use red critical connectors plus distinctive line treatment, a legend and
+textual critical/float details. Dependency conflicts use their existing warning
+style and message, not the same unexplained red line. Show every tied chain.
+Keep a keyboard-accessible list and graph alternative; verify both themes.
+Filters hide presentation only: report hidden critical nodes, never calculate
+a different path from visible rows. Invalidated or incomplete analysis clears
+the overlay and explains why. No cached critical state in project files.
 
 ## Consequences
 

@@ -42,6 +42,26 @@ Describe the problem, resulting behavior, validation, and limitations in the PR.
 Update documentation and the Unreleased changelog for user-facing changes.
 Keep commits focused, for example `feat(plan): add work item hierarchy`.
 
+### Reviewable implementation slices
+
+Use the [implementation queue](docs/implementation-queue.md) to select one ready
+slice. Check live issue/PR status before starting; a pending PR is not a completed
+prerequisite. Record acceptance criteria and non-goals before implementation.
+Do not bundle adjacent roadmap features just because they touch the same screen.
+
+For visible UI or website changes, include real screenshots in the PR. Show both
+themes when appearance is affected and before/after views for visual fixes.
+Use a short recording or reproducible steps for interactions that a still image
+cannot establish. Include the platform and fictional dataset. Use attachments
+or commit-pinned links so images remain available after branch deletion.
+Keep the evidence focused on the changed behavior; screenshots do not replace
+tests or keyboard checks. Do not require images for nonvisual or docs-only work.
+
+For documentation-only changes, check links, consistency, and the diff; runtime
+tests and builds are unnecessary unless an executable/configuration file changes.
+CI remains the integration gate. Update website feature claims only when the
+corresponding functionality has actually shipped.
+
 Use only fictional or sanitized examples. Do not commit corporate planning data,
 credentials, or personal HR information. Do not rewrite public Git history.
 Merges, release tags, releases, and publication require maintainer approval.

@@ -29,7 +29,7 @@ Open Timeline (Ctrl+3) and compare Day, Week, and Month. The initial summary is
 - Save to a new project, reopen, and continue. The supplied JSON remains unchanged.
 
 This remains a schema 1 backup to exercise backward compatibility. Restoring and
-saving produces the current schema 5 project format. The roster is not an
+saving produces the current schema 7 project format. The roster is not an
 allocation model, and the example contains no synthetic zero-duration milestones.
 
 ## Jira roundtrip sample
@@ -39,3 +39,10 @@ keep comma delimiter, use seconds and ISO dates, and explicitly match or create
 the two example people. Repeated Labels columns demonstrate source preservation.
 See [the import guide](../docs/jira-import.md) and
 [the export guide](../docs/jira-export.md).
+
+## Planned demonstration
+
+[Operation Moon Heist](../docs/moon-heist-example.md) specifies a future Gru and
+minions planning example with groups, allocations, duties, and guided exercises.
+It is not an available JSON example yet. Aurora remains the backward-compatibility
+sample when the new demonstration is added.

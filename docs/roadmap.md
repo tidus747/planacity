@@ -1,6 +1,6 @@
 # Planacity implementation roadmap
 
-Revised 2026-10-02 after the v0.4 allocation workflow was merged in PR #73.
+Revised 2026-10-04 after the planning and demonstration review.
 This is the implementation direction, not a list of features already available
 or a release announcement. Current source remains `0.4.0.dev0`, file schema 7.
 
@@ -14,7 +14,9 @@ Timeline date editing and arrows, calendars, availability, recurring reservation
 and explicit multi-person work allocations. The pieces need a shared calculation
 and a clearer editing workflow before more charts can be trusted.
 
-| Observation | Current behavior | Decision |
+The table records the original review findings; see tracking below for progress.
+
+| Observation | Behavior at review | Decision |
 | --- | --- | --- |
 | Overview cannot explain spare capacity or topics | Counts work and roster entries only | Add a compact analysis selector after shared capacity totals exist |
 | Estimate calendar cannot be selected | Disabled for Hours; Days/Weeks list existing work calendars | Explain the state and offer calendar setup from the dialog; verify the reported failure |
@@ -40,7 +42,8 @@ wave in the running application before starting the next.
 | v0.4 A - Reliable editing | Configure effort units and trust hierarchy/dependency edits | R01-R03 |
 | v0.4 B - Explainable capacity | See hours consumed by duties and work, with missing-data and overload findings | R04-R06 |
 | v0.4 C - Understand the plan | Edit context and topics; inspect workload and effort distribution in Overview | R07-R09 |
-| v0.5 A - Team visibility | See people, absences, duties, and local dependency graphs in Timeline | V01-V04 |
+| v0.4 D - Review and demonstrate | See People groups, edit/map priorities, and explore the Moon Heist example | R10, P01-P02, D01 |
+| v0.5 A - Team visibility | See people, absences, duties, dependency graphs, and critical paths in Timeline | V01-V06 |
 | v0.5 B - Program Calendar | Add shared holidays/events and file-based availability providers | Calendar slices below |
 | v0.6 - Milestones & Deliveries | Model outcomes, readiness links, and risk as first-class entities | Preserve the existing milestone goal |
 | v0.7 - Communication | Share the now-trustworthy Timeline, capacity, calendar, and Program Pack | Export before more dashboard variants |
@@ -62,9 +65,11 @@ focused GitHub issues linked to the v0.4 milestone when implementation resumes.
 GitHub owns live status; this document owns scope, ordering, and acceptance.
 R01 was completed in [#75](https://github.com/tidus747/planacity/issues/75) and
 merged through [#76](https://github.com/tidus747/planacity/pull/76). R02 is now
-tracked in [#77](https://github.com/tidus747/planacity/issues/77). The remaining
-slices are planned. Website showcase work is tracked separately in
-[#78](https://github.com/tidus747/planacity/issues/78), without changing app scope.
+tracked in [#77](https://github.com/tidus747/planacity/issues/77), with
+[#80](https://github.com/tidus747/planacity/pull/80) awaiting review as of October 4.
+Website showcase work (#78) merged through PR #79. The remaining slices are
+planned, not implemented. The [implementation queue](implementation-queue.md)
+adds focused briefs, dependencies, and review evidence for the next sessions.
 
 ### R01 - Make estimate-calendar setup understandable
 
@@ -199,6 +204,13 @@ Dependencies: R03-R08.
 
 ### v0.4 acceptance gate
 
+The October review adds R10 (People work groups) after R06/R07 and P01/P02
+(priorities and CSV mapping) after the inspector. These are separate PRs, not
+extra acceptance criteria silently added to R06 or R08. Finish the existing
+R03-R09 sequence first, then R10, P01, P02, and the D01 demonstration dataset.
+See the implementation queue for their acceptance criteria. D01 ships only
+implemented fields; graph and critical-path exercises are later extensions.
+
 Evaluate a fictional program with an Epic of two Tasks (60 h and 40 h), two people
 with different calendars, a full absence, meetings, front office, overlapping
 work, one missing estimate/calendar, and a dependency. The Epic shows 100 h only
@@ -221,6 +233,8 @@ the previous issue queue is empty; release approval follows this acceptance gate
 | V02 | Optional unavailability overlay | Existing availability, R04 | Toggle off by default; named person lanes with hatched rectangles, dates and partial/full share. Clip visibly, retain canonical dates, support both themes and keyboard details. |
 | V03 | Plan / Team Timeline modes | R04-R06, V01-V02 | Team mode has one person section with work, absence, and duty lanes. Show reservation names/hours by period and weekly load, not fictitious meeting appointments. Toggling views changes no data. |
 | V04 | Selected-work dependency graph | R02, R03, R08 | Immediate predecessors -> selected work -> immediate successors. Cards show title, dates, assigned people and warnings; click to select/recenter. Graph cycles and hidden endpoints remain explicit; text details stay available. |
+| V05 | Critical-path calculation | R02, R03 | Pure elapsed-day CPM service with explicit assumptions, float, all tied critical paths, and incomplete/unsupported results. See the decision record. |
+| V06 | Critical-path Timeline overlay | V04, V05 | Optional red critical connectors and labelled task outlines, readable in both themes. Filters do not recalculate criticality. Keyboard details expose float and coverage. |
 
 Use existing Qt graphics for V04. Start with immediate neighbours and a bounded
 view, not a full-program layout engine. Show when nodes are omitted and allow
@@ -229,7 +243,11 @@ network service is required. Parent/child hierarchy is not a dependency edge.
 
 ### Complete the v0.5 Program Calendar goal
 
-After V01-V04, split work into separate issues in this order:
+Implement V04 before V05/V06 so the selected-item graph is useful independently
+of critical-path analysis. Priority does not determine criticality. These new
+slices remain in v0.5; they do not delay the v0.4 capacity acceptance gate.
+
+After V01-V06, split work into separate issues in this order:
 
 1. Shared holiday and program-event domain, capacity effects, persistence, and
    overlap policy. Reuse the R04 calculation boundary; avoid double deductions.
