@@ -14,6 +14,7 @@ from PySide6.QtCore import (
 )
 
 from planacity.domain import ProgramPlan, WorkItem
+from planacity.planning.allocations import WorkAllocationSummary, summarize_allocations
 from planacity.planning.estimate_units import conversion_description, estimate_text, parse_estimate
 from planacity.planning.work_items import rename_work_item, set_work_dates, set_work_estimate
 from planacity.ui.session import Session
@@ -38,8 +39,10 @@ class PlanModel(QAbstractItemModel):
         super().__init__(session)
         self.session = session
         self.plan = session.document.plan
+        self.effort: dict[UUID, WorkAllocationSummary] = {}
         self.tokens: dict[UUID, int] = {}
         self.ids: dict[int, UUID] = {}
+        self._refresh_effort()
         self._remember()
         session.changed.connect(self.refresh)
 
@@ -57,8 +60,19 @@ class PlanModel(QAbstractItemModel):
             return
         self.beginResetModel()
         self.plan = incoming
+        self._refresh_effort()
         self._remember()
         self.endResetModel()
+
+    def _refresh_effort(self) -> None:
+        self.effort = (
+            {
+                summary.work_item_id: summary
+                for summary in summarize_allocations(self.plan, self.plan.allocations).work
+            }
+            if self.plan is not None
+            else {}
+        )
 
     def item(self, index: Index) -> WorkItem | None:
         if self.plan is None or not index.isValid():
@@ -120,10 +134,21 @@ class PlanModel(QAbstractItemModel):
             ),
             "",
         )
+        effort = self._effort(item.id)
+        estimate = estimate_text(
+            self.plan,
+            effort.known_estimate_hours if effort.is_container else item.estimate_hours,
+            editing=role == Qt.ItemDataRole.EditRole,
+        )
+        if effort.is_container and effort.missing_estimate_count:
+            estimate = (
+                f"{estimate} known; {effort.missing_estimate_count} "
+                f"estimate{'s' if effort.missing_estimate_count != 1 else ''} missing"
+            )
         values = (
             item.title,
             item.kind.value.title(),
-            estimate_text(self.plan, item.estimate_hours, editing=role == Qt.ItemDataRole.EditRole),
+            estimate,
             "" if item.start is None else item.start.isoformat(),
             "" if item.end is None else item.end.isoformat(),
             "Outside planning horizon" if outside else "",
@@ -136,6 +161,22 @@ class PlanModel(QAbstractItemModel):
             return value
         if role == Qt.ItemDataRole.ToolTipRole:
             if index.column() == 2:
+                if effort.is_container:
+                    reference = (
+                        f"Entered reference estimate: {item.estimate_hours} h. "
+                        if item.estimate_hours is not None
+                        else "No entered reference estimate. "
+                    )
+                    missing = (
+                        f" {effort.missing_estimate_count} leaf estimate(s) are missing."
+                        if effort.missing_estimate_count
+                        else ""
+                    )
+                    return (
+                        f"Derived from {effort.leaf_count} leaf item(s): "
+                        f"{effort.known_estimate_hours} h known.{missing} {reference}"
+                        "Container estimates are read-only. " + conversion_description(self.plan)
+                    )
                 return (
                     f"Stored estimate: {item.estimate_hours} h. "
                     if item.estimate_hours is not None
@@ -147,6 +188,11 @@ class PlanModel(QAbstractItemModel):
                 "Clear a cell to leave it unset."
             )
         return None
+
+    def _effort(self, item_id: UUID) -> WorkAllocationSummary:
+        if self.plan is None:
+            raise ValueError("Open a plan before calculating effort.")
+        return self.effort[item_id]
 
     def headerData(
         self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole
@@ -161,7 +207,11 @@ class PlanModel(QAbstractItemModel):
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
         flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-        if index.column() in (0, 2, 3, 4):
+        item = self.item(index)
+        estimate_is_editable = bool(
+            item is not None and self.plan is not None and not self.plan.children(item.id)
+        )
+        if index.column() in (0, 3, 4) or (index.column() == 2 and estimate_is_editable):
             flags |= Qt.ItemFlag.ItemIsEditable
         return flags
 
@@ -172,6 +222,10 @@ class PlanModel(QAbstractItemModel):
         if index.column() == 0:
             return rename_work_item(self.plan, item.id, text)
         if index.column() == 2:
+            if self.plan.children(item.id):
+                raise ValueError(
+                    "Container estimates are derived from leaf work and cannot be edited."
+                )
             hours = parse_estimate(self.plan, text)
             return (
                 self.plan
@@ -196,16 +250,25 @@ class PlanModel(QAbstractItemModel):
     def setData(self, index: Index, value: object, role: int = Qt.ItemDataRole.EditRole) -> bool:
         if role != Qt.ItemDataRole.EditRole or not isinstance(value, str):
             return False
+        edited_item = self.item(index)
+        if edited_item is None:
+            return False
         try:
             updated = self.candidate(index, value)
         except ValueError as error:
             self.error.emit(str(error))
             return False
         self.plan = updated  # Cell edits preserve indexes and the current editor.
+        self._refresh_effort()
         self.session.apply(updated)
         self.dataChanged.emit(
             self.index(index.row(), 0, self.parent(index)),
             self.index(index.row(), len(self.headers) - 1, self.parent(index)),
         )
+        parent_id = edited_item.parent_id
+        while parent_id is not None:
+            parent_index = self.index_for_id(parent_id).siblingAtColumn(2)
+            self.dataChanged.emit(parent_index, parent_index)
+            parent_id = self.plan.work_item(parent_id).parent_id
         self.error.emit("")
         return True

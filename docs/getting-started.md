@@ -14,7 +14,9 @@ No account or network connection is needed while planning.
    in **Planning -> Estimate units...** with an explicit reference calendar.
    See [estimate units](estimate-units.md) for conversions. Clear a value to leave it
    unset; zero hours is different from unknown. Invalid drafts stay editable;
-   correct them or press `Escape` to cancel.
+   correct them or press `Escape` to cancel. Epic and Task containers show
+   read-only totals from their leaves. Their tooltips retain any entered or
+   imported container estimate as reference and identify missing leaf estimates.
 4. Use **Move...** to select a different parent. **Delete...** previews the number
    of work items, relationships, and memberships being removed before confirming.
 5. Use **WorkGroups...** to organize Epics independently from hierarchy. Use
@@ -198,7 +200,10 @@ testing remain release work. No release tag or application download is published
 
 In Plan, select work and choose **Work allocations...**. Add people from the
 roster with explicit hours, or edit/remove existing assignments. Review the
-estimate, allocated hours, and remaining effort before Save. Cancel discards all
+effective estimate, entered reference, allocated hours, and remaining effort
+before Save. Container summaries separate direct and descendant allocations.
+New allocations belong to leaves; legacy direct container effort can be moved
+to a named leaf without changing allocation IDs or hours. Cancel discards all
 dialog edits. Allocation hours are independent of the estimate display unit.
 Save the project to retain assignments after reopening. See the
 [allocation guide](allocation-model.md) for screenshots and calculation limits.

@@ -84,14 +84,60 @@ def test_unknown_estimate_and_zero_hours_are_distinct(plan):
     assert empty.work[0].unassigned
 
 
-def test_no_implicit_hierarchy_rollups_or_date_clipping(plan):
+def test_hierarchy_rollups_do_not_clip_dates_or_double_count_container_estimates(plan):
     task = replace(plan.work_items[1], start=date(2027, 1, 1), end=date(2027, 1, 5))
     plan = replace(plan, work_items=(plan.work_items[0], task, plan.work_items[2]))
     result = summarize_allocations(plan, (allocation(plan, "25"), allocation(plan, "10", work=0)))
-    assert [w.allocated_hours for w in result.work] == [10, 25, 0]
-    assert [w.remaining_hours for w in result.work] == [90, 75, None]
+    epic, child, unknown = result.work
+    assert epic.entered_estimate_hours == 100
+    assert epic.known_estimate_hours == 100
+    assert epic.estimate_hours == 100
+    assert epic.direct_allocated_hours == 10
+    assert epic.descendant_allocated_hours == 25
+    assert epic.allocated_hours == 35
+    assert epic.remaining_hours is None
+    assert epic.mixed_level_effort and epic.incomplete
+    assert child.allocated_hours == 25 and child.remaining_hours == 75
+    assert unknown.missing_estimate_count == 1 and unknown.remaining_hours is None
     assert result.people[0].allocated_hours == 35
     assert result.people[1].allocated_hours == 0
+
+
+def test_nested_rollup_reports_known_subtotal_missing_leaves_and_exact_allocations(plan):
+    epic, task, unknown = plan.work_items
+    known = WorkItem(
+        title="Known leaf",
+        kind=WorkItemType.SUBTASK,
+        parent_id=task.id,
+        estimate_hours=Decimal("60"),
+    )
+    missing = WorkItem(title="Unknown leaf", kind=WorkItemType.SUBTASK, parent_id=task.id)
+    other = replace(unknown, parent_id=epic.id, estimate_hours=Decimal("40"))
+    plan = replace(
+        plan,
+        work_items=(replace(epic, estimate_hours=Decimal("150")), task, known, missing, other),
+    )
+    entries = (
+        Allocation(work_item_id=known.id, person_id=plan.people[0].id, hours=Decimal("20")),
+        Allocation(work_item_id=other.id, person_id=plan.people[1].id, hours=Decimal("40")),
+    )
+    result = summarize_allocations(plan, entries)
+    by_id = {summary.work_item_id: summary for summary in result.work}
+    epic_summary = by_id[epic.id]
+    task_summary = by_id[task.id]
+    assert epic_summary.entered_estimate_hours == 150
+    assert epic_summary.known_estimate_hours == 100
+    assert epic_summary.estimate_hours is None
+    assert epic_summary.missing_estimate_count == 1
+    assert epic_summary.leaf_count == 3
+    assert epic_summary.allocated_hours == 60
+    assert epic_summary.direct_allocation_count == 0
+    assert epic_summary.descendant_allocation_count == 2
+    assert task_summary.entered_estimate_hours == 100
+    assert task_summary.known_estimate_hours == 60
+    assert task_summary.missing_estimate_count == 1
+    assert task_summary.allocated_hours == 20
+    assert [person.allocated_hours for person in result.people] == [20, 40]
 
 
 def test_long_fractional_hours_and_negative_difference_are_exact_under_low_precision(plan):

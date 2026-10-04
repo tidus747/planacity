@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from test_editor_forms import accept, drive_dialog
 from test_estimate_units import unit_plan
 
+from planacity.domain import WorkItem, WorkItemType
 from planacity.domain.estimate_units import EstimateUnit
 from planacity.planning.estimate_units import set_estimate_preferences
 from planacity.ui.theme import Theme
@@ -109,6 +110,30 @@ def test_rounded_editor_noop_and_cancel_do_not_change_hours_or_dirty_state(app, 
     drive_dialog(app, window.estimate_units_action.trigger, cancel)
     assert window.session.document.plan is plan
     assert not window.session.document.dirty
+
+
+def test_container_rollup_uses_display_units_without_replacing_reference_estimate(app, loaded):
+    window = loaded
+    plan = window.session.document.plan
+    parent = WorkItem(title="Program", kind=WorkItemType.EPIC, estimate_hours=Decimal("99"))
+    children = tuple(
+        WorkItem(
+            title=f"Leaf {number}",
+            kind=WorkItemType.TASK,
+            parent_id=parent.id,
+            estimate_hours=Decimal("27"),
+        )
+        for number in (1, 2)
+    )
+    plan = replace(plan, work_items=(parent, *children))
+    plan = set_estimate_preferences(plan, EstimateUnit.DAYS, plan.work_calendars[0].id)
+    window.session.apply(plan)
+    index = window.plan_page.model.index_for_id(parent.id).siblingAtColumn(2)
+    assert window.plan_page.model.data(index) == "10"
+    tooltip = window.plan_page.model.data(index, Qt.ItemDataRole.ToolTipRole)
+    assert "54 h known" in tooltip
+    assert "Entered reference estimate: 99 h" in tooltip
+    assert plan.work_item(parent.id).estimate_hours == 99
 
 
 def test_invalid_open_editor_blocks_unit_settings(app, loaded):

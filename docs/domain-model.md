@@ -87,7 +87,11 @@ means an explicit zero-hour estimate. Fractional precision is preserved, with no
 rounding. Negative/non-finite values, floats, strings, and booleans are rejected.
 Future UI/import adapters must parse human input into Decimal explicitly.
 `set_work_estimate(plan, item_id, Decimal("1.25"))` changes the estimate;
-passing `None` clears it. Parent estimates are independent, not computed rollups.
+passing `None` clears it. A leaf's entered value is its effective estimate. A
+container's effective estimate is the recursive sum of its descendant leaves and
+is read-only in Plan. Unknown leaves produce a known subtotal plus a missing count;
+an explicit zero remains known. A container's entered/imported value stays stored
+as reference data and is not added to the rollup or written over.
 
 `set_work_dates(plan, item_id, start=..., end=...)` sets or clears both optional
 dates atomically. A start-only or end-only item is valid. When both are known,
@@ -210,4 +214,10 @@ ProgramPlan owns an immutable tuple of Allocation values: `id`, `work_item_id`,
 `person_id`, and finite non-negative Decimal `hours`. Work and people must exist;
 IDs and work/person pairs are unique. Schema 7 persists these values. Lifecycle
 services preserve identity; deletion requires explicit consent for references.
+Summaries recursively count each allocation ID once. They separate direct and
+descendant hours, and mark legacy container allocations as incomplete or
+mixed-level effort instead of discarding them. New allocations must target leaves.
+When allocated leaf work gains its first child, the user must move its entered
+estimate and allocations to a leaf or cancel. `resolve_container_effort` offers
+the same explicit repair for existing container allocations.
 See [work allocations](allocation-model.md) for summary rules and desktop editing.

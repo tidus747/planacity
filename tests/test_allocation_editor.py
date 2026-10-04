@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QComboBox, QDialogButtonBox, QLabel, QLineEdit, QM
 from test_allocation_settings import allocated_plan
 from test_editor_forms import accept, drive_dialog
 
-from planacity.domain import WorkCalendar
+from planacity.domain import Allocation, WorkCalendar, WorkItemType
 from planacity.domain.estimate_units import EstimateUnit
 from planacity.planning.estimate_units import set_estimate_preferences
 from planacity.ui.allocations import AllocationDialog
@@ -217,3 +217,85 @@ def test_person_removal_previews_allocations_and_preserves_other_people(app, loa
     monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.StandardButton.Yes)
     page.edit("remove")
     assert window.session.document.plan.allocations == (original.allocations[1],)
+
+
+def test_container_summary_and_resolution_move_direct_effort_to_named_leaf(app, loaded):
+    window = loaded
+    plan = window.session.document.plan
+    parent = replace(plan.work_items[0], estimate_hours=Decimal("150"))
+    direct = Allocation(work_item_id=parent.id, person_id=plan.people[2].id, hours=Decimal("10"))
+    legacy = replace(
+        plan,
+        work_items=(parent, *plan.work_items[1:]),
+        allocations=(*plan.allocations, direct),
+    )
+    window.session.apply(legacy)
+    dialog = AllocationDialog(window, window.session, parent.id)
+    dialog.show()
+    assert "Effective estimate: 100 h" in dialog.summary.text()
+    assert "Entered reference: 150 h" in dialog.summary.text()
+    assert "10 h direct; 100 h in descendants" in dialog.summary.text()
+    assert "Mixed-level effort" in dialog.summary.text()
+    assert not dialog.add_button.isEnabled()
+    assert dialog.resolve_button.isEnabled()
+
+    def resolve(form):
+        field = form.findChild(QLineEdit)
+        field.setText("Program coordination")
+        accept(form)
+
+    drive_dialog(app, dialog.resolve_button.click, resolve)
+    leaf = dialog.candidate.work_items[-1]
+    assert leaf.title == "Program coordination"
+    assert leaf.estimate_hours == 150
+    moved = next(a for a in dialog.candidate.allocations if a.id == direct.id)
+    assert moved.work_item_id == leaf.id
+    assert not dialog.resolve_button.isEnabled()
+    save(dialog)
+    assert window.session.document.plan.work_item(parent.id).estimate_hours is None
+
+
+def test_adding_child_to_allocated_leaf_previews_transfer_and_honors_cancel(
+    app, loaded, monkeypatch
+):
+    window = loaded
+    plan = window.session.document.plan
+    leaf = replace(plan.work_items[2], estimate_hours=Decimal("12"))
+    direct = Allocation(work_item_id=leaf.id, person_id=plan.people[2].id, hours=Decimal("7"))
+    plan = replace(
+        plan,
+        work_items=(*plan.work_items[:2], leaf),
+        allocations=(*plan.allocations, direct),
+    )
+    window.session.apply(plan)
+    page = window.plan_page
+    page.table.setCurrentIndex(page.model.index_for_id(leaf.id))
+    messages = []
+
+    def reject(*args):
+        messages.append(args[2])
+        return QMessageBox.StandardButton.Cancel
+
+    monkeypatch.setattr(QMessageBox, "question", reject)
+
+    def cancel_add(form):
+        form.findChild(QLineEdit).setText("Research")
+        accept(form)
+        assert form.isVisible()
+
+    drive_dialog(app, lambda: page.add_item(WorkItemType.SUBTASK), cancel_add)
+    assert window.session.document.plan is plan
+    assert "Allocation IDs and hours stay unchanged" in messages[0]
+
+    monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.StandardButton.Yes)
+
+    def accept_add(form):
+        form.findChild(QLineEdit).setText("Research")
+        accept(form)
+
+    drive_dialog(app, lambda: page.add_item(WorkItemType.SUBTASK), accept_add)
+    changed = window.session.document.plan
+    child = changed.children(leaf.id)[0]
+    assert child.title == "Research" and child.estimate_hours == 12
+    moved = next(allocation for allocation in changed.allocations if allocation.id == direct.id)
+    assert moved.work_item_id == child.id and moved.hours == 7

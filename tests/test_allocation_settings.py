@@ -26,8 +26,14 @@ from planacity.planning.allocation_settings import (
     remove_allocation,
     update_allocation,
 )
+from planacity.planning.allocations import summarize_allocations
 from planacity.planning.people import remove_person, rename_person
-from planacity.planning.work_items import move_work_item, remove_work_item
+from planacity.planning.work_items import (
+    add_work_item,
+    move_work_item,
+    remove_work_item,
+    resolve_container_effort,
+)
 
 
 def allocated_plan():
@@ -72,6 +78,103 @@ def test_lifecycle_preserves_ids_order_and_unrelated_data():
     moved = move_work_item(plan, plan.work_items[1].id, None)
     assert renamed.allocations is plan.allocations
     assert moved.allocations is plan.allocations
+
+
+def test_new_allocations_are_leaf_only_but_legacy_container_entries_can_be_edited():
+    plan = allocated_plan()
+    container = plan.work_items[0]
+    entry = Allocation(work_item_id=container.id, person_id=plan.people[0].id, hours=Decimal("8"))
+    with pytest.raises(ValueError, match="leaf work"):
+        add_allocation(plan, entry)
+    legacy = replace(plan, allocations=(entry, *plan.allocations))
+    changed = update_allocation(legacy, replace(entry, hours=Decimal("9")))
+    assert changed.allocations[0].id == entry.id
+    assert changed.allocations[0].hours == 9
+
+
+def test_adding_child_to_allocated_leaf_requires_and_applies_explicit_transfer():
+    plan = allocated_plan()
+    leaf = plan.work_items[2]
+    leaf = replace(leaf, estimate_hours=Decimal("12"), start=date(2026, 10, 4))
+    entry = Allocation(work_item_id=leaf.id, person_id=plan.people[0].id, hours=Decimal("7"))
+    plan = replace(
+        plan,
+        work_items=(*plan.work_items[:2], leaf),
+        allocations=(*plan.allocations, entry),
+    )
+    child = WorkItem(title="Research", kind=WorkItemType.SUBTASK, parent_id=leaf.id)
+    with pytest.raises(ValueError, match="direct allocations"):
+        add_work_item(plan, child)
+    resolved = add_work_item(plan, child, transfer_parent_effort=True)
+    assert resolved.work_item(leaf.id).estimate_hours is None
+    assert resolved.work_item(leaf.id).start == date(2026, 10, 4)
+    assert resolved.work_item(child.id).estimate_hours == 12
+    moved = next(allocation for allocation in resolved.allocations if allocation.id == entry.id)
+    assert moved.work_item_id == child.id and moved.hours == 7
+    assert resolved.imports is plan.imports
+
+
+def test_reparenting_into_allocated_leaf_creates_resolution_leaf_and_preserves_ids():
+    plan = allocated_plan()
+    target = WorkItem(title="Target program", kind=WorkItemType.EPIC, estimate_hours=Decimal("5"))
+    entry = Allocation(work_item_id=target.id, person_id=plan.people[2].id, hours=Decimal("5"))
+    plan = replace(
+        plan,
+        work_items=(*plan.work_items, target),
+        allocations=(*plan.allocations, entry),
+    )
+    moving = plan.work_items[1]
+    with pytest.raises(ValueError, match="new leaf"):
+        move_work_item(plan, moving.id, target.id)
+    resolved = move_work_item(plan, moving.id, target.id, resolve_parent_effort=True)
+    children = resolved.children(target.id)
+    resolution = next(child for child in children if child.id != moving.id)
+    assert resolution.title == "Target program effort"
+    assert resolution.estimate_hours == 5
+    assert resolved.work_item(target.id).estimate_hours is None
+    assert next(a for a in resolved.allocations if a.id == entry.id).work_item_id == resolution.id
+
+
+def test_existing_container_effort_moves_to_named_leaf_without_touching_descendants():
+    plan = allocated_plan()
+    parent, existing = plan.work_items[:2]
+    direct = Allocation(work_item_id=parent.id, person_id=plan.people[2].id, hours=Decimal("3"))
+    legacy = replace(
+        plan,
+        work_items=(replace(parent, estimate_hours=Decimal("8")), *plan.work_items[1:]),
+        allocations=(*plan.allocations, direct),
+    )
+    resolved = resolve_container_effort(legacy, parent.id, "Program coordination")
+    leaf = resolved.work_items[-1]
+    assert leaf.title == "Program coordination" and leaf.estimate_hours == 8
+    assert resolved.work_item(parent.id).estimate_hours is None
+    assert resolved.work_item(existing.id) == existing
+    assert next(a for a in resolved.allocations if a.id == direct.id).work_item_id == leaf.id
+
+
+def test_rollups_recompute_after_reparent_and_delete_without_rewriting_estimates():
+    plan = allocated_plan()
+    parent = replace(plan.work_items[0], estimate_hours=Decimal("150"))
+    other = replace(plan.work_items[2], estimate_hours=Decimal("40"))
+    plan = replace(plan, work_items=(parent, plan.work_items[1], other))
+    moved = move_work_item(plan, other.id, parent.id)
+    by_id = {item.work_item_id: item for item in summarize_allocations(moved, ()).work}
+    assert by_id[parent.id].known_estimate_hours == 140
+    assert moved.work_item(parent.id).estimate_hours == 150
+    restored = remove_work_item(moved, other.id)
+    parent_summary = summarize_allocations(restored, ()).work[0]
+    assert parent_summary.known_estimate_hours == 100
+    assert restored.work_item(parent.id).estimate_hours == 150
+
+
+def test_jira_export_keeps_stored_container_estimate_instead_of_rollup():
+    plan = allocated_plan()
+    parent = replace(plan.work_items[0], estimate_hours=Decimal("150"))
+    plan = replace(plan, work_items=(parent, *plan.work_items[1:]))
+    table = read_csv(export_csv(plan, ExportOptions(estimate_unit="hours")))
+    assert table.rows[0][5] == "150"
+    assert table.rows[1][5] == "100"
+    assert summarize_allocations(plan, ()).work[0].known_estimate_hours == 100
 
 
 def test_save_load_and_backup_preserve_exact_hours_and_order(tmp_path):

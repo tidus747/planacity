@@ -293,10 +293,19 @@ class PlanPage(WorkspacePage):
             parent_id = selected.id
         title = QLineEdit()
         item_id: list[UUID] = []
+        transfer_confirmed = False
 
         def build() -> ProgramPlan:
+            nonlocal transfer_confirmed
             item = WorkItem(title=title.text(), kind=kind, parent_id=parent_id)
-            updated = add_work_item(plan, item)
+            if parent_id is not None and self._allocated_leaf(plan, parent_id):
+                if not transfer_confirmed:
+                    transfer_confirmed = self._confirm_effort_transfer(
+                        plan, parent_id, f"the new leaf '{item.title}'"
+                    )
+                if not transfer_confirmed:
+                    raise ValueError("No work was added; the effort transfer was cancelled.")
+            updated = add_work_item(plan, item, transfer_parent_effort=transfer_confirmed)
             item_id.append(item.id)
             return updated
 
@@ -325,10 +334,26 @@ class PlanPage(WorkspacePage):
                     )
         current = parents.findData(str(item.parent_id) if item.parent_id else None)
         parents.setCurrentIndex(max(0, current))
+        confirmed_parent: UUID | None = None
 
         def build() -> ProgramPlan:
+            nonlocal confirmed_parent
             value = parents.currentData()
-            return move_work_item(plan, item.id, UUID(value) if value else None)
+            parent_id = UUID(value) if value else None
+            resolve = False
+            if parent_id is not None and self._allocated_leaf(plan, parent_id):
+                if confirmed_parent != parent_id:
+                    target = plan.work_item(parent_id)
+                    confirmed = self._confirm_effort_transfer(
+                        plan, parent_id, f"a new leaf named '{target.title} effort'"
+                    )
+                    if not confirmed:
+                        raise ValueError(
+                            "The work was not moved; the effort transfer was cancelled."
+                        )
+                    confirmed_parent = parent_id
+                resolve = True
+            return move_work_item(plan, item.id, parent_id, resolve_parent_effort=resolve)
 
         updated = validated_form(self, "Move work", [("&New parent", parents)], build)
         if updated is not None:
@@ -336,6 +361,34 @@ class PlanPage(WorkspacePage):
             self.table.expand(self.model.index_for_id(updated.work_item(item.id).parent_id))
             self.table.setCurrentIndex(self.model.index_for_id(item.id))
             self.report_hidden(item.id)
+
+    @staticmethod
+    def _allocated_leaf(plan: ProgramPlan, item_id: UUID) -> bool:
+        return not plan.children(item_id) and any(
+            allocation.work_item_id == item_id for allocation in plan.allocations
+        )
+
+    def _confirm_effort_transfer(self, plan: ProgramPlan, item_id: UUID, destination: str) -> bool:
+        item = plan.work_item(item_id)
+        count = sum(allocation.work_item_id == item_id for allocation in plan.allocations)
+        estimate = (
+            f"Its entered estimate of {item.estimate_hours} h"
+            if item.estimate_hours is not None
+            else "Its missing estimate"
+        )
+        return (
+            QMessageBox.question(
+                self,
+                "Move effort to leaf work",
+                f"'{item.title}' is allocated leaf work. Making it a container requires "
+                f"an explicit resolution.\n\n{estimate} and {count} allocation(s) will move "
+                f"to {destination}. Allocation IDs and hours stay unchanged. Dates, groups, "
+                "relationships, and imported baselines do not move.\n\nContinue?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
+            )
+            == QMessageBox.StandardButton.Yes
+        )
 
     def report_hidden(self, item_id: UUID) -> None:
         self.error.setText(
