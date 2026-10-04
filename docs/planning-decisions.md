@@ -1,8 +1,9 @@
 # Planning consistency and visibility decisions
 
-Revised: 2026-10-04. Status: direction for the next implementation slices.
-This document specifies future behavior. It does not change the current schema 7
-application. See the [roadmap](roadmap.md) for order and acceptance.
+Revised: 2026-10-04. Status: active implementation contract.
+Dependency guards and hierarchy effort rollups are implemented without changing
+schema 7. Dated capacity, reusable findings, and later presentation sections
+remain future behavior. See the [roadmap](roadmap.md) for order and acceptance.
 
 ## 1. One source of calculation truth
 

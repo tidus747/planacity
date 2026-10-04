@@ -64,12 +64,13 @@ These are backlog keys, not GitHub issue numbers. Promote the next wave to
 focused GitHub issues linked to the v0.4 milestone when implementation resumes.
 GitHub owns live status; this document owns scope, ordering, and acceptance.
 R01 was completed in [#75](https://github.com/tidus747/planacity/issues/75) and
-merged through [#76](https://github.com/tidus747/planacity/pull/76). R02 is now
-tracked in [#77](https://github.com/tidus747/planacity/issues/77), with
-[#80](https://github.com/tidus747/planacity/pull/80) awaiting review as of October 4.
-Website showcase work (#78) merged through PR #79. The remaining slices are
-planned, not implemented. The [implementation queue](implementation-queue.md)
-adds focused briefs, dependencies, and review evidence for the next sessions.
+merged through [#76](https://github.com/tidus747/planacity/pull/76). R02 was
+completed in [#77](https://github.com/tidus747/planacity/issues/77) and merged
+through [#80](https://github.com/tidus747/planacity/pull/80). Website showcase
+work (#78) merged through PR #79. R03 is tracked in
+[#82](https://github.com/tidus747/planacity/issues/82). Later slices remain
+planned. The [implementation queue](implementation-queue.md) adds focused briefs,
+dependencies, and review evidence for the next sessions.
 
 ### R01 - Make estimate-calendar setup understandable
 

@@ -18,6 +18,11 @@ match your Jira configuration. Jira's importer requires its own field mapping,
 date configuration, permissions, and validation. Review its preview before
 applying changes. Planacity does not upload anything to Jira.
 
+Hierarchy rollups do not replace stored export values. A container's exported
+estimate is its entered/imported reference value, not its computed leaf total.
+Derived totals remain visible in Plan and allocation summaries, so an export
+never silently rewrites Jira effort or its imported baseline.
+
 Atlassian documents numeric IDs for CSV hierarchy, parent-first row ordering,
 seconds for Original Estimate, and issue keys for updating existing issues in
 its [CSV import guide](https://support.atlassian.com/jira-cloud-administration/docs/import-data-from-a-csv-file/).

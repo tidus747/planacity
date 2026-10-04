@@ -41,8 +41,8 @@ def test_tree_indexes_edits_and_structural_changes(app):
     assert session.document.plan == plan
     assert model.setData(task, "Assemble fixture")
     assert session.document.plan.work_items[2].id == plan.work_items[2].id
-    assert not model.setData(task.siblingAtColumn(2), "-1")
-    assert model.setData(task.siblingAtColumn(2), "0.125")
+    assert not model.setData(subtask.siblingAtColumn(2), "-1")
+    assert model.setData(subtask.siblingAtColumn(2), "0.125")
     assert model.setData(epic.siblingAtColumn(3), "2026-09-30")
     assert "Outside" in model.data(epic.siblingAtColumn(5))
     moved = move_work_item(session.document.plan, plan.work_items[2].id, plan.work_items[4].id)
@@ -55,6 +55,29 @@ def test_tree_indexes_edits_and_structural_changes(app):
         )
     )
     assert not model.index_for_id(plan.work_items[2].id).isValid()
+
+
+def test_container_estimate_is_derived_read_only_and_keeps_entered_reference(app):
+    session = Session()
+    plan = example()
+    session.document.new(plan)
+    model = PlanModel(session)
+    epic = model.index_for_id(plan.work_items[0].id).siblingAtColumn(2)
+    task = model.index_for_id(plan.work_items[2].id).siblingAtColumn(2)
+    leaf = model.index_for_id(plan.work_items[3].id).siblingAtColumn(2)
+
+    assert model.data(epic) == "20.75"
+    assert model.data(task) == "4.25"
+    assert "Derived from 1 leaf item(s): 4.25 h known" in model.data(
+        task, Qt.ItemDataRole.ToolTipRole
+    )
+    assert "Entered reference estimate: 40 h" in model.data(
+        task, Qt.ItemDataRole.ToolTipRole
+    )
+    assert not (model.flags(task) & Qt.ItemFlag.ItemIsEditable)
+    assert model.flags(leaf) & Qt.ItemFlag.ItemIsEditable
+    assert not model.setData(task, "10")
+    assert session.document.plan.work_item(plan.work_items[2].id).estimate_hours == 40
 
 
 def test_inline_invalid_draft_remains_editable_then_save_commits_it(

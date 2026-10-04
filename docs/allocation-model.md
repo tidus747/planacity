@@ -13,12 +13,18 @@ must exist in the plan. Allocation IDs and work/person pairs must be unique;
 edit an existing allocation instead of adding another entry for the same pair.
 
 The summary returns all work and people in canonical plan/roster order. It sums
-only explicitly allocated hours. For each work item:
+each explicit allocation ID once. For each work item:
 
-- `allocated_hours` is the exact sum of its allocations.
-- `remaining_hours` is estimate minus allocated hours, or None for an unknown
-  estimate. A negative value identifies allocation beyond the estimate.
-- `missing_estimate` identifies unknown estimates, separately from zero.
+- A leaf uses its entered estimate. A container's effective estimate is the exact
+  recursive sum of descendant leaves; its entered estimate remains reference data.
+- `known_estimate_hours` and `missing_estimate_count` distinguish a partial
+  subtotal from a complete zero. A complete `estimate_hours` is available only
+  when every leaf estimate is known.
+- `direct_allocated_hours`, `descendant_allocated_hours`, and `allocated_hours`
+  explain the exact subtree total without duplicating an allocation ID.
+- `remaining_hours` is the complete effective estimate minus the subtree's
+  allocated hours. It is unknown when estimates are missing or the container has
+  unresolved direct allocations. A negative value identifies excess allocation.
 - `unassigned` means no positive effort has been allocated. A zero-hour entry is
   retained as explicit data but does not make work positively allocated.
 
@@ -27,12 +33,18 @@ are allowed so incomplete plans remain visible. The calculation never changes
 estimates, rescales allocations, assigns imported users, or rewrites baselines.
 Decimal totals retain all input precision even under a low caller precision.
 
-Parent and child work are independent. Their estimates and allocations do not
-inherit or roll up automatically. Allocating effort at both levels counts both
-explicit entries; decide which work represents the effort being planned.
-Dates outside the horizon do not discard allocations from these whole-work
-totals. No calendar-hour defaults, date distribution, capacity comparison, or
-individual performance measure is implied.
+Existing plans may contain entered estimates or allocations on containers. The
+estimate is shown separately as reference and is not added to leaf effort. Direct
+container allocations stay visible and count once, but make the summary incomplete;
+direct and descendant allocations together are marked mixed-level effort. Use
+**Move direct effort to leaf...** to create a named child, clear the container's
+entered estimate, and move its direct allocations while preserving their IDs and
+hours. No dates, groups, relationships, or imported baselines move with them.
+
+New allocations target leaf work. Adding or moving the first child under an
+allocated leaf previews the same transfer and requires an explicit choice; Cancel
+preserves the original plan. Dates outside the horizon do not discard allocations.
+No date distribution, capacity comparison, or productivity measure is implied.
 
 ## Edit allocations in Plan
 
@@ -42,9 +54,10 @@ Remove it. Hours remain hours even when Plan displays estimates in days or weeks
 Save applies the complete draft. Cancel or Escape discards it. Use Tab to move
 between controls and Alt+A / Alt+E / Alt+R for allocation actions.
 
-The summary reports estimate, allocated effort, and remaining effort for this
-work. Missing estimates and allocations exceeding the estimate remain visible.
-These totals do not compare against calendar capacity or distribute work by date.
+The summary reports effective estimate, entered reference, direct and descendant
+allocation, and remaining effort. Missing estimates, mixed levels, and excess
+allocation remain visible. These totals do not compare against calendar capacity
+or distribute work by date.
 
 Deletion of a person or work item previews affected allocations and requires
 confirmation. Deleting a parent includes hidden descendants. Surviving allocation
@@ -63,8 +76,7 @@ then edit one entry and cancel. Check that the saved totals remain unchanged.
 Capacity load and overload comparisons require a scheduling policy and remain
 separate work.
 
-The next [roadmap](roadmap.md) defines that work in R03-R06. Its
-[planning decisions](planning-decisions.md) introduce leaf-effort rollups,
-explicit handling of existing parent allocations, and dated capacity results.
-The current independent parent/child calculation above remains in place until
-those changes are implemented and validated.
+The [roadmap](roadmap.md) continues with R04-R06. The shared dated capacity engine
+will consume these effective estimates and explicit allocations without changing
+their hierarchy or storage. See the [planning decisions](planning-decisions.md)
+for the dated distribution contract.

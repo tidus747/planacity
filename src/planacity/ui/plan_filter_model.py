@@ -24,6 +24,9 @@ class PlanFilterModel(QSortFilterProxyModel):
         self.result = filter_plan(source.plan, self.filters)
         self.plan_id = source.plan.id if source.plan else None
         self.pending = False
+        self.refresh_timer = QTimer(self)
+        self.refresh_timer.setSingleShot(True)
+        self.refresh_timer.timeout.connect(self.refresh_filters)
         self.setDynamicSortFilter(False)
         # Recompute acceptance before Qt completes its source-reset handling.
         source.modelReset.connect(self._source_reset)
@@ -57,9 +60,10 @@ class PlanFilterModel(QSortFilterProxyModel):
     def _queue_refresh(self) -> None:
         if not self.pending:
             self.pending = True
-            QTimer.singleShot(0, self.refresh_filters)
+            self.refresh_timer.start(0)
 
     def refresh_filters(self) -> None:
+        self.refresh_timer.stop()
         self.pending = False
         self.filters_about_to_change.emit()
         result = filter_plan(self.plan, self.filters)

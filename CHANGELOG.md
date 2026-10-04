@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Hierarchy effort rollups in Plan. Leaf estimates form read-only Epic and Task
+  totals, with known subtotals and missing-estimate counts. Allocation summaries
+  count each assignment once and identify direct container effort. Existing
+  container estimates remain reference values, and an explicit resolution action
+  moves direct effort to a new leaf without changing allocation IDs or hours.
 - Product website with real application captures, a getting-started guide,
   responsive light/dark appearance, and the current implementation roadmap.
 - Work allocations in Plan: split explicit hours between people, edit or remove

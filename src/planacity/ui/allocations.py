@@ -26,6 +26,7 @@ from planacity.planning.allocation_settings import (
     update_allocation,
 )
 from planacity.planning.allocations import summarize_allocations
+from planacity.planning.work_items import resolve_container_effort
 from planacity.ui.forms import validated_form
 from planacity.ui.pages import label
 from planacity.ui.session import Session
@@ -35,18 +36,46 @@ def allocation_summary_text(plan: ProgramPlan, work_id: UUID) -> str:
     summary = next(
         w for w in summarize_allocations(plan, plan.allocations).work if w.work_item_id == work_id
     )
-    estimate = (
-        "Missing estimate" if summary.missing_estimate else f"Estimate: {summary.estimate_hours} h"
-    )
+    if summary.is_container:
+        estimate = f"Effective estimate: {summary.known_estimate_hours} h known"
+        if summary.missing_estimate_count:
+            estimate += f"; {summary.missing_estimate_count} leaf estimate(s) missing"
+        else:
+            estimate = f"Effective estimate: {summary.known_estimate_hours} h"
+        reference = (
+            f"Entered reference: {summary.entered_estimate_hours} h"
+            if summary.entered_estimate_hours is not None
+            else "Entered reference: not set"
+        )
+        allocated = (
+            f"Allocated: {summary.allocated_hours} h total "
+            f"({summary.direct_allocated_hours} h direct; "
+            f"{summary.descendant_allocated_hours} h in descendants)"
+        )
+    else:
+        estimate = (
+            "Missing estimate"
+            if summary.missing_estimate
+            else f"Estimate: {summary.estimate_hours} h"
+        )
+        reference = ""
+        allocated = f"Allocated: {summary.allocated_hours} h"
     remaining = (
         "Remaining: unknown"
         if summary.remaining_hours is None
         else f"Remaining: {summary.remaining_hours} h"
     )
     status = "No positive allocation." if summary.unassigned else ""
-    if summary.remaining_hours is not None and summary.remaining_hours < 0:
+    if summary.mixed_level_effort:
+        status = (
+            "Mixed-level effort: direct container allocations and descendant allocations "
+            "are both counted. Move the direct effort to a leaf to resolve it."
+        )
+    elif summary.has_direct_container_allocations:
+        status = "Direct container allocations are counted but must be moved to leaf work."
+    elif summary.remaining_hours is not None and summary.remaining_hours < 0:
         status = "Allocated hours exceed the estimate."
-    return f"{estimate}\nAllocated: {summary.allocated_hours} h\n{remaining}\n{status}".strip()
+    return f"{estimate}\n{reference}\n{allocated}\n{remaining}\n{status}".strip()
 
 
 class AllocationDialog(QDialog):
@@ -61,7 +90,12 @@ class AllocationDialog(QDialog):
         self.setWindowTitle("Work allocations")
         self.resize(620, 520)
         layout = QVBoxLayout(self)
-        layout.addWidget(label(f"{work.title}\nSplit this work between roster members."))
+        guidance = (
+            "Review direct and descendant effort; add new allocations to leaf work."
+            if self.original.children(work_id)
+            else "Split this work between roster members."
+        )
+        layout.addWidget(label(f"{work.title}\n{guidance}"))
         self.summary = label("")
         self.summary.setAccessibleName("Allocation totals")
         layout.addWidget(self.summary)
@@ -78,16 +112,24 @@ class AllocationDialog(QDialog):
         self.add_button = QPushButton("&Add...")
         self.edit_button = QPushButton("&Edit...")
         self.remove_button = QPushButton("&Remove")
+        self.resolve_button = QPushButton("&Move direct effort to leaf...")
         self.add_button.clicked.connect(lambda: self.edit(False))
         self.edit_button.clicked.connect(lambda: self.edit(True))
         self.remove_button.clicked.connect(self.remove)
-        for button in (self.add_button, self.edit_button, self.remove_button):
+        self.resolve_button.clicked.connect(self.resolve)
+        for button in (
+            self.add_button,
+            self.edit_button,
+            self.remove_button,
+            self.resolve_button,
+        ):
             actions.addWidget(button)
         layout.addLayout(actions)
         layout.addWidget(
             label(
                 "Enter explicit hours, regardless of the Plan estimate display unit. "
-                "Totals cover this work only; dates and team capacity are not compared here. "
+                "Container totals include descendant work once; direct legacy allocations "
+                "remain visible until moved or removed. Dates and team capacity are not compared. "
                 "Save applies all changes. Cancel discards them."
             )
         )
@@ -129,9 +171,21 @@ class AllocationDialog(QDialog):
                 self.table.setCurrentIndex(row[0].index())
         self.table.setColumnWidth(0, 340)
         self.summary.setText(allocation_summary_text(self.candidate, self.work_id))
-        self.add_button.setEnabled(bool(self.candidate.people))
+        summary = next(
+            item
+            for item in summarize_allocations(self.candidate, self.candidate.allocations).work
+            if item.work_item_id == self.work_id
+        )
+        self.add_button.setEnabled(bool(self.candidate.people) and not summary.is_container)
+        self.resolve_button.setEnabled(summary.has_direct_container_allocations)
         self.error.setText(
-            "Add roster members in People first." if not self.candidate.people else ""
+            "Add roster members in People first."
+            if not self.candidate.people
+            else (
+                "Add new allocations to leaf work; this container total is derived."
+                if summary.is_container
+                else ""
+            )
         )
         self.selection_changed()
 
@@ -197,6 +251,23 @@ class AllocationDialog(QDialog):
             self.error.setText(str(error))
             return
         self.refresh()
+
+    def resolve(self) -> None:
+        title = QLineEdit(f"{self.candidate.work_item(self.work_id).title} effort")
+
+        def build() -> ProgramPlan:
+            self.current()
+            return resolve_container_effort(self.candidate, self.work_id, title.text())
+
+        updated = validated_form(
+            self,
+            "Move direct effort to leaf",
+            [("&New leaf title", title)],
+            build,
+        )
+        if updated is not None:
+            self.candidate = updated
+            self.refresh()
 
     def save(self) -> None:
         try:

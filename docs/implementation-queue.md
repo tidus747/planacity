@@ -8,11 +8,11 @@ because its specification is written here.
 
 ## Start the next session
 
-1. Check main, the working tree, open issues, and pending PRs. R02 is currently
-   issue #77 / PR #80 awaiting review. Do not merge without maintainer approval.
-2. Select one ready slice. R03 is the next foundation slice; R01 is merged.
-3. Turn its brief into one issue with outcome, non-goals, dependencies, examples,
-   persistence impact, and validation. Assign the release milestone.
+1. Check main, the working tree, open issues, and pending PRs. R01 and R02 are
+   merged; R03 is tracked in issue #82. Do not merge without maintainer approval.
+2. Finish or review R03 before selecting R04, its dependent calculation slice.
+3. Turn each later brief into one issue with outcome, non-goals, dependencies,
+   examples, persistence impact, and validation. Assign the release milestone.
 4. Implement and review that slice alone, updating docs and user-facing changelog
    when appropriate. If it needs smaller PRs, define those boundaries first.
 5. Include real visual evidence when applicable, then stop for review.

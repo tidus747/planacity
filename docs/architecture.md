@@ -2,9 +2,9 @@
 
 The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
-sequencing in the [roadmap](roadmap.md). In particular, dependency enforcement,
-hierarchy rollups, and dated capacity integration are planned changes, not
-properties of the current schema 7 application.
+sequencing in the [roadmap](roadmap.md). Dependency enforcement and hierarchy
+effort rollups are implemented over schema 7 inputs. Dated capacity integration
+remains planned work.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
 people, estimates, dates, groups, and relationships. See
@@ -206,7 +206,9 @@ terminating and fractions otherwise; display rounding never changes rule hours.
 of ownership or external assignees. `planning/allocations.py` validates a candidate
 tuple against a ProgramPlan and computes exact whole-work and per-person totals.
 It retains unknown estimates and signed remaining effort rather than correcting
-incomplete plans. Hierarchy does not imply rollups or inherited allocations.
+incomplete plans. Leaves provide effective estimates; containers recursively sum
+their leaf estimates and allocations once. Stored container estimates remain
+reference inputs and are never added to their derived totals.
 
 ProgramPlan owns and validates allocations. Schema 7 persists exact hours and
 stable IDs; schemas 1-6 load without inferred assignments. Lifecycle services in
@@ -214,3 +216,7 @@ stable IDs; schemas 1-6 load without inferred assignments. Lifecycle services in
 dialog stages edits until Save and rejects stale snapshots. Person/work deletion
 requires explicit consent for affected allocations, including descendants. See
 [the allocation model](allocation-model.md) for calculation semantics and limits.
+New allocations target leaf work. A legacy direct container allocation stays
+visible and counted until the user moves it to a newly named leaf or removes it.
+The move preserves allocation IDs/hours and does not alter dates, groups,
+relationships, imported baselines, or unrelated descendants.
