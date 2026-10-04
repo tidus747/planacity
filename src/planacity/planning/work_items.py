@@ -6,6 +6,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from planacity.domain import ProgramPlan, WorkItem
+from planacity.planning.dependency_validation import validate_dependency_change
 
 
 def set_work_estimate(
@@ -24,10 +25,12 @@ def set_work_dates(
 ) -> ProgramPlan:
     """Set both optional dates together, preserving dates outside the horizon."""
     updated = replace(plan.work_item(item_id), start=start, end=end)
-    return replace(
+    candidate = replace(
         plan,
         work_items=tuple(updated if item.id == item_id else item for item in plan.work_items),
     )
+    validate_dependency_change(plan, candidate, affected_item_ids=(item_id,))
+    return candidate
 
 
 def work_outside_horizon(plan: ProgramPlan) -> tuple[WorkItem, ...]:

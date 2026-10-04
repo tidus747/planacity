@@ -110,10 +110,18 @@ Removing a group removes its memberships and preserves all work and links.
 
 Duplicate IDs, equivalent duplicate links, self-links, and missing endpoints are
 rejected. A related link and a dependency between the same items can coexist.
-Dependency cycles are recorded without scheduling or risk analysis in v0.1;
-hierarchy cycles are always rejected. Adding a link never changes dates, hours,
-or parentage. Future scheduling/validation must report dependency cycles rather
-than traverse them indefinitely.
+New dependency cycles are rejected. A new fully dated link is also rejected when
+its predecessor does not finish before its successor starts. Existing imported or
+legacy cycles and date conflicts remain loadable and appear as calculated findings
+so the user can repair them; partial edges remain explicitly unevaluated.
+
+`planning/dependency_validation.py` is the shared source for direction, cycle,
+and inclusive-date checks. Plan and Timeline date operations allow an existing
+conflict to be preserved or reduced, but reject a new or larger conflict on every
+incoming and outgoing edge. Clearing a required date is allowed and makes the
+edge unevaluated. Unrelated existing conflicts never block a repair. No operation
+automatically moves dependent work, clamps a date, or changes the imported baseline.
+Hierarchy cycles remain hard domain errors.
 
 ```python
 from datetime import date

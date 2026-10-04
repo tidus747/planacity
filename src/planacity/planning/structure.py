@@ -4,6 +4,7 @@ from dataclasses import replace
 from uuid import UUID
 
 from planacity.domain import ProgramPlan, Relationship, WorkGroup
+from planacity.planning.dependency_validation import validate_dependency_change
 
 
 def add_work_group(plan: ProgramPlan, group: WorkGroup) -> ProgramPlan:
@@ -35,7 +36,9 @@ def remove_work_group(plan: ProgramPlan, group_id: UUID) -> ProgramPlan:
 
 
 def add_relationship(plan: ProgramPlan, relationship: Relationship) -> ProgramPlan:
-    return replace(plan, relationships=(*plan.relationships, relationship))
+    candidate = replace(plan, relationships=(*plan.relationships, relationship))
+    validate_dependency_change(plan, candidate, added_relationship_ids=(relationship.id,))
+    return candidate
 
 
 def remove_relationship(plan: ProgramPlan, relationship_id: UUID) -> ProgramPlan:

@@ -43,8 +43,8 @@ def test_tree_indexes_edits_and_structural_changes(app):
     assert session.document.plan.work_items[2].id == plan.work_items[2].id
     assert not model.setData(task.siblingAtColumn(2), "-1")
     assert model.setData(task.siblingAtColumn(2), "0.125")
-    assert model.setData(task.siblingAtColumn(3), "2026-09-30")
-    assert "Outside" in model.data(task.siblingAtColumn(5))
+    assert model.setData(epic.siblingAtColumn(3), "2026-09-30")
+    assert "Outside" in model.data(epic.siblingAtColumn(5))
     moved = move_work_item(session.document.plan, plan.work_items[2].id, plan.work_items[4].id)
     session.apply(moved)
     task = model.index_for_id(plan.work_items[2].id)
