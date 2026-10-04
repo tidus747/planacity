@@ -83,9 +83,7 @@ def test_lifecycle_preserves_ids_order_and_unrelated_data():
 def test_new_allocations_are_leaf_only_but_legacy_container_entries_can_be_edited():
     plan = allocated_plan()
     container = plan.work_items[0]
-    entry = Allocation(
-        work_item_id=container.id, person_id=plan.people[0].id, hours=Decimal("8")
-    )
+    entry = Allocation(work_item_id=container.id, person_id=plan.people[0].id, hours=Decimal("8"))
     with pytest.raises(ValueError, match="leaf work"):
         add_allocation(plan, entry)
     legacy = replace(plan, allocations=(entry, *plan.allocations))
@@ -98,9 +96,7 @@ def test_adding_child_to_allocated_leaf_requires_and_applies_explicit_transfer()
     plan = allocated_plan()
     leaf = plan.work_items[2]
     leaf = replace(leaf, estimate_hours=Decimal("12"), start=date(2026, 10, 4))
-    entry = Allocation(
-        work_item_id=leaf.id, person_id=plan.people[0].id, hours=Decimal("7")
-    )
+    entry = Allocation(work_item_id=leaf.id, person_id=plan.people[0].id, hours=Decimal("7"))
     plan = replace(
         plan,
         work_items=(*plan.work_items[:2], leaf),
@@ -120,12 +116,8 @@ def test_adding_child_to_allocated_leaf_requires_and_applies_explicit_transfer()
 
 def test_reparenting_into_allocated_leaf_creates_resolution_leaf_and_preserves_ids():
     plan = allocated_plan()
-    target = WorkItem(
-        title="Target program", kind=WorkItemType.EPIC, estimate_hours=Decimal("5")
-    )
-    entry = Allocation(
-        work_item_id=target.id, person_id=plan.people[2].id, hours=Decimal("5")
-    )
+    target = WorkItem(title="Target program", kind=WorkItemType.EPIC, estimate_hours=Decimal("5"))
+    entry = Allocation(work_item_id=target.id, person_id=plan.people[2].id, hours=Decimal("5"))
     plan = replace(
         plan,
         work_items=(*plan.work_items, target),
@@ -146,9 +138,7 @@ def test_reparenting_into_allocated_leaf_creates_resolution_leaf_and_preserves_i
 def test_existing_container_effort_moves_to_named_leaf_without_touching_descendants():
     plan = allocated_plan()
     parent, existing = plan.work_items[:2]
-    direct = Allocation(
-        work_item_id=parent.id, person_id=plan.people[2].id, hours=Decimal("3")
-    )
+    direct = Allocation(work_item_id=parent.id, person_id=plan.people[2].id, hours=Decimal("3"))
     legacy = replace(
         plan,
         work_items=(replace(parent, estimate_hours=Decimal("8")), *plan.work_items[1:]),

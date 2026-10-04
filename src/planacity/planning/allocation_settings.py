@@ -23,10 +23,7 @@ def add_allocation(plan: ProgramPlan, allocation: Allocation) -> ProgramPlan:
 
 def update_allocation(plan: ProgramPlan, allocation: Allocation) -> ProgramPlan:
     original = allocation_by_id(plan, allocation.id)
-    if (
-        allocation.work_item_id != original.work_item_id
-        and plan.children(allocation.work_item_id)
-    ):
+    if allocation.work_item_id != original.work_item_id and plan.children(allocation.work_item_id):
         raise ValueError(
             "Allocate effort to leaf work. Container totals are derived from their children."
         )

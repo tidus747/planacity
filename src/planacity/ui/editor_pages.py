@@ -305,9 +305,7 @@ class PlanPage(WorkspacePage):
                     )
                 if not transfer_confirmed:
                     raise ValueError("No work was added; the effort transfer was cancelled.")
-            updated = add_work_item(
-                plan, item, transfer_parent_effort=transfer_confirmed
-            )
+            updated = add_work_item(plan, item, transfer_parent_effort=transfer_confirmed)
             item_id.append(item.id)
             return updated
 
@@ -355,9 +353,7 @@ class PlanPage(WorkspacePage):
                         )
                     confirmed_parent = parent_id
                 resolve = True
-            return move_work_item(
-                plan, item.id, parent_id, resolve_parent_effort=resolve
-            )
+            return move_work_item(plan, item.id, parent_id, resolve_parent_effort=resolve)
 
         updated = validated_form(self, "Move work", [("&New parent", parents)], build)
         if updated is not None:
@@ -372,13 +368,9 @@ class PlanPage(WorkspacePage):
             allocation.work_item_id == item_id for allocation in plan.allocations
         )
 
-    def _confirm_effort_transfer(
-        self, plan: ProgramPlan, item_id: UUID, destination: str
-    ) -> bool:
+    def _confirm_effort_transfer(self, plan: ProgramPlan, item_id: UUID, destination: str) -> bool:
         item = plan.work_item(item_id)
-        count = sum(
-            allocation.work_item_id == item_id for allocation in plan.allocations
-        )
+        count = sum(allocation.work_item_id == item_id for allocation in plan.allocations)
         estimate = (
             f"Its entered estimate of {item.estimate_hours} h"
             if item.estimate_hours is not None

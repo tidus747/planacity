@@ -223,9 +223,7 @@ def test_container_summary_and_resolution_move_direct_effort_to_named_leaf(app, 
     window = loaded
     plan = window.session.document.plan
     parent = replace(plan.work_items[0], estimate_hours=Decimal("150"))
-    direct = Allocation(
-        work_item_id=parent.id, person_id=plan.people[2].id, hours=Decimal("10")
-    )
+    direct = Allocation(work_item_id=parent.id, person_id=plan.people[2].id, hours=Decimal("10"))
     legacy = replace(
         plan,
         work_items=(parent, *plan.work_items[1:]),
@@ -263,9 +261,7 @@ def test_adding_child_to_allocated_leaf_previews_transfer_and_honors_cancel(
     window = loaded
     plan = window.session.document.plan
     leaf = replace(plan.work_items[2], estimate_hours=Decimal("12"))
-    direct = Allocation(
-        work_item_id=leaf.id, person_id=plan.people[2].id, hours=Decimal("7")
-    )
+    direct = Allocation(work_item_id=leaf.id, person_id=plan.people[2].id, hours=Decimal("7"))
     plan = replace(
         plan,
         work_items=(*plan.work_items[:2], leaf),
@@ -291,9 +287,7 @@ def test_adding_child_to_allocated_leaf_previews_transfer_and_honors_cancel(
     assert window.session.document.plan is plan
     assert "Allocation IDs and hours stay unchanged" in messages[0]
 
-    monkeypatch.setattr(
-        QMessageBox, "question", lambda *args: QMessageBox.StandardButton.Yes
-    )
+    monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.StandardButton.Yes)
 
     def accept_add(form):
         form.findChild(QLineEdit).setText("Research")

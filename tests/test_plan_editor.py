@@ -71,9 +71,7 @@ def test_container_estimate_is_derived_read_only_and_keeps_entered_reference(app
     assert "Derived from 1 leaf item(s): 4.25 h known" in model.data(
         task, Qt.ItemDataRole.ToolTipRole
     )
-    assert "Entered reference estimate: 40 h" in model.data(
-        task, Qt.ItemDataRole.ToolTipRole
-    )
+    assert "Entered reference estimate: 40 h" in model.data(task, Qt.ItemDataRole.ToolTipRole)
     assert not (model.flags(task) & Qt.ItemFlag.ItemIsEditable)
     assert model.flags(leaf) & Qt.ItemFlag.ItemIsEditable
     assert not model.setData(task, "10")

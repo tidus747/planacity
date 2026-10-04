@@ -55,9 +55,7 @@ def _direct_allocations(plan: ProgramPlan, item_id: UUID) -> tuple[Allocation, .
     )
 
 
-def _transfer_effort_to_child(
-    plan: ProgramPlan, parent: WorkItem, child: WorkItem
-) -> ProgramPlan:
+def _transfer_effort_to_child(plan: ProgramPlan, parent: WorkItem, child: WorkItem) -> ProgramPlan:
     if child.estimate_hours is not None:
         raise ValueError("The resolution leaf must not already have an estimate.")
     moved_child = replace(child, estimate_hours=parent.estimate_hours)
@@ -135,9 +133,7 @@ def move_work_item(
             )
         if allocated_leaf:
             child_kind = (
-                WorkItemType.TASK
-                if parent.kind == WorkItemType.EPIC
-                else WorkItemType.SUBTASK
+                WorkItemType.TASK if parent.kind == WorkItemType.EPIC else WorkItemType.SUBTASK
             )
             resolution = WorkItem(
                 title=f"{parent.title} effort", kind=child_kind, parent_id=parent.id

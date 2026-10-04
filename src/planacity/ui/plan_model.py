@@ -175,8 +175,7 @@ class PlanModel(QAbstractItemModel):
                     return (
                         f"Derived from {effort.leaf_count} leaf item(s): "
                         f"{effort.known_estimate_hours} h known.{missing} {reference}"
-                        "Container estimates are read-only. "
-                        + conversion_description(self.plan)
+                        "Container estimates are read-only. " + conversion_description(self.plan)
                     )
                 return (
                     f"Stored estimate: {item.estimate_hours} h. "

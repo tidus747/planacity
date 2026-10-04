@@ -121,8 +121,7 @@ def summarize_allocations(
             leaves = 1
         direct_count = len(direct_entries)
         descendant_count = sum(
-            child.direct_allocation_count + child.descendant_allocation_count
-            for child in children
+            child.direct_allocation_count + child.descendant_allocation_count for child in children
         )
         incomplete = missing > 0 or (bool(children) and direct_count > 0)
         remaining = None if incomplete else _sum_hours((known, allocated.copy_negate()))
