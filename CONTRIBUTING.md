@@ -9,15 +9,24 @@ roadmap wave; GitHub Issues track live status. Keep later features out of the PR
 
 Use [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow):
 
-1. Update `main` with `git pull --ff-only`.
-2. Create a short-lived `feature/<name>`, `fix/<name>`, or `docs/<name>` branch.
-3. Make focused commits and push the branch.
-4. Open a pull request targeting `main` and wait for all CI checks to pass.
-5. After maintainer approval, squash merge the PR and delete the remote feature branch.
+1. Start with a focused GitHub issue, or promote the selected roadmap slice to
+   an issue before implementation begins.
+2. Update `main` with `git pull --ff-only`.
+3. Create a short-lived `feature/<name>`, `fix/<name>`, or `docs/<name>` branch.
+4. Make focused commits and push the branch.
+5. Open one pull request for that outcome, link or close the issue, and wait for
+   all CI checks to pass.
+6. After maintainer approval, squash merge the PR and delete the remote branch.
 
 Keep `main` ready to build; do not push directly to it. A long-lived `develop`
 branch is unnecessary at this stage. Release tags use Semantic Versioning, such
 as `v0.1.0`, and are created only for approved releases.
+
+This issue -> branch -> pull request -> CI -> maintainer approval sequence is the
+default for planned features, fixes, and documentation changes. Keep each change
+small enough to review as one coherent outcome. When the package version changes,
+update the prominent version badge and status in `README.md` in the same pull
+request.
 
 The CI workflow builds the website for every PR. After a merge to `main`, the
 same workflow publishes it to GitHub Pages only if both Python and website checks
