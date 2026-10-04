@@ -32,6 +32,25 @@ The CI workflow builds the website for every PR. After a merge to `main`, the
 same workflow publishes it to GitHub Pages only if both Python and website checks
 pass. Pull requests never publish the site.
 
+## Authorship and AI assistance
+
+Keep human authorship, AI assistance, and review responsibility explicit. Git
+commits must use the identity of the human contributor. Do not create synthetic
+email addresses or `Co-authored-by` trailers for an AI system.
+
+Complete the authorship and assistance section in every pull request:
+
+- identify the human contributors;
+- retain Iván Rodríguez-Mendez as the project owner and accountable maintainer;
+- select only the AI systems that materially assisted that change;
+- name any other AI system or state that none was used.
+
+AI-assisted contributions remain subject to the same review, validation, and
+licensing requirements as any other contribution. The maintainer decides what is
+accepted and remains accountable for merged work. See
+[AUTHORS.md](AUTHORS.md) for the project-level acknowledgement, including earlier
+work completed before per-pull-request model disclosure was introduced.
+
 ## Implementation and validation
 
 Use ordinary keyboard punctuation in authored text: hyphens, straight quotes,
