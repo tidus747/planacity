@@ -147,6 +147,14 @@ pull request, review, and validation workflow.
 - `assets/` - editable design originals; runtime graphics live under
   `src/planacity/resources/`.
 
+## Credits and transparency
+
+Planacity was created and is maintained by
+[Iván Rodríguez-Mendez](https://github.com/tidus747). Development has been
+assisted by OpenAI Codex using GPT-6 Astra and GPT-5.6 Sol. See
+[authorship and acknowledgements](AUTHORS.md) for the attribution and disclosure
+policy.
+
 ## License
 
 Planacity is released under the [GNU General Public License v3.0](LICENSE).

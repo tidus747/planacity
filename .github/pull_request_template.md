@@ -2,6 +2,19 @@
 
 Explain the user problem, resulting behavior, and related issue.
 
+## Authorship and assistance
+
+- Project owner and accountable maintainer: Iván Rodríguez-Mendez
+- Human contributor(s): <!-- Add the people who authored this change. -->
+- AI systems that materially assisted this change:
+  - [ ] None
+  - [ ] OpenAI Codex - GPT-6 Astra
+  - [ ] OpenAI Codex - GPT-5.6 Sol
+  - [ ] Other: <!-- Name the system and model. -->
+
+Select only the systems that actually assisted this pull request. Do not select
+`None` together with an AI system.
+
 ## Validation
 
 Describe checks performed and results. Distinguish automated checks from manual
