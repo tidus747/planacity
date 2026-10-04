@@ -66,6 +66,7 @@ class ResizeScheduleView(DependencyScheduleView):
         self.setAutoScroll(False)
         self._drag: tuple[ProgramPlan, TimelineRow, ResizeEdge, float] | None = None
         self._candidate: ProgramPlan | None = None
+        self._candidate_error: str | None = None
         self._ghost_x: float | None = None
         self.setToolTip(
             "Drag a bar edge to resize dates. Escape cancels. Use Edit dates for keyboard entry."
@@ -111,6 +112,7 @@ class ResizeScheduleView(DependencyScheduleView):
 
     def _preview(self, point: QPointF) -> None:
         self._candidate = None
+        self._candidate_error = None
         self._ghost_x = None
         if self._drag is None or self.axis is None:
             return
@@ -151,7 +153,8 @@ class ResizeScheduleView(DependencyScheduleView):
                 + warning
             )
         except (ValueError, OverflowError) as error:
-            self.preview_changed.emit(original + f"Invalid drop: {error}")
+            self._candidate_error = original + f"Invalid drop: {error}"
+            self.preview_changed.emit(self._candidate_error)
         self.viewport().update()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
@@ -173,6 +176,7 @@ class ResizeScheduleView(DependencyScheduleView):
             self._preview(event.position())
             original = self._drag[0]
             candidate = self._candidate
+            candidate_error = self._candidate_error
             super().mouseReleaseEvent(event)
             self.cancel_resize()
             if candidate is not None and self.session.document.plan is original:
@@ -188,7 +192,7 @@ class ResizeScheduleView(DependencyScheduleView):
                     else "Dates updated. Effort hours and dependent work are unchanged."
                 )
             else:
-                self.preview_changed.emit("Resize cancelled. No dates changed.")
+                self.preview_changed.emit(candidate_error or "Resize cancelled. No dates changed.")
             return
         super().mouseReleaseEvent(event)
 
@@ -196,6 +200,7 @@ class ResizeScheduleView(DependencyScheduleView):
         if self._drag is not None:
             self._drag = None
             self._candidate = None
+            self._candidate_error = None
             self._ghost_x = None
             self.preview_changed.emit("Resize cancelled. No dates changed.")
             self.viewport().unsetCursor()

@@ -37,6 +37,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Changed
 
+- Dependency links now reject new cycles and fully dated conflicts. Plan and
+  Timeline date edits reject only new or worsened conflicts, with affected work
+  and permitted boundaries; legacy conflicts and incomplete edges remain visible
+  and repairable without automatic rescheduling.
 - Development continues as 0.4.0.dev0. Projects and backups now save as schema 7
   to retain calendars, availability, reservation rules, estimate preferences, and
   work allocations. Schemas 1-6 open without inferred allocations.

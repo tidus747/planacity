@@ -52,8 +52,16 @@ def test_example_visual_planning_acceptance(app, window, tmp_path, theme):
         QTest.mouseMove(view.viewport(), end)
         assert window.session.document.plan is original
         QTest.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=end)
+        assert window.session.document.plan is original
+        assert "end on or before 2026-10-21" in page.resize_preview.text()
+
+        # Shortening the same predecessor repairs its margin and remains allowed.
+        repaired_end = start - QPoint(18, 0)  # One day at the weekly scale.
+        QTest.mousePress(view.viewport(), Qt.MouseButton.LeftButton, pos=start)
+        QTest.mouseMove(view.viewport(), repaired_end)
+        QTest.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=repaired_end)
         changed = window.session.document.plan
-        assert changed.work_item(row.item_id).end == date(2026, 10, 24)
+        assert changed.work_item(row.item_id).end == date(2026, 10, 20)
         assert (
             changed.work_item(row.item_id).estimate_hours
             == original.work_item(row.item_id).estimate_hours

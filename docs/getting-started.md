@@ -19,8 +19,10 @@ No account or network connection is needed while planning.
    of work items, relationships, and memberships being removed before confirming.
 5. Use **WorkGroups...** to organize Epics independently from hierarchy. Use
    **Relationships...** to add `related_to`, `depends_on`, or `blocks` links.
-   Links do not automatically reschedule work. Dates outside the horizon are
-   retained and shown in the Planning notes column.
+   New dependency cycles and fully dated conflicts are rejected with the permitted
+   date boundary. Partial dependencies remain unevaluated until both required
+   dates exist. Links never automatically reschedule work. Dates outside the
+   horizon are retained and shown in the Planning notes column.
 6. Open **People** to add, rename, or remove roster members. Use **Work calendars...**
    to define all seven weekdays, then **Assign calendar...** for each person.
    Use **Availability...** to enter dated unavailable shares and preview overlaps.
@@ -123,13 +125,19 @@ within shared sections; links across sections use the first occurrences.
 Toggle arrows off to reduce visual clutter. Grouping, filtering, and arrow display
 do not change dates, estimates, relationships, or imported baselines.
 
+New cycles cannot be added. Cycles and conflicts already present in imported or
+older plans remain visible for repair. With inclusive dates, a predecessor must
+end at least one calendar day before its successor starts; a same-day boundary is
+a one-day conflict.
+
 ### Adjust dates from Timeline
 
 Drag the left or right handle of a fully scheduled bar. The dashed line snaps to
 calendar days at every scale. The preview shows original and proposed dates and
 inclusive calendar duration, which is separate from estimated effort hours.
-Release inside the schedule to apply one validated change. Escape, a reversed
-date range, or a drop outside the schedule preserves the original dates.
+Release inside the schedule to apply one validated change. A dependency-breaking
+drop shows both affected work items and the latest/earliest permitted boundary.
+Escape, a reversed date range, or a drop outside the schedule preserves the original dates.
 Changing scale, filtering, leaving the view, or receiving a new plan cancels a drag.
 
 Scroll horizontally before dragging to bring the required dates into view. The
@@ -140,7 +148,11 @@ handles; dates outside the horizon are never silently clamped.
 Select work and choose **Edit dates...** (`Alt+D`) to enter dates with the keyboard
 or calendar. Clear a field to leave it unset. This also works for partial and
 unscheduled work or dates outside the displayed horizon. The Plan view continues
-to offer the same keyboard date editing. Outside-horizon warnings remain visible.
+to offer the same keyboard date editing. Both editors check all incoming and
+outgoing dependencies, including work hidden by filters. An old conflict may be
+preserved or reduced so it can be repaired incrementally; increasing it is rejected.
+Clearing a required date leaves an explicit unevaluated finding. Outside-horizon
+warnings remain visible.
 
 Date changes update Plan, Timeline, and Changes together and are included when
 you save the project. Effort hours, dependencies, other work, and imported

@@ -3,7 +3,12 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from planacity.domain import ProgramPlan, RelationshipType
+from planacity.domain import ProgramPlan
+from planacity.planning.dependency_validation import (
+    DependencyFindingKind,
+    dependency_findings,
+    normalize_dependency,
+)
 from planacity.planning.timeline import TimelineDateState, TimelineProjection
 
 
@@ -24,33 +29,21 @@ def timeline_dependencies(
     items = {item.id: item for item in plan.work_items}
     rows = {row.item_id: row for row in projection.rows}
     links = []
-    adjacency: dict[UUID, set[UUID]] = {}
     for link in plan.relationships:
-        if link.kind == RelationshipType.RELATED_TO:
+        edge = normalize_dependency(link)
+        if edge is None:
             continue
-        before, after = (
-            (link.target_id, link.source_id)
-            if link.kind == RelationshipType.DEPENDS_ON
-            else (link.source_id, link.target_id)
-        )
-        links.append((link, before, after))
-        adjacency.setdefault(before, set()).add(after)
+        links.append((link, edge.predecessor_id, edge.successor_id))
 
-    def reaches(start: UUID, target: UUID) -> bool:
-        pending, visited = [start], set()
-        while pending:
-            node = pending.pop()
-            if node == target:
-                return True
-            if node not in visited:
-                visited.add(node)
-                pending.extend(adjacency.get(node, ()))
-        return False
+    findings: dict[UUID, dict[DependencyFindingKind, str]] = {}
+    for finding in dependency_findings(plan):
+        findings.setdefault(finding.edge.relationship_id, {})[finding.kind] = finding.message
 
     result = []
     for link, before, after in links:
         reason = ""
-        if reaches(after, before):
+        link_findings = findings.get(link.id, {})
+        if DependencyFindingKind.CYCLE in link_findings:
             reason = "Dependency cycle; arrow hidden"
         elif before not in rows or after not in rows:
             reason = "Endpoint hidden by filters; arrow hidden"
@@ -62,10 +55,10 @@ def timeline_dependencies(
             f"{items[before].title} -> {items[after].title} "
             f"({items[link.source_id].title} {link.kind.value} {items[link.target_id].title})"
         )
-        end, start = items[before].end, items[after].start
-        if end is not None and start is not None:
-            if end >= start:
-                description += "; dates overlap or run against dependency order"
+        if conflict := link_findings.get(DependencyFindingKind.CONFLICT):
+            description += "; dates overlap or run against dependency order. " + conflict
+        if unevaluated := link_findings.get(DependencyFindingKind.UNEVALUATED):
+            description += "; " + unevaluated
         result.append(TimelineDependency(link.id, before, after, description, reason))
     return tuple(result)
 
