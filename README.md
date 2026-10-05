@@ -72,8 +72,9 @@ an approved release. Development now targets the shared capacity calculations,
 validation, and planning context needed for v0.4.
 
 Current reservation previews do not yet deduct program events or work
-allocations, and the app does not yet calculate remaining team capacity. The
-[implementation roadmap](docs/roadmap.md) and
+allocations. A shared service now calculates dated remaining capacity, but the
+desktop does not yet present those results; R05 and R06 add findings and People
+visibility. The [implementation roadmap](docs/roadmap.md) and
 [implementation queue](docs/implementation-queue.md) describe the ordered work;
 GitHub Issues and Milestones are the live status.
 

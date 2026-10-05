@@ -73,10 +73,12 @@ if an older build must still open the project.
 
 For a quick evaluation, split a 100-hour task into 60 and 40 hours, save and reopen,
 then edit one entry and cancel. Check that the saved totals remain unchanged.
-Capacity load and overload comparisons require a scheduling policy and remain
-separate work.
+The shared dated capacity engine now consumes explicit allocations without
+changing their hierarchy or storage. It spreads each person's hours across the
+WorkItem's complete dates using positive planning capacity after reservations,
+then sums concurrent work and retains negative remaining capacity. Missing dates,
+calendars, or positive-capacity days keep the hours as explicit unplaced demand.
 
-The [roadmap](roadmap.md) continues with R04-R06. The shared dated capacity engine
-will consume these effective estimates and explicit allocations without changing
-their hierarchy or storage. See the [planning decisions](planning-decisions.md)
-for the dated distribution contract.
+The [roadmap](roadmap.md) continues with R05-R06 to present findings and the same
+capacity totals in the desktop. See the
+[planning decisions](planning-decisions.md) for the dated distribution contract.
