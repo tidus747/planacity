@@ -100,35 +100,65 @@ calendars return zero hours and zero working days, not missing data.
 estimate expressed in working days should be converted when days have different
 lengths. Estimate unit settings in #39 must specify that convention explicitly.
 
-## Capacity boundaries and follow-ups
+## Shared dated capacity engine
 
-Nominal capacity is the first input to the future calculation:
+`planning.capacity.calculate_dated_capacity` combines the existing canonical
+inputs for any inclusive query period:
 
     Nominal calendar hours
-    - Holidays and personal unavailability
-    - Capacity-affecting program events
-    - Reserved capacity
+    - Recorded personal unavailability
+    = Available hours
+    - Recurring reservations
     = Planning capacity
+    - Scheduled allocated work
+    = Remaining capacity
 
-Allocations then consume planning capacity. The nominal-calendar API does not
-apply reductions. The separate availability API below applies unavailability
-only; neither API calculates remaining planning hours, overload, or team totals.
-The desktop shows nominal hours alongside unavailability deductions and available hours.
+The result provides one `DatedCapacityDay` per queried date and person. Each day
+retains exact nominal, unavailable, available, reserved, planning, allocated,
+and signed remaining hours. Reservation and allocation breakdowns keep their
+source UUIDs so later views can explain which duty or work item consumed the
+hours. Negative planning or remaining hours are retained as overload, never
+clamped to zero.
 
-The next [roadmap slices](roadmap.md) integrate existing calendars, availability,
-reservations, and work allocations into one result before adding charts.
-Program-event deductions follow in v0.5; they are not a prerequisite for showing
+An allocation is distributed over its WorkItem's complete start/end window in
+proportion to that person's positive planning capacity after reservations. The
+complete window and complete anchored reservation periods are calculated first;
+only then is the result clipped to the query. Concurrent allocations are summed
+after distribution, so one allocation never silently moves because another uses
+the same dates. Stored allocations, dates, estimates, and project files are not
+changed.
+
+Missing calendars, incomplete work dates, zero-capacity work windows, and
+reservation occurrences without eligible days produce explicit `CapacityGap`
+values. Their demand is not treated as zero. Known daily values remain available
+alongside the gap, while `complete` prevents consumers from presenting an
+incomplete result as a fully feasible plan. Queries requiring more than 100,000
+person-days return one actionable incomplete result and no partial totals.
+
+All public hour values use exact `Fraction` results derived from stored Decimal
+inputs. No display rounding or caller Decimal context changes the total. Program
+events are not yet a source because their domain model belongs to v0.5.
+
+## Capacity boundaries and follow-ups
+
+The nominal-calendar and availability APIs remain smaller reusable calculations;
+they do not independently claim remaining capacity. The shared engine is the
+canonical integration boundary for new findings and People/Overview totals.
+R05 turns its gaps and overloads into reusable planning findings, and R06 exposes
+the same totals in People. No desktop page consumes the engine yet.
+
+Program-event deductions follow in v0.5. They are not a prerequisite for showing
 the currently entered meetings and front-office reservations consistently.
 The recurring reservation API (#8) now consumes explicit daily capacity after
 these deductions. Rules persist (#9), and the wizard (#10) previews saved calendars
 and entered availability before reservations. Program-event deductions are not yet
 modeled in the desktop; the preview labels that limitation. People's table remains
 before reservations; use Reserve capacity to review reservation totals.
-Calendar and availability data use schema 7, while Jira hour estimates and import baselines are
-unchanged. See [recurring reservations](capacity-wizards.md).
-The future distribution and missing-data rules are defined in
-[planning decisions](planning-decisions.md); they are not implemented by the
-current nominal/availability APIs.
+Calendar and availability data use schema 7, while Jira hour estimates and
+import baselines are unchanged. See
+[recurring reservations](capacity-wizards.md).
+The distribution and missing-data rules are defined in
+[planning decisions](planning-decisions.md).
 
 ## Availability calculation API
 

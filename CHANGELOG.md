@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Shared dated capacity calculation across each person's calendar, recorded
+  availability, recurring reservations, and scheduled work allocations. Exact
+  daily and selected-period results retain overloads, source breakdowns, and
+  explicit unplaced-demand gaps without changing plan data.
 - Hierarchy effort rollups in Plan. Leaf estimates form read-only Epic and Task
   totals, with known subtotals and missing-estimate counts. Allocation summaries
   count each assignment once and identify direct container effort. Existing

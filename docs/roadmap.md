@@ -67,8 +67,10 @@ R01 was completed in [#75](https://github.com/tidus747/planacity/issues/75) and
 merged through [#76](https://github.com/tidus747/planacity/pull/76). R02 was
 completed in [#77](https://github.com/tidus747/planacity/issues/77) and merged
 through [#80](https://github.com/tidus747/planacity/pull/80). Website showcase
-work (#78) merged through PR #79. R03 is tracked in
-[#82](https://github.com/tidus747/planacity/issues/82). Later slices remain
+work (#78) merged through PR #79. R03 was completed in
+[#82](https://github.com/tidus747/planacity/issues/82) and merged through
+[PR #83](https://github.com/tidus747/planacity/pull/83). R04 is tracked in
+[#88](https://github.com/tidus747/planacity/issues/88). Later slices remain
 planned. The [implementation queue](implementation-queue.md) adds focused briefs,
 dependencies, and review evidence for the next sessions.
 
