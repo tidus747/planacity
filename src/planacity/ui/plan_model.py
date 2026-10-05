@@ -1,7 +1,7 @@
 """Qt hierarchy adapter over the canonical immutable plan."""
 
 from datetime import date
-from typing import cast, overload
+from typing import overload
 from uuid import UUID
 
 from PySide6.QtCore import (
@@ -12,11 +12,14 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
+from PySide6.QtWidgets import QApplication, QStyle
 
 from planacity.domain import ProgramPlan, WorkItem
 from planacity.planning.allocations import WorkAllocationSummary, summarize_allocations
 from planacity.planning.estimate_units import conversion_description, estimate_text, parse_estimate
+from planacity.planning.findings import PlanningFinding, findings_for_work, planning_findings
 from planacity.planning.work_items import rename_work_item, set_work_dates, set_work_estimate
+from planacity.ui.planning_findings import finding_details, finding_note
 from planacity.ui.session import Session
 
 Index = QModelIndex | QPersistentModelIndex
@@ -40,6 +43,7 @@ class PlanModel(QAbstractItemModel):
         self.session = session
         self.plan = session.document.plan
         self.effort: dict[UUID, WorkAllocationSummary] = {}
+        self.findings: dict[UUID, tuple[PlanningFinding, ...]] = {}
         self.tokens: dict[UUID, int] = {}
         self.ids: dict[int, UUID] = {}
         self._refresh_effort()
@@ -65,14 +69,19 @@ class PlanModel(QAbstractItemModel):
         self.endResetModel()
 
     def _refresh_effort(self) -> None:
-        self.effort = (
-            {
+        if self.plan is not None:
+            self.effort = {
                 summary.work_item_id: summary
                 for summary in summarize_allocations(self.plan, self.plan.allocations).work
             }
-            if self.plan is not None
-            else {}
-        )
+            calculated = planning_findings(self.plan)
+            self.findings = {
+                item.id: findings_for_work(self.plan, calculated, item.id)
+                for item in self.plan.work_items
+            }
+        else:
+            self.effort = {}
+            self.findings = {}
 
     def item(self, index: Index) -> WorkItem | None:
         if self.plan is None or not index.isValid():
@@ -113,7 +122,9 @@ class PlanModel(QAbstractItemModel):
 
     def parent(self, index: Index | None = None) -> QObject | QModelIndex:
         if index is None:
-            return cast(QObject, super().parent())
+            owner = super().parent()
+            assert owner is not None
+            return owner
         item = self.item(index)
         return self.index_for_id(item.parent_id) if item else QModelIndex()
 
@@ -145,13 +156,22 @@ class PlanModel(QAbstractItemModel):
                 f"{estimate} known; {effort.missing_estimate_count} "
                 f"estimate{'s' if effort.missing_estimate_count != 1 else ''} missing"
             )
+        item_findings = self.findings.get(item.id, ())
+        notes = [
+            value
+            for value in (
+                "Outside planning horizon" if outside else "",
+                finding_note(item_findings),
+            )
+            if value
+        ]
         values = (
             item.title,
             item.kind.value.title(),
             estimate,
             "" if item.start is None else item.start.isoformat(),
             "" if item.end is None else item.end.isoformat(),
-            "Outside planning horizon" if outside else "",
+            "; ".join(notes),
             reference,
         )
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
@@ -159,7 +179,9 @@ class PlanModel(QAbstractItemModel):
             if role == Qt.ItemDataRole.DisplayRole and index.column() in (2, 3, 4) and not value:
                 return "Not set"
             return value
-        if role == Qt.ItemDataRole.ToolTipRole:
+        if role == Qt.ItemDataRole.DecorationRole and index.column() == 5 and values[5]:
+            return QApplication.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning)
+        if role in (Qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleDescriptionRole):
             if index.column() == 2:
                 if effort.is_container:
                     reference = (
@@ -183,7 +205,7 @@ class PlanModel(QAbstractItemModel):
                     else "Estimate is not set. "
                 ) + conversion_description(self.plan)
             return (
-                values[5]
+                (finding_details(item_findings) if item_findings else values[5])
                 or "Dates: calendar button or YYYY-MM-DD. Estimates: use the column unit. "
                 "Clear a cell to leave it unset."
             )
@@ -261,14 +283,14 @@ class PlanModel(QAbstractItemModel):
         self.plan = updated  # Cell edits preserve indexes and the current editor.
         self._refresh_effort()
         self.session.apply(updated)
-        self.dataChanged.emit(
-            self.index(index.row(), 0, self.parent(index)),
-            self.index(index.row(), len(self.headers) - 1, self.parent(index)),
+        # Notify the edited row first so the filtering proxy can schedule its
+        # established post-editor refresh before concurrent findings update.
+        ordered = (
+            edited_item,
+            *(item for item in self.plan.work_items if item.id != edited_item.id),
         )
-        parent_id = edited_item.parent_id
-        while parent_id is not None:
-            parent_index = self.index_for_id(parent_id).siblingAtColumn(2)
-            self.dataChanged.emit(parent_index, parent_index)
-            parent_id = self.plan.work_item(parent_id).parent_id
+        for item in ordered:
+            first = self.index_for_id(item.id)
+            self.dataChanged.emit(first, first.siblingAtColumn(len(self.headers) - 1))
         self.error.emit("")
         return True

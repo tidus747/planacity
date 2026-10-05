@@ -26,9 +26,11 @@ from planacity.planning.allocation_settings import (
     update_allocation,
 )
 from planacity.planning.allocations import summarize_allocations
+from planacity.planning.findings import findings_for_work, planning_findings
 from planacity.planning.work_items import resolve_container_effort
 from planacity.ui.forms import validated_form
 from planacity.ui.pages import label
+from planacity.ui.planning_findings import FindingView
 from planacity.ui.session import Session
 
 
@@ -88,7 +90,7 @@ class AllocationDialog(QDialog):
         self.work_id = work_id
         work = self.original.work_item(work_id)
         self.setWindowTitle("Work allocations")
-        self.resize(620, 520)
+        self.resize(680, 620)
         layout = QVBoxLayout(self)
         guidance = (
             "Review direct and descendant effort; add new allocations to leaf work."
@@ -99,6 +101,8 @@ class AllocationDialog(QDialog):
         self.summary = label("")
         self.summary.setAccessibleName("Allocation totals")
         layout.addWidget(self.summary)
+        self.findings = FindingView("Allocation planning findings")
+        layout.addWidget(self.findings)
         self.table = QTreeView()
         self.table.setAccessibleName("Work allocations")
         self.table.setRootIsDecorated(False)
@@ -129,7 +133,8 @@ class AllocationDialog(QDialog):
             label(
                 "Enter explicit hours, regardless of the Plan estimate display unit. "
                 "Container totals include descendant work once; direct legacy allocations "
-                "remain visible until moved or removed. Dates and team capacity are not compared. "
+                "remain visible until moved or removed. The preview compares dated demand with "
+                "the whole team's calendars, availability, reservations, and concurrent work. "
                 "Save applies all changes. Cancel discards them."
             )
         )
@@ -171,6 +176,8 @@ class AllocationDialog(QDialog):
                 self.table.setCurrentIndex(row[0].index())
         self.table.setColumnWidth(0, 340)
         self.summary.setText(allocation_summary_text(self.candidate, self.work_id))
+        calculated = planning_findings(self.candidate)
+        self.findings.set_findings(findings_for_work(self.candidate, calculated, self.work_id))
         summary = next(
             item
             for item in summarize_allocations(self.candidate, self.candidate.allocations).work

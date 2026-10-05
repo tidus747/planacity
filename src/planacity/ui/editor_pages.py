@@ -30,6 +30,7 @@ from planacity.ui.forms import ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.plan_filter_model import PlanFilterModel
 from planacity.ui.plan_model import PlanModel
+from planacity.ui.planning_findings import FindingView
 from planacity.ui.reservations import reserve_capacity_dialog
 from planacity.ui.session import Session
 from planacity.ui.structure_dialogs import manage_structure
@@ -105,6 +106,8 @@ class PlanPage(WorkspacePage):
         detail = Panel("Selected work")
         self.detail = label("Create or open a plan from the File menu.")
         detail.content.addWidget(self.detail)
+        self.finding_view = FindingView("Selected work planning findings")
+        detail.content.addWidget(self.finding_view)
         self.allocation_button = QPushButton("Work allocations...")
         self.allocation_button.clicked.connect(self.edit_allocations)
         detail.content.addWidget(self.allocation_button)
@@ -265,6 +268,9 @@ class PlanPage(WorkspacePage):
             self.detail.setText(
                 self.detail.text() + "\n\n" + allocation_summary_text(self.model.plan, item.id)
             )
+            self.finding_view.set_findings(self.source_model.findings.get(item.id, ()))
+        else:
+            self.finding_view.set_findings(())
 
     def edit_allocations(self) -> None:
         if not self.commit_editor():
