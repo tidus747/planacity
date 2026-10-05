@@ -57,6 +57,8 @@ def test_filtered_plan_edits_exact_hours_validates_and_saves_once(app, loaded, t
     def interact(dialog):
         assert isinstance(dialog, AllocationDialog)
         assert "Allocated: 100 h" in dialog.summary.text()
+        assert "Estimate and allocation differ" not in dialog.findings.text()
+        assert "Missing work dates" in dialog.findings.text()
         dialog.table.setCurrentIndex(dialog.model.index(0, 0))
 
         def edit(form):
@@ -71,6 +73,7 @@ def test_filtered_plan_edits_exact_hours_validates_and_saves_once(app, loaded, t
         assert dialog.candidate.allocations[0].id == original.allocations[0].id
         assert "Remaining: -5.125 h" in dialog.summary.text()
         assert "exceed the estimate" in dialog.summary.text()
+        assert "Estimate and allocation differ" in dialog.findings.text()
         assert window.session.document.plan is original
         drive_dialog(app, dialog.add_button.click, hours_form("2.5", 2))
         assert len(dialog.candidate.allocations) == 3
@@ -87,6 +90,71 @@ def test_filtered_plan_edits_exact_hours_validates_and_saves_once(app, loaded, t
     assert page.search.text() == "Integration"
     assert page.model.item(page.table.currentIndex()).id == original.work_items[1].id
     assert "Allocated: 105.125 h" in page.detail.text()
+    assert "Planning findings" in page.finding_view.text()
+    assert "Estimate and allocation differ" in page.finding_view.text()
+
+
+def test_plan_row_and_draft_preview_share_concurrent_overload_finding(app, window):
+    from datetime import date
+
+    from planacity.domain import Person, PersonCalendar, PlanningHorizon, ProgramPlan, WorkItem
+
+    person = Person(name="Alex")
+    day = date(2026, 10, 5)
+    first = WorkItem(
+        title="First",
+        kind=WorkItemType.TASK,
+        estimate_hours=Decimal(8),
+        start=day,
+        end=day,
+    )
+    second = WorkItem(
+        title="Second",
+        kind=WorkItemType.TASK,
+        estimate_hours=Decimal(8),
+        start=day,
+        end=day,
+    )
+    calendar = WorkCalendar(
+        name="One day", weekday_hours=tuple(Decimal(v) for v in ("8", "0", "0", "0", "0", "0", "0"))
+    )
+    entries = (
+        Allocation(work_item_id=first.id, person_id=person.id, hours=Decimal(8)),
+        Allocation(work_item_id=second.id, person_id=person.id, hours=Decimal(8)),
+    )
+    plan = ProgramPlan(
+        name="Concurrent",
+        horizon=PlanningHorizon(day, day),
+        work_items=(first, second),
+        people=(person,),
+        work_calendars=(calendar,),
+        person_calendars=(PersonCalendar(person_id=person.id, calendar_id=calendar.id),),
+        allocations=entries,
+    )
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    page = window.plan_page
+    page.table.setCurrentIndex(page.model.index_for_id(first.id))
+    app.processEvents()
+
+    notes = page.model.index_for_id(first.id).siblingAtColumn(5)
+    assert "Capacity overload" in page.model.data(notes)
+    icon = page.model.data(notes, Qt.ItemDataRole.DecorationRole)
+    assert not icon.isNull()
+    assert "All concurrent work" in page.model.data(notes, Qt.ItemDataRole.ToolTipRole)
+    assert "Capacity overload" in page.finding_view.text()
+    assert page.finding_view.icon.isVisible()
+
+    dialog = AllocationDialog(window, window.session, first.id)
+    dialog.show()
+    assert "Capacity overload" in dialog.findings.text()
+    assert "Second" not in dialog.findings.text()
+    assert "All concurrent work" in dialog.findings.text()
+    save(dialog)
+    assert window.session.document.plan == plan
+    assert not dialog.isVisible()
 
 
 def test_cancel_discards_add_edit_and_remove_drafts(app, loaded):

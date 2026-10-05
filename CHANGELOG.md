@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Actionable planning findings in Plan rows, selected-work details, and allocation
+  drafts. Missing calendars, dates, estimates and assignments, allocation
+  mismatches, hierarchy effort, unplaced demand, and overloads use the same
+  current-plan capacity calculation. Findings remain advisory, so incomplete or
+  overloaded drafts can still be saved and corrected incrementally.
+
 - Shared dated capacity calculation across each person's calendar, recorded
   availability, recurring reservations, and scheduled work allocations. Exact
   daily and selected-period results retain overloads, source breakdowns, and

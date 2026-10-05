@@ -56,8 +56,11 @@ between controls and Alt+A / Alt+E / Alt+R for allocation actions.
 
 The summary reports effective estimate, entered reference, direct and descendant
 allocation, and remaining effort. Missing estimates, mixed levels, and excess
-allocation remain visible. These totals do not compare against calendar capacity
-or distribute work by date.
+allocation remain visible. The findings preview also distributes dated demand
+through the shared capacity engine and compares it with every concurrent
+allocation, calendar, availability entry, and reservation in the candidate plan.
+Findings are advisory: Save keeps an infeasible or incomplete draft visible for
+later correction instead of silently changing or rejecting its hours.
 
 Deletion of a person or work item previews affected allocations and requires
 confirmation. Deleting a parent includes hidden descendants. Surviving allocation
@@ -71,6 +74,10 @@ if an older build must still open the project.
 ![Work allocations in light appearance](images/work-allocations-light.png)
 ![Work allocations in dark appearance](images/work-allocations-dark.png)
 
+The same overload finding from all concurrent work remains readable in the
+allocation draft in both appearances: [light](images/planning-findings-light.png)
+and [dark](images/planning-findings-dark.png).
+
 For a quick evaluation, split a 100-hour task into 60 and 40 hours, save and reopen,
 then edit one entry and cancel. Check that the saved totals remain unchanged.
 The shared dated capacity engine now consumes explicit allocations without
@@ -79,6 +86,6 @@ WorkItem's complete dates using positive planning capacity after reservations,
 then sums concurrent work and retains negative remaining capacity. Missing dates,
 calendars, or positive-capacity days keep the hours as explicit unplaced demand.
 
-The [roadmap](roadmap.md) continues with R05-R06 to present findings and the same
-capacity totals in the desktop. See the
+The [roadmap](roadmap.md) continues with R06 to present the same capacity totals
+in People. See the
 [planning decisions](planning-decisions.md) for the dated distribution contract.

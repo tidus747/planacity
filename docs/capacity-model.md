@@ -139,13 +139,21 @@ All public hour values use exact `Fraction` results derived from stored Decimal
 inputs. No display rounding or caller Decimal context changes the total. Program
 events are not yet a source because their domain model belongs to v0.5.
 
+`planning.findings.planning_findings` turns this shared result and the canonical
+effort rollups into calculated, non-persisted advice. Each finding has a stable
+rule key, severity, affected work/person/source UUIDs, an optional date range,
+an explanation, and a suggested action. Plan rows, selected-work details, and
+allocation drafts consume the same snapshot. Overload findings include all
+concurrent work and reservations for the affected person, even when a draft is
+opened from only one task. They warn but do not block saving an incomplete plan.
+
 ## Capacity boundaries and follow-ups
 
 The nominal-calendar and availability APIs remain smaller reusable calculations;
 they do not independently claim remaining capacity. The shared engine is the
 canonical integration boundary for new findings and People/Overview totals.
-R05 turns its gaps and overloads into reusable planning findings, and R06 exposes
-the same totals in People. No desktop page consumes the engine yet.
+R05 exposes its gaps and overloads as reusable planning findings. R06 will expose
+the same totals in People; program events remain a later input.
 
 Program-event deductions follow in v0.5. They are not a prerequisite for showing
 the currently entered meetings and front-office reservations consistently.
