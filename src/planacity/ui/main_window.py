@@ -195,7 +195,8 @@ class MainWindow(QMainWindow):
             "Configure work calendars and review nominal hours. "
             "Edit dated availability and review overlaps. "
             "Reserve recurring capacity with a per-person preview. "
-            "Program events and allocations remain planned.</p>",
+            "Review dated capacity, reservations, allocations, and planning findings. "
+            "Program events remain planned.</p>",
         )
 
     def _refresh_document(self) -> None:

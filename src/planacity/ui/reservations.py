@@ -109,7 +109,9 @@ def preview_text(plan: ProgramPlan, results: tuple[ReservationCapacity, ...]) ->
 class ReservationWizard(QDialog):
     """Edits remain local until a successfully previewed candidate is confirmed."""
 
-    def __init__(self, parent: QWidget, session: Session) -> None:
+    def __init__(
+        self, parent: QWidget, session: Session, selected_rule_id: UUID | None = None
+    ) -> None:
         super().__init__(parent)
         self.session = session
         self.original = session.document.plan
@@ -131,6 +133,10 @@ class ReservationWizard(QDialog):
         self.rule_choice.addItem("New reservation", "")
         for rule in self.original.reservation_rules:
             self.rule_choice.addItem(rule.name, str(rule.id))
+        if selected_rule_id is not None:
+            selected_index = self.rule_choice.findData(str(selected_rule_id))
+            if selected_index >= 0:
+                self.rule_choice.setCurrentIndex(selected_index)
         form.addRow("&Rule", self.rule_choice)
         self.name = QLineEdit()
         self.name.setAccessibleName("Reservation name")
@@ -343,9 +349,11 @@ class ReservationWizard(QDialog):
             self.accept()
 
 
-def reserve_capacity_dialog(parent: QWidget, session: Session) -> None:
+def reserve_capacity_dialog(
+    parent: QWidget, session: Session, selected_rule_id: UUID | None = None
+) -> None:
     if session.document.plan is None:
         return
-    dialog = ReservationWizard(parent, session)
+    dialog = ReservationWizard(parent, session, selected_rule_id)
     dialog.exec()
     dialog.deleteLater()

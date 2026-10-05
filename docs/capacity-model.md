@@ -28,13 +28,24 @@ and overlapping periods/entry numbers matching the manager's list. Overlaps use
 the largest share, not the sum;
 combine distinct partial absences into one share if they should add up.
 
-People shows nominal, unavailable, and available hours, plus overlap counts.
-Available hours are before program events, reservations, and allocations.
-Entries outside the horizon are retained; only intersecting dates contribute.
-Without a calendar, hours and overlap reports remain Unknown. Clearing a calendar
-retains availability; reassigning one recalculates it. Confirming an edit retains
-its ID, while cancellation leaves the draft unapplied. Deleting a person asks
-before clearing their availability entries. Imported snapshots remain unchanged.
+People starts at the plan horizon and also accepts explicit Day, Week, or custom
+inclusive ranges. Its roster shows nominal, unavailable, available, reserved,
+planning, allocated, signed remaining, and unplaced hours. The selected-person
+table groups the same exact daily result by day, ISO week, or the complete selected
+period. Status is always written as text as well as highlighted: overloaded,
+incomplete, unknown, full, within capacity, no work, or no planning capacity.
+
+The detail names every contributing reservation rule and dated task. Source
+actions reopen the matching reservation or allocation editor. A period total is
+marked Overloaded when any included date is overloaded, even if spare capacity on
+other dates makes the period's signed total positive. Missing dates remain visible
+as unplaced demand, and a missing calendar remains Unknown rather than zero.
+
+Entries outside the selected range are retained; only intersecting dates
+contribute. Clearing a calendar retains availability; reassigning one recalculates
+it. Confirming an edit retains its ID, while cancellation leaves the draft
+unapplied. Deleting a person asks before clearing their availability entries.
+Imported snapshots remain unchanged. Program events are not yet modeled.
 
 Schemas 1-3 open without availability; schemas 1-4 open without reservations.
 Saving writes schema 7. Keep a backup
@@ -42,6 +53,8 @@ or use Save As if the file must remain readable in an older build.
 
 Screenshots using an explicitly configured example schedule:
 
+- Complete People capacity: [light](images/people-capacity-light.png),
+  [dark](images/people-capacity-dark.png).
 - People: [light](images/people-calendars-light.png),
   [dark](images/people-calendars-dark.png).
 - Calendar editor: [light](images/calendar-editor-light.png),
@@ -151,17 +164,17 @@ opened from only one task. They warn but do not block saving an incomplete plan.
 
 The nominal-calendar and availability APIs remain smaller reusable calculations;
 they do not independently claim remaining capacity. The shared engine is the
-canonical integration boundary for new findings and People/Overview totals.
-R05 exposes its gaps and overloads as reusable planning findings. R06 will expose
-the same totals in People; program events remain a later input.
+canonical integration boundary for findings and People/Overview totals. R05
+exposes its gaps and overloads as reusable planning findings. R06 exposes the same
+exact totals and source IDs in People; program events remain a later input.
 
 Program-event deductions follow in v0.5. They are not a prerequisite for showing
 the currently entered meetings and front-office reservations consistently.
 The recurring reservation API (#8) now consumes explicit daily capacity after
 these deductions. Rules persist (#9), and the wizard (#10) previews saved calendars
 and entered availability before reservations. Program-event deductions are not yet
-modeled in the desktop; the preview labels that limitation. People's table remains
-before reservations; use Reserve capacity to review reservation totals.
+modeled in the desktop; the preview labels that limitation. People then combines
+the saved reservation result with dated allocations for the selected range.
 Calendar and availability data use schema 7, while Jira hour estimates and
 import baselines are unchanged. See
 [recurring reservations](capacity-wizards.md).

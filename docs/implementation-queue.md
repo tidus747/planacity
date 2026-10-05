@@ -8,9 +8,9 @@ because its specification is written here.
 
 ## Start the next session
 
-1. Check main, the working tree, open issues, and pending PRs. R01-R04 are
-   merged; R05 is tracked in issue #90. Do not merge without maintainer approval.
-2. Finish or review R05 before selecting R06, its dependent People slice.
+1. Check main, the working tree, open issues, and pending PRs. R01-R05 are
+   merged; R06 is tracked in issue #92. Do not merge without maintainer approval.
+2. Finish or review R06 before selecting R07, its dependent context slice.
 3. Turn each later brief into one issue with outcome, non-goals, dependencies,
    examples, persistence impact, and validation. Assign the release milestone.
 4. Implement and review that slice alone, updating docs and user-facing changelog
