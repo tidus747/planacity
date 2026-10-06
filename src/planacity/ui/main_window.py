@@ -154,7 +154,7 @@ class MainWindow(QMainWindow):
 
     def _menus(self) -> None:
         self.file_actions = ProjectActions(self, self.session)
-        self.file_actions.flush_edit = self.plan_page.commit_editor
+        self.file_actions.flush_edit = self.plan_page.flush_edits
         edit_menu = self.menuBar().addMenu("&Edit")
         edit_menu.addAction("Plan properties...", self.file_actions.properties)
         edit_menu.addAction("Move selected work...", self.plan_page.move_item)
@@ -214,11 +214,11 @@ class MainWindow(QMainWindow):
         )
 
     def _reserve_capacity(self) -> None:
-        if self.plan_page.commit_editor():
+        if self.plan_page.flush_edits():
             reserve_capacity_dialog(self, self.session)
 
     def _estimate_units(self) -> None:
-        if self.plan_page.commit_editor():
+        if self.plan_page.flush_edits():
             choose_estimate_units(self, self.session)
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -228,7 +228,7 @@ class MainWindow(QMainWindow):
             event.ignore()
 
     def show_page(self, index: int) -> None:
-        if index != 1 and not self.plan_page.commit_editor():
+        if index != 1 and not self.plan_page.flush_edits():
             list(self.navigation.values())[self.pages.currentIndex()].setChecked(True)
             return
         self.pages.setCurrentIndex(index)

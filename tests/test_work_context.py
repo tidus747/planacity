@@ -2,11 +2,20 @@
 
 from dataclasses import replace
 from datetime import date
+from decimal import Decimal
 from uuid import uuid4
 
 import pytest
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkGroup, WorkItem, WorkItemType
+from planacity.domain import (
+    PlanningHorizon,
+    ProgramPlan,
+    Relationship,
+    RelationshipType,
+    WorkGroup,
+    WorkItem,
+    WorkItemType,
+)
 from planacity.planning.plan_filters import filter_plan
 from planacity.planning.timeline import project_timeline
 from planacity.planning.timeline_view import TimelineFilters
@@ -15,6 +24,7 @@ from planacity.planning.work_context import (
     effective_group_ids,
     resolve_topic,
     update_work_context,
+    update_work_details,
 )
 
 
@@ -146,3 +156,91 @@ def test_effective_filters_keep_legacy_memberships_and_add_primary_topic(
         task.id,
         subtask.id,
     }
+
+
+def test_complete_work_details_update_is_atomic(plan: ProgramPlan) -> None:
+    task = plan.work_items[2]
+    alpha = plan.work_groups[0]
+
+    changed = update_work_details(
+        plan,
+        task.id,
+        title="Build integrated rig",
+        description="Acceptance notes",
+        labels=("hardware", "customer-a"),
+        primary_group_id=alpha.id,
+        estimate_hours=Decimal("12.5"),
+        start=date(2026, 2, 2),
+        end=date(2026, 2, 6),
+    )
+
+    assert changed.work_item(task.id) == replace(
+        task,
+        title="Build integrated rig",
+        description="Acceptance notes",
+        labels=("hardware", "customer-a"),
+        primary_group_id=alpha.id,
+        estimate_hours=Decimal("12.5"),
+        start=date(2026, 2, 2),
+        end=date(2026, 2, 6),
+    )
+    assert plan.work_item(task.id) is task
+
+
+def test_complete_update_rejects_container_estimate_without_partial_changes(
+    plan: ProgramPlan,
+) -> None:
+    epic = plan.work_items[0]
+    with pytest.raises(ValueError, match="derived from leaf work"):
+        update_work_details(
+            plan,
+            epic.id,
+            title="Changed but rejected",
+            description="Not applied",
+            labels=(),
+            primary_group_id=None,
+            estimate_hours=Decimal(1),
+            start=None,
+            end=None,
+        )
+    assert plan.work_item(epic.id) is epic
+
+
+def test_complete_update_rejects_dependency_conflict_without_partial_changes(
+    plan: ProgramPlan,
+) -> None:
+    task = replace(
+        plan.work_items[1],
+        start=date(2026, 1, 5),
+        end=date(2026, 1, 9),
+    )
+    successor = replace(
+        plan.work_items[3],
+        start=date(2026, 1, 12),
+        end=date(2026, 1, 16),
+    )
+    dependency = Relationship(
+        source_id=successor.id,
+        target_id=task.id,
+        kind=RelationshipType.DEPENDS_ON,
+    )
+    scheduled = replace(
+        plan,
+        work_items=(plan.work_items[0], task, plan.work_items[2], successor),
+        relationships=(dependency,),
+    )
+
+    with pytest.raises(ValueError, match="must end on or before"):
+        update_work_details(
+            scheduled,
+            task.id,
+            title="Changed but rejected",
+            description="Not applied",
+            labels=("blocked",),
+            primary_group_id=None,
+            estimate_hours=task.estimate_hours,
+            start=task.start,
+            end=successor.start,
+        )
+
+    assert scheduled.work_item(task.id) is task
