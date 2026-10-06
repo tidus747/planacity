@@ -134,6 +134,14 @@ def stylesheet(theme: Theme) -> str:
         QFrame[role="panel"] {{
             background: {c.surface}; border: 1px solid {c.border}; border-radius: 8px;
         }}
+        QGroupBox#overviewAnalysis {{
+            background: {c.surface}; border: 1px solid {c.border}; border-radius: 8px;
+            margin-top: 14px; font-size: 18px; font-weight: 600;
+        }}
+        QGroupBox#overviewAnalysis::title {{
+            subcontrol-origin: margin; subcontrol-position: top left;
+            left: 14px; padding: 0 6px; color: {c.text};
+        }}
         QFrame[role="divider"] {{ background: {c.border}; border: none; }}
         QPushButton {{
             background: {c.surface}; border: 1px solid {c.border};

@@ -59,8 +59,11 @@ class MainWindow(QMainWindow):
         self.plan_page = PlanPage(self.session)
         self.timeline_page = TimelinePage(self.session, self.settings)
         self.people_page = PeoplePage(self.session)
+        self.overview_page = OverviewPage(
+            self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)
+        )
         for page in (
-            OverviewPage(self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)),
+            self.overview_page,
             self.plan_page,
             self.timeline_page,
             self.people_page,

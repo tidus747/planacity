@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Compact Overview analysis for the fixed plan horizon. Compare planning
+  capacity, scheduled work, remaining hours, and unplaced demand by person;
+  review scheduled or estimated leaf effort by reporting topic; and reconcile
+  nominal time, unavailability, named reservations, work, and remaining time.
+  Native charts have exact accessible table peers and keep overload, unknown,
+  and incomplete states explicit.
 - Transactional work inspector in Plan. Edit a selected item's title,
   description, ordered labels, primary reporting topic, dates, and leaf estimate
   as one draft with Apply/Cancel. Selection and navigation changes offer
