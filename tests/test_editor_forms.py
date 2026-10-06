@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QLineEdit,
     QListWidget,
+    QMessageBox,
     QPushButton,
 )
 
@@ -170,3 +171,40 @@ def test_renaming_group_preserves_existing_membership_order(app, window):
     assert changed.epic_ids == group.epic_ids
     assert changed.name == "Renamed only"
     window.session.document.saved_plan = window.session.document.plan
+
+
+def test_removing_group_previews_and_clears_primary_topic(app, window, monkeypatch):
+    plan = restore_backup(
+        Path(__file__).resolve().parents[1] / "examples" / "aurora.planacity.json"
+    )
+    group = plan.work_groups[0]
+    item = replace(plan.work_items[1], primary_group_id=group.id)
+    plan = replace(plan, work_items=(plan.work_items[0], item, *plan.work_items[2:]))
+    window.session.document.new(plan)
+    window.session.changed.emit()
+    questions = []
+
+    def confirm(parent, title, message, buttons, default):
+        questions.append((title, message))
+        return QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(QMessageBox, "question", confirm)
+
+    def manager(dialog):
+        dialog.findChild(QListWidget).setCurrentRow(0)
+        remove = next(b for b in dialog.findChildren(QPushButton) if b.text() == "&Remove")
+        remove.click()
+
+    drive_dialog(app, lambda: window.plan_page.manage(True), manager)
+
+    changed = window.session.document.plan
+    assert questions == [
+        (
+            "Remove entry?",
+            "Remove this WorkGroup? 1 work item(s) use it as their primary reporting topic. "
+            "Their primary topic will be cleared; the work items themselves will be preserved.",
+        )
+    ]
+    assert all(existing.id != group.id for existing in changed.work_groups)
+    assert changed.work_items[1].primary_group_id is None
+    window.session.document.saved_plan = changed

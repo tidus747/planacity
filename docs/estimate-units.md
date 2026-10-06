@@ -55,7 +55,7 @@ Jira import previews, mapping profiles, Changes, and CSV exports retain their
 explicit hours/seconds conventions. They are independent of this display
 preference, and imported baseline estimates are never rewritten.
 
-Saving writes schema 7. Keep a backup or use Save As when an older build must
+Saving writes schema 8. Keep a backup or use Save As when an older build must
 still open the original file. See [the file format](project-file-format.md).
 
 ## Set up calendars without leaving the dialog

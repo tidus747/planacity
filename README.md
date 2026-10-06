@@ -62,7 +62,7 @@ and load the fictional `examples/aurora.planacity.json` plan to explore the app.
 | --- | --- |
 | Source version | `0.4.0.dev0` |
 | Active milestone | v0.4 - Team & Capacity |
-| Project file schema | 7 |
+| Project file schema | 8 |
 | Distribution | Source preview - no stable installer yet |
 
 The v0.1 planning foundation and v0.2 Jira roundtrip are implemented. The v0.3
@@ -72,15 +72,15 @@ an approved release. Development now targets the shared capacity calculations,
 validation, and planning context needed for v0.4.
 
 Current reservation previews do not yet deduct program events or work
-allocations. A shared service now calculates dated remaining capacity, but the
-desktop does not yet present those results; R05 and R06 add findings and People
-visibility. The [implementation roadmap](docs/roadmap.md) and
+allocations. Plan findings and People now present the shared dated-capacity
+results. Work context persists for the upcoming inspector, while program events
+remain a later calendar input. The [implementation roadmap](docs/roadmap.md) and
 [implementation queue](docs/implementation-queue.md) describe the ordered work;
 GitHub Issues and Milestones are the live status.
 
-Project files from schemas 1-6 remain supported. Schemas 1-5 open in hours, and
-schemas 1-6 open without inferred allocations. Keep a backup or use Save As when
-opening a project with an older build.
+Project files from schemas 1-7 remain supported. Schemas 1-5 open in hours,
+schemas 1-6 open without inferred allocations, and schemas 1-7 open with empty
+work context. Keep a backup or use Save As when opening a project with an older build.
 
 ## Run from source
 

@@ -8,6 +8,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
+from persistence_helpers import strip_work_context
 
 from planacity.domain import (
     Allocation,
@@ -221,6 +222,7 @@ def test_older_schemas_open_without_inferred_allocations(version, tmp_path):
     plan = replace(allocated_plan(), allocations=())
     data = json.loads(dumps(plan))
     data["schema_version"] = version
+    strip_work_context(data)
     for key, introduced in (
         ("imports", 2),
         ("work_calendars", 3),
@@ -247,7 +249,7 @@ def test_older_schemas_open_without_inferred_allocations(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
     connection.close()
 
 

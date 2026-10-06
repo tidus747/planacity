@@ -27,11 +27,26 @@ def set_group_epics(plan: ProgramPlan, group_id: UUID, epic_ids: tuple[UUID, ...
     )
 
 
-def remove_work_group(plan: ProgramPlan, group_id: UUID) -> ProgramPlan:
-    """Remove the group and its memberships; preserve every work item and link."""
+def remove_work_group(
+    plan: ProgramPlan, group_id: UUID, *, clear_primary_references: bool = False
+) -> ProgramPlan:
+    """Remove a group only after explicitly resolving primary references."""
+    if type(clear_primary_references) is not bool:
+        raise ValueError("Clearing primary WorkGroup references requires an explicit boolean.")
     plan.work_group(group_id)
+    references = tuple(item for item in plan.work_items if item.primary_group_id == group_id)
+    if references and not clear_primary_references:
+        raise ValueError(
+            f"Removal affects {len(references)} primary WorkGroup reference(s). "
+            "Explicitly confirm clearing these references first."
+        )
     return replace(
-        plan, work_groups=tuple(group for group in plan.work_groups if group.id != group_id)
+        plan,
+        work_items=tuple(
+            replace(item, primary_group_id=None) if item.primary_group_id == group_id else item
+            for item in plan.work_items
+        ),
+        work_groups=tuple(group for group in plan.work_groups if group.id != group_id),
     )
 
 

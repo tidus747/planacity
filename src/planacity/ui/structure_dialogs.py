@@ -141,20 +141,38 @@ def manage_structure(parent: QWidget, session: Session, *, groups: bool) -> None
         row, plan = listing.currentItem(), session.document.plan
         if row is None or plan is None:
             return
+        item_id = UUID(row.data(Qt.ItemDataRole.UserRole))
+        primary_references = (
+            tuple(item for item in plan.work_items if item.primary_group_id == item_id)
+            if groups
+            else ()
+        )
+        message = "Remove this entry? Work items will be preserved."
+        if primary_references:
+            message = (
+                f"Remove this WorkGroup? {len(primary_references)} work item(s) use it as "
+                "their primary reporting topic. Their primary topic will be cleared; "
+                "the work items themselves will be preserved."
+            )
         if (
             QMessageBox.question(
                 dialog,
                 "Remove entry?",
-                "Remove this entry? Work items will be preserved.",
+                message,
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )
             != QMessageBox.StandardButton.Yes
         ):
             return
-        item_id = UUID(row.data(Qt.ItemDataRole.UserRole))
         session.apply(
-            remove_work_group(plan, item_id) if groups else remove_relationship(plan, item_id)
+            remove_work_group(
+                plan,
+                item_id,
+                clear_primary_references=bool(primary_references),
+            )
+            if groups
+            else remove_relationship(plan, item_id)
         )
         refresh()
 

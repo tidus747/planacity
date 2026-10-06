@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Persist plain-text descriptions, ordered labels, and an optional primary
+  WorkGroup on work items. Reporting-topic resolution inherits the nearest
+  explicit choice, classifies legacy single-group work, and keeps Ungrouped and
+  Ambiguous cases explicit. Existing Plan and Timeline WorkGroup filters include
+  this effective context without rewriting Epic memberships.
 - Complete People capacity breakdown for an explicit day, week, plan horizon, or
   custom range. Roster and selected-person views reconcile named reservations and
   dated work with planning capacity, signed remaining hours, overload states, and
@@ -61,9 +66,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   Timeline date edits reject only new or worsened conflicts, with affected work
   and permitted boundaries; legacy conflicts and incomplete edges remain visible
   and repairable without automatic rescheduling.
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 7
-  to retain calendars, availability, reservation rules, estimate preferences, and
-  work allocations. Schemas 1-6 open without inferred allocations.
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 8
+  to retain work context alongside calendars, availability, reservation rules,
+  estimate preferences, and work allocations. Schemas 1-7 open with empty work
+  context; schemas 1-6 open without inferred allocations.
   Schemas 1-5 open with estimates displayed in hours; keep a backup or use Save As
   for older builds.
 - Removing a person now identifies affected reservation rules before confirmation.

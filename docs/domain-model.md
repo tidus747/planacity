@@ -15,7 +15,7 @@ estimates, which remain exact Decimal hours. See [estimate units](estimate-units
 | --- | --- | --- |
 | `PlanningHorizon` | `start`, `end` | Inclusive dates; end cannot precede start |
 | `ProgramPlan` | `id`, `name`, `description`, `horizon`, `work_items`, `people`, `work_groups`, `relationships` | Valid immutable collections and references |
-| `WorkItem` | `id`, `title`, `kind`, `parent_id`, `estimate_hours`, `start`, `end` | Valid hierarchy, estimates and optional dates |
+| `WorkItem` | `id`, `title`, `kind`, `parent_id`, `estimate_hours`, `start`, `end`, `description`, `labels`, `primary_group_id` | Valid hierarchy, estimates, dates, text metadata, and optional reporting topic |
 | `Person` | `id`, `name` | Non-blank name; unique ID within the roster |
 | `WorkGroup` | `id`, `name`, `epic_ids` | Named group of existing Epics |
 | `Relationship` | `id`, `source_id`, `target_id`, `kind` | Existing distinct endpoints; no duplicate links |
@@ -48,6 +48,25 @@ children, allowing a future loader to resolve a complete snapshot before validat
 
 WorkGroups and relationships are separate concepts, not extra hierarchy levels.
 Assignment uses separate Allocations; no single owner field is introduced.
+
+## Work context and reporting topics
+
+WorkItem descriptions are plain text. Labels are ordered non-blank strings with
+no leading/trailing whitespace and no case-insensitive duplicates. Their spelling
+and order are preserved. They are metadata, not additive reporting dimensions.
+
+`primary_group_id` is optional and must identify a WorkGroup in the same plan.
+`planning/work_context.py` edits all three context fields atomically. A work
+item's reporting topic is its nearest explicit primary group in the hierarchy.
+Without one, exactly one WorkGroup membership on the containing Epic resolves a
+legacy topic; none is Ungrouped and several are Ambiguous. Standalone Tasks can
+select a primary group directly, and a child can override its ancestor.
+
+Effective WorkGroup filters combine inherited Epic memberships with the resolved
+primary group. This keeps historical multi-group organization while giving future
+additive reports one topic or an explicit exception bucket. No memberships are
+copied into descendants. Removing a referenced WorkGroup requires confirmation
+and clears only explicit primary references; work and other groups are preserved.
 
 ## Editing
 
@@ -104,7 +123,9 @@ to display; it never invents missing dates, clamps values, or shifts other work.
 `planning/structure.py` provides group add/rename/remove operations and
 `set_group_epics` to replace ordered membership. Groups contain Epics directly;
 an Epic can appear in multiple groups. Tasks remain under their canonical Epic.
-Removing a group removes its memberships and preserves all work and links.
+Removing a group removes its memberships and preserves all work and links. If it
+is an explicit primary topic, removal first requires confirmation and clears only
+those references.
 
 `add_relationship` and `remove_relationship` manage explicit links:
 
@@ -188,7 +209,9 @@ and zero-capacity rules.
 `planning/timeline.py` derives immutable rows from a complete `ProgramPlan` for
 visualization. Rows keep work IDs, hierarchy depth, sibling order, original
 dates, and effective WorkGroup memberships. Tasks and Subtasks inherit the
-memberships of their containing Epic; standalone Tasks remain ungrouped.
+memberships of their containing Epic. A resolved primary group is also included,
+so standalone Tasks and deliberate child overrides can be filtered without
+changing hierarchy or legacy memberships.
 
 Day coordinates are zero-based from the inclusive planning-horizon start. They
 may be negative or extend past the horizon, making outside work visible without

@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 7)
+# Project files and JSON backups (schema 8)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 7` is the schema version.
+- `PRAGMA user_version = 8` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,12 +26,19 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`7`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`8`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
 `availability_events`, `reservation_rules`, `estimate_preferences`, and `allocations`.
 Fields match [the domain model](domain-model.md).
+
+Each work item stores its existing identity, hierarchy, estimate, and dates plus
+plain-text `description`, ordered `labels`, and nullable `primary_group_id`.
+Labels are non-blank canonical strings without leading/trailing whitespace and
+are unique ignoring case. A primary group must exist in the same current plan.
+Imported baseline WorkItems use the same representation, but editing current work
+does not rewrite baseline values or raw source rows.
 
 Each work calendar stores `id`, `name`, and seven `weekday_hours` Decimal strings,
 Monday through Sunday. Each person/calendar assignment stores `person_id` and
@@ -95,7 +102,8 @@ does not modify the file. Schemas 1-3 open with empty availability collections.
 Schemas 1-4 open without reservation rules; schema 4 retains its availability.
 Schemas 1-5 open with Hours and no estimate reference calendar.
 Schemas 1-6 open with no allocations; no assignments are inferred.
-Saving writes schema 7; older builds cannot open the upgraded file. Keep a
+Schemas 1-7 open with empty work descriptions, labels, and primary groups.
+Saving writes schema 8; older builds cannot open the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.
