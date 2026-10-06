@@ -1,10 +1,12 @@
 """Keyboard-friendly Plan and People workspaces with validated editing actions."""
 
+from datetime import date
+from fractions import Fraction
 from functools import partial
 from uuid import UUID
 
 from PySide6.QtCore import QModelIndex, QPersistentModelIndex, Qt
-from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtGui import QColor, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemDelegate,
     QAbstractItemView,
@@ -17,8 +19,17 @@ from PySide6.QtWidgets import (
     QTreeView,
 )
 
-from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType
-from planacity.planning.availability_settings import person_availability
+from planacity.domain import Person, PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
+from planacity.planning.availability import availability_capacity
+from planacity.planning.capacity_breakdown import (
+    CapacityBreakdown,
+    CapacityBucket,
+    CapacityBucketScale,
+    CapacityLoadState,
+    calculate_capacity_breakdown,
+    day_period,
+    week_period,
+)
 from planacity.planning.people import add_person, remove_person, rename_person
 from planacity.planning.timeline import TimelineDateState
 from planacity.planning.timeline_view import TimelineFilters
@@ -26,12 +37,12 @@ from planacity.planning.work_calendar import nominal_capacity
 from planacity.planning.work_items import add_work_item, move_work_item, remove_work_item
 from planacity.ui.allocations import AllocationDialog, allocation_summary_text
 from planacity.ui.availability import manage_availability
-from planacity.ui.forms import ValidatedDelegate, validated_form
+from planacity.ui.forms import CalendarLineEdit, ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.plan_filter_model import PlanFilterModel
 from planacity.ui.plan_model import PlanModel
 from planacity.ui.planning_findings import FindingView
-from planacity.ui.reservations import reserve_capacity_dialog
+from planacity.ui.reservations import hours_text, reserve_capacity_dialog
 from planacity.ui.session import Session
 from planacity.ui.structure_dialogs import manage_structure
 from planacity.ui.work_calendars import choose_person_calendar, manage_work_calendars
@@ -125,6 +136,7 @@ class PlanPage(WorkspacePage):
         self.content.addWidget(self.error)
         self.model.error.connect(self.error.setText)
         self.table.selectionModel().currentChanged.connect(self.selection_changed)
+        self.table.itemDelegate().closeEditor.connect(lambda *args: self.model.refresh_filters())
         self.selected_id: UUID | None = None
         self.expanded_ids: list[UUID] = []
         self.model.modelAboutToBeReset.connect(self.remember_selection)
@@ -441,16 +453,52 @@ class PeoplePage(WorkspacePage):
     def __init__(self, session: Session) -> None:
         super().__init__(
             "People",
-            "Calendar hours and availability before program events, reservations, and allocations.",
+            "Compare planning capacity with dated work, reservations, and availability.",
         )
         self.session = session
+        self.period: PlanningHorizon | None = None
+        self.plan_id: UUID | None = None
+        self.selected_person_id: UUID | None = None
+        self.breakdown: CapacityBreakdown | None = None
+        self.detail_buckets: tuple[CapacityBucket, ...] = ()
+        self._refreshing = False
+
+        ranges = QHBoxLayout()
+        self.range_start = CalendarLineEdit()
+        self.range_start.setAccessibleName("Capacity range start")
+        self.range_start.setPlaceholderText("YYYY-MM-DD")
+        self.range_end = CalendarLineEdit()
+        self.range_end.setAccessibleName("Capacity range end")
+        self.range_end.setPlaceholderText("YYYY-MM-DD")
+        ranges.addWidget(label("From"))
+        ranges.addWidget(self.range_start)
+        ranges.addWidget(label("To"))
+        ranges.addWidget(self.range_end)
+        for title, mode in (
+            ("Day", "day"),
+            ("Week", "week"),
+            ("Plan horizon", "horizon"),
+        ):
+            button = QPushButton(title)
+            button.setAccessibleName(f"Use {title.lower()} capacity range")
+            button.clicked.connect(partial(self.apply_range, mode))
+            ranges.addWidget(button)
+        self.apply_range_button = QPushButton("Apply range")
+        self.apply_range_button.clicked.connect(partial(self.apply_range, "custom"))
+        ranges.addWidget(self.apply_range_button)
+        self.content.addLayout(ranges)
+        self.range_error = label("")
+        self.range_error.setAccessibleName("Capacity range validation message")
+        self.content.addWidget(self.range_error)
         self.horizon_notice = label("")
         self.content.addWidget(self.horizon_notice)
         self.table = QTreeView()
         self.table.setAccessibleName("People roster")
         self.table.setRootIsDecorated(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.model = QStandardItemModel(0, 7, self.table)
+        self.model = QStandardItemModel(0, 13, self.table)
         self.model.setHorizontalHeaderLabels(
             [
                 "Person",
@@ -460,6 +508,12 @@ class PeoplePage(WorkspacePage):
                 "Unavailable hours",
                 "Available hours",
                 "Overlap periods",
+                "Reserved hours",
+                "Planning hours",
+                "Allocated work",
+                "Remaining hours",
+                "Unplaced demand",
+                "Status",
             ]
         )
         self.table.setModel(self.model)
@@ -494,59 +548,341 @@ class PeoplePage(WorkspacePage):
         self.buttons.append(self.reserve_button)
         buttons.addStretch()
         self.content.addLayout(buttons)
+
+        detail = Panel("Selected person capacity")
+        detail_controls = QHBoxLayout()
+        detail_controls.addWidget(label("Scale"))
+        self.scale = QComboBox()
+        self.scale.setAccessibleName("Capacity detail scale")
+        for title, value in (
+            ("Day", CapacityBucketScale.DAY),
+            ("Week", CapacityBucketScale.WEEK),
+            ("Selected period", CapacityBucketScale.PERIOD),
+        ):
+            self.scale.addItem(title, value.value)
+        self.scale.setCurrentIndex(self.scale.findData(CapacityBucketScale.WEEK.value))
+        self.scale.currentIndexChanged.connect(self.refresh)
+        detail_controls.addWidget(self.scale)
+        detail_controls.addStretch()
+        detail.content.addLayout(detail_controls)
+        self.detail_heading = label("Select a person to inspect dated capacity.")
+        self.detail_heading.setAccessibleName("Selected person capacity summary")
+        detail.content.addWidget(self.detail_heading)
+        self.detail_table = QTreeView()
+        self.detail_table.setAccessibleName("Selected person capacity periods")
+        self.detail_table.setRootIsDecorated(False)
+        self.detail_table.setAlternatingRowColors(True)
+        self.detail_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.detail_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.detail_model = QStandardItemModel(0, 7, self.detail_table)
+        self.detail_model.setHorizontalHeaderLabels(
+            [
+                "Period",
+                "Planning capacity",
+                "Allocated work",
+                "Remaining",
+                "Load status",
+                "Reservations",
+                "Work",
+            ]
+        )
+        self.detail_table.setModel(self.detail_model)
+        detail.content.addWidget(self.detail_table, 1)
+        self.detail_notice = label("")
+        self.detail_notice.setAccessibleName("Selected person capacity gaps")
+        detail.content.addWidget(self.detail_notice)
+        source_actions = QHBoxLayout()
+        self.reservation_choice = QComboBox()
+        self.reservation_choice.setAccessibleName("Reservation in selected period")
+        self.reservation_button = QPushButton("Open reservation...")
+        self.reservation_button.clicked.connect(self.open_reservation)
+        self.work_choice = QComboBox()
+        self.work_choice.setAccessibleName("Work in selected period")
+        self.work_button = QPushButton("Open work allocation...")
+        self.work_button.clicked.connect(self.open_work)
+        for widget in (
+            self.reservation_choice,
+            self.reservation_button,
+            self.work_choice,
+            self.work_button,
+        ):
+            source_actions.addWidget(widget)
+        detail.content.addLayout(source_actions)
+        self.content.addWidget(detail, 1)
+
         session.changed.connect(self.refresh)
         self.table.selectionModel().currentChanged.connect(self._selection_changed)
+        self.detail_table.selectionModel().currentChanged.connect(self._detail_selection_changed)
         self.refresh()
 
     def refresh(self) -> None:
+        if self._refreshing:
+            return
+        self._refreshing = True
         selected = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
+        if selected:
+            self.selected_person_id = UUID(selected)
         self.model.removeRows(0, self.model.rowCount())
+        self.breakdown = None
         plan = self.session.document.plan
+        if plan is None:
+            self.period = None
+            self.plan_id = None
+            self.range_start.clear()
+            self.range_end.clear()
+        elif self.plan_id != plan.id or self.period is None:
+            self.plan_id = plan.id
+            self._set_period(plan.horizon)
+        period = self.period
         self.horizon_notice.setText(
-            f"Planning horizon: {plan.horizon.start} to {plan.horizon.end}. "
-            "Unknown means no calendar is assigned. "
-            f"{len(plan.reservation_rules)} reservation rules; "
-            "use Reserve capacity to review totals."
-            if plan
+            f"Selected range: {period.start} to {period.end}. "
+            f"Plan horizon: {plan.horizon.start} to {plan.horizon.end}. "
+            "Unknown capacity is never treated as free time."
+            if plan and period
             else "Open a plan to configure calendars."
         )
-        for button in self.buttons:
+        for button in (*self.buttons, self.apply_range_button):
             button.setEnabled(plan is not None)
-        if plan:
+        for editor in (self.range_start, self.range_end):
+            editor.setEnabled(plan is not None)
+        self.scale.setEnabled(plan is not None)
+        if plan and period:
+            scale = CapacityBucketScale(self.scale.currentData())
+            breakdown = calculate_capacity_breakdown(plan, period, scale)
+            self.breakdown = breakdown
             assigned = {
                 value.person_id: plan.work_calendar(value.calendar_id)
                 for value in plan.person_calendars
             }
-            for person in plan.people:
-                calendar = assigned.get(person.id)
-                capacity = nominal_capacity(calendar, plan.horizon) if calendar else None
-                available = person_availability(plan, person.id)
+            for capacity in breakdown.people:
+                person = plan.person(capacity.person_id)
+                calendar = assigned.get(capacity.person_id)
+                nominal = nominal_capacity(calendar, period) if calendar else None
+                availability = (
+                    availability_capacity(
+                        calendar,
+                        period,
+                        person.id,
+                        tuple(
+                            event
+                            for event in plan.availability_events
+                            if event.person_id == person.id
+                        ),
+                    )
+                    if calendar
+                    else None
+                )
                 row = [
                     QStandardItem(value)
                     for value in (
                         person.name,
                         calendar.name if calendar else "Not configured",
-                        str(capacity.total_hours) if capacity else "Unknown",
-                        str(capacity.working_days) if capacity else "Unknown",
-                        str(available.unavailable_hours) if available else "Unknown",
-                        str(available.available_hours) if available else "Unknown",
-                        str(len(available.overlaps)) if available else "Unknown",
+                        str(nominal.total_hours) if nominal else "Unknown",
+                        str(nominal.working_days) if nominal else "Unknown",
+                        str(availability.unavailable_hours) if availability else "Unknown",
+                        str(availability.available_hours) if availability else "Unknown",
+                        str(len(availability.overlaps)) if availability else "Unknown",
+                        self._hours(capacity.reserved_hours),
+                        self._hours(capacity.planning_hours),
+                        self._hours(capacity.allocated_hours),
+                        self._hours(capacity.remaining_hours),
+                        self._hours(capacity.unplaced_hours),
+                        self._state_text(capacity.state),
                     )
                 ]
                 for item in row:
                     item.setData(str(person.id), Qt.ItemDataRole.UserRole)
                     item.setEditable(False)
+                self._decorate_status(row[-1], capacity.state, capacity.gaps)
                 self.model.appendRow(row)
-                if str(person.id) == selected:
+                if capacity.person_id == self.selected_person_id:
                     self.table.setCurrentIndex(row[0].index())
+            if not self.table.currentIndex().isValid() and self.model.rowCount():
+                self.table.setCurrentIndex(self.model.index(0, 0))
+        self._refreshing = False
         self._selection_changed()
-        for column in range(7):
+        for column in range(self.model.columnCount()):
             self.table.resizeColumnToContents(column)
 
-    def _selection_changed(self) -> None:
-        selected = bool(self.table.currentIndex().data(Qt.ItemDataRole.UserRole))
+    def _selection_changed(self, *args: object) -> None:
+        selected_value = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
+        selected = bool(selected_value)
+        self.selected_person_id = UUID(selected_value) if selected_value else None
         self.assign_button.setEnabled(selected)
         self.availability_button.setEnabled(selected)
+        self._refresh_detail()
+
+    @staticmethod
+    def _hours(value: Fraction | None) -> str:
+        return hours_text(value) if value is not None else "Unknown"
+
+    @staticmethod
+    def _state_text(state: CapacityLoadState) -> str:
+        return {
+            CapacityLoadState.UNKNOWN: "Unknown",
+            CapacityLoadState.INCOMPLETE: "Incomplete",
+            CapacityLoadState.OVERLOADED: "Overloaded",
+            CapacityLoadState.FULL: "Fully allocated",
+            CapacityLoadState.WITHIN_CAPACITY: "Within capacity",
+            CapacityLoadState.NO_WORK: "No allocated work",
+            CapacityLoadState.NO_CAPACITY: "No planning capacity",
+        }[state]
+
+    @staticmethod
+    def _decorate_status(
+        item: QStandardItem, state: CapacityLoadState, gaps: tuple[object, ...]
+    ) -> None:
+        colors = {
+            CapacityLoadState.UNKNOWN: QColor(128, 128, 128, 70),
+            CapacityLoadState.INCOMPLETE: QColor(245, 166, 35, 70),
+            CapacityLoadState.OVERLOADED: QColor(219, 68, 55, 80),
+            CapacityLoadState.FULL: QColor(245, 166, 35, 55),
+            CapacityLoadState.WITHIN_CAPACITY: QColor(39, 174, 96, 55),
+            CapacityLoadState.NO_WORK: QColor(32, 139, 173, 45),
+            CapacityLoadState.NO_CAPACITY: QColor(128, 128, 128, 45),
+        }
+        item.setBackground(colors[state])
+        messages = tuple(str(getattr(gap, "message", gap)) for gap in gaps)
+        if messages:
+            item.setToolTip("\n".join(dict.fromkeys(messages)))
+
+    def _set_period(self, period: PlanningHorizon) -> None:
+        self.period = period
+        self.range_start.setText(str(period.start))
+        self.range_end.setText(str(period.end))
+        self.range_error.clear()
+
+    def apply_range(self, mode: str) -> None:
+        plan = self.session.document.plan
+        if plan is None:
+            return
+        try:
+            if mode == "horizon":
+                period = plan.horizon
+            else:
+                start = date.fromisoformat(self.range_start.text().strip())
+                if mode == "day":
+                    period = day_period(start)
+                elif mode == "week":
+                    period = week_period(start)
+                else:
+                    period = PlanningHorizon(
+                        start, date.fromisoformat(self.range_end.text().strip())
+                    )
+        except ValueError as error:
+            self.range_error.setText(
+                f"Enter valid dates as YYYY-MM-DD with the start on or before the end. {error}"
+            )
+            return
+        self._set_period(period)
+        self.refresh()
+
+    def _refresh_detail(self) -> None:
+        self.detail_model.removeRows(0, self.detail_model.rowCount())
+        self.detail_buckets = ()
+        plan = self.session.document.plan
+        if (
+            plan is None
+            or self.period is None
+            or self.selected_person_id is None
+            or self.breakdown is None
+        ):
+            self.detail_heading.setText("Select a person to inspect dated capacity.")
+            self.detail_notice.clear()
+            self._detail_selection_changed()
+            return
+        person = self.breakdown.person(self.selected_person_id)
+        self.detail_buckets = person.buckets
+        self.detail_heading.setText(
+            f"{plan.person(person.person_id).name}: "
+            f"planning {self._hours(person.planning_hours)} h; "
+            f"allocated {self._hours(person.allocated_hours)} h; "
+            f"remaining {self._hours(person.remaining_hours)} h."
+        )
+        unique_messages = tuple(dict.fromkeys(gap.message for gap in person.gaps))
+        self.detail_notice.setText("\n".join(unique_messages))
+        for index, bucket in enumerate(person.buckets):
+            reservation_names = {rule.id: rule.name for rule in plan.reservation_rules}
+            reservations = ", ".join(
+                f"{reservation_names.get(entry.rule_id, 'Unknown reservation')}: "
+                f"{self._hours(entry.hours)} h"
+                for entry in bucket.reservations
+            )
+            work = ", ".join(
+                f"{plan.work_item(entry.work_item_id).title}: {self._hours(entry.hours)} h"
+                for entry in bucket.allocations
+            )
+            row = [
+                QStandardItem(value)
+                for value in (
+                    self._period_text(bucket.period),
+                    self._hours(bucket.planning_hours),
+                    self._hours(bucket.allocated_hours),
+                    self._hours(bucket.remaining_hours),
+                    self._state_text(bucket.state),
+                    reservations or "-",
+                    work or "-",
+                )
+            ]
+            for item in row:
+                item.setData(index, Qt.ItemDataRole.UserRole)
+                item.setEditable(False)
+            self._decorate_status(row[4], bucket.state, bucket.gaps)
+            self.detail_model.appendRow(row)
+        if self.detail_model.rowCount():
+            self.detail_table.setCurrentIndex(self.detail_model.index(0, 0))
+        for column in range(self.detail_model.columnCount()):
+            self.detail_table.resizeColumnToContents(column)
+        self._detail_selection_changed()
+
+    @staticmethod
+    def _period_text(period: PlanningHorizon) -> str:
+        return (
+            str(period.start) if period.start == period.end else f"{period.start} to {period.end}"
+        )
+
+    def _detail_selection_changed(self, *args: object) -> None:
+        self.reservation_choice.blockSignals(True)
+        self.work_choice.blockSignals(True)
+        self.reservation_choice.clear()
+        self.work_choice.clear()
+        index = self.detail_table.currentIndex().data(Qt.ItemDataRole.UserRole)
+        plan = self.session.document.plan
+        bucket = (
+            self.detail_buckets[index]
+            if isinstance(index, int) and index < len(self.detail_buckets)
+            else None
+        )
+        if plan is not None and bucket is not None:
+            names = {rule.id: rule.name for rule in plan.reservation_rules}
+            for entry in bucket.reservations:
+                self.reservation_choice.addItem(
+                    f"{names.get(entry.rule_id, 'Unknown reservation')} "
+                    f"({self._hours(entry.hours)} h)",
+                    str(entry.rule_id),
+                )
+            for allocation_entry in bucket.allocations:
+                self.work_choice.addItem(
+                    f"{plan.work_item(allocation_entry.work_item_id).title} "
+                    f"({self._hours(allocation_entry.hours)} h)",
+                    str(allocation_entry.work_item_id),
+                )
+        self.reservation_choice.blockSignals(False)
+        self.work_choice.blockSignals(False)
+        self.reservation_button.setEnabled(self.reservation_choice.count() > 0)
+        self.work_button.setEnabled(self.work_choice.count() > 0)
+
+    def open_reservation(self) -> None:
+        selected = self.reservation_choice.currentData()
+        if selected:
+            reserve_capacity_dialog(self, self.session, UUID(selected))
+
+    def open_work(self) -> None:
+        selected = self.work_choice.currentData()
+        if selected:
+            dialog = AllocationDialog(self, self.session, UUID(selected))
+            dialog.exec()
+            dialog.deleteLater()
 
     def edit_availability(self) -> None:
         selected = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)

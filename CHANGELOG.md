@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Complete People capacity breakdown for an explicit day, week, plan horizon, or
+  custom range. Roster and selected-person views reconcile named reservations and
+  dated work with planning capacity, signed remaining hours, overload states, and
+  unplaced demand. Source actions open the matching reservation or allocation
+  editor, while unknown inputs remain visible instead of becoming free capacity.
 - Actionable planning findings in Plan rows, selected-work details, and allocation
   drafts. Missing calendars, dates, estimates and assignments, allocation
   mismatches, hierarchy effort, unplaced demand, and overloads use the same

@@ -71,9 +71,11 @@ work (#78) merged through PR #79. R03 was completed in
 [#82](https://github.com/tidus747/planacity/issues/82) and merged through
 [PR #83](https://github.com/tidus747/planacity/pull/83). R04 was completed in
 [#88](https://github.com/tidus747/planacity/issues/88) and merged through
-[PR #89](https://github.com/tidus747/planacity/pull/89). R05 is tracked in
-[#90](https://github.com/tidus747/planacity/issues/90). Later slices remain
-planned. The [implementation queue](implementation-queue.md) adds focused briefs,
+[PR #89](https://github.com/tidus747/planacity/pull/89). R05 was completed in
+[#90](https://github.com/tidus747/planacity/issues/90) and merged through
+[PR #91](https://github.com/tidus747/planacity/pull/91). R06 is tracked in
+[#92](https://github.com/tidus747/planacity/issues/92). Later slices remain planned.
+The [implementation queue](implementation-queue.md) adds focused briefs,
 dependencies, and review evidence for the next sessions.
 
 ### R01 - Make estimate-calendar setup understandable

@@ -1,6 +1,6 @@
 """Shared dated capacity calculation over canonical planning inputs."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
 from enum import StrEnum
@@ -331,7 +331,11 @@ def _reservation_load(
     targets: tuple[PlanningHorizon, ...],
     base: dict[int, _BaseDay],
 ) -> tuple[dict[int, dict[UUID, Fraction]], tuple[CapacityGap, ...]]:
-    rules = tuple(rule for rule in plan.reservation_rules if person_id in rule.person_ids)
+    rules = tuple(
+        replace(rule, person_ids=(person_id,))
+        for rule in plan.reservation_rules
+        if person_id in rule.person_ids
+    )
     if not rules:
         return {}, ()
     inputs = PersonCapacity(

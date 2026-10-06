@@ -46,7 +46,7 @@ def test_keyboard_navigation_and_empty_workspaces(app: QApplication, window: Mai
     app.processEvents()
     assert window.pages.currentIndex() == 1
     tables = window.findChildren(QTreeView)
-    assert len(tables) == 3
+    assert len(tables) == 4
     assert all(table.model().rowCount() == 0 for table in tables)
 
 

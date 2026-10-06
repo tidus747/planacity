@@ -28,14 +28,19 @@ No account or network connection is needed while planning.
 6. Open **People** to add, rename, or remove roster members. Use **Work calendars...**
    to define all seven weekdays, then **Assign calendar...** for each person.
    Use **Availability...** to enter dated unavailable shares and preview overlaps.
-   The table shows nominal, unavailable, and available hours, before program events,
-   reservations, or allocations. Unassigned calendars show Unknown.
+   Set an inclusive capacity range with the Day, Week, Plan horizon, or custom
+   controls. The roster shows nominal and available hours, named reservations,
+   planning capacity, dated allocated work, signed remaining hours, and demand
+   that cannot yet be placed. Unassigned calendars show Unknown rather than free
+   time. Select a person and choose a day, week, or selected-period detail scale
+   to see the duties and tasks consuming that range. The source actions reopen
+   the matching reservation or work-allocation editor.
    See [calendar and availability setup](capacity-model.md).
    Choose **Reserve capacity...** here or from the **Planning** menu for recurring
    meetings or other duties. Enter hours per person, review sprint proration and
    remaining hours, then Confirm. Select an existing rule to edit or preview its
-   deletion. See the [wizard guide](capacity-wizards.md). Program events and work
-   allocations remain future work.
+   deletion. See the [wizard guide](capacity-wizards.md). Program events remain
+   future work; saved work allocations are included in People capacity.
 7. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling
