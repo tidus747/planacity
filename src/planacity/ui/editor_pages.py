@@ -31,6 +31,11 @@ from planacity.planning.capacity_breakdown import (
     week_period,
 )
 from planacity.planning.people import add_person, remove_person, rename_person
+from planacity.planning.people_groups import (
+    PeopleGroupProjection,
+    PersonTopic,
+    calculate_people_groups,
+)
 from planacity.planning.timeline import TimelineDateState
 from planacity.planning.timeline_view import TimelineFilters
 from planacity.planning.work_calendar import nominal_capacity
@@ -490,7 +495,9 @@ class PeoplePage(WorkspacePage):
         self.plan_id: UUID | None = None
         self.selected_person_id: UUID | None = None
         self.breakdown: CapacityBreakdown | None = None
+        self.group_projection: PeopleGroupProjection | None = None
         self.detail_buckets: tuple[CapacityBucket, ...] = ()
+        self.group_topics: tuple[PersonTopic, ...] = ()
         self._refreshing = False
 
         ranges = QHBoxLayout()
@@ -522,13 +529,26 @@ class PeoplePage(WorkspacePage):
         self.content.addWidget(self.range_error)
         self.horizon_notice = label("")
         self.content.addWidget(self.horizon_notice)
+        filters = QHBoxLayout()
+        group_filter_label = label("WorkGroup")
+        self.group_filter = QComboBox()
+        self.group_filter.setAccessibleName("People WorkGroup filter")
+        self.group_filter.addItem("All WorkGroups", "")
+        group_filter_label.setBuddy(self.group_filter)
+        filters.addWidget(group_filter_label)
+        filters.addWidget(self.group_filter)
+        filters.addStretch()
+        self.content.addLayout(filters)
+        self.group_filter_notice = label("")
+        self.group_filter_notice.setAccessibleName("People WorkGroup filter summary")
+        self.content.addWidget(self.group_filter_notice)
         self.table = QTreeView()
         self.table.setAccessibleName("People roster")
         self.table.setRootIsDecorated(False)
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.model = QStandardItemModel(0, 13, self.table)
+        self.model = QStandardItemModel(0, 14, self.table)
         self.model.setHorizontalHeaderLabels(
             [
                 "Person",
@@ -544,9 +564,11 @@ class PeoplePage(WorkspacePage):
                 "Remaining hours",
                 "Unplaced demand",
                 "Status",
+                "WorkGroups",
             ]
         )
         self.table.setModel(self.model)
+        self.table.header().moveSection(13, 1)
         self.content.addWidget(self.table, 1)
         buttons = QHBoxLayout()
         self.buttons: list[QPushButton] = []
@@ -578,6 +600,39 @@ class PeoplePage(WorkspacePage):
         self.buttons.append(self.reserve_button)
         buttons.addStretch()
         self.content.addLayout(buttons)
+
+        groups = Panel("Selected person WorkGroups")
+        self.group_heading = label("Select a person to inspect their whole-plan associations.")
+        self.group_heading.setAccessibleName("Selected person WorkGroup summary")
+        groups.content.addWidget(self.group_heading)
+        self.group_table = QTreeView()
+        self.group_table.setAccessibleName("Selected person WorkGroup associations")
+        self.group_table.setRootIsDecorated(False)
+        self.group_table.setAlternatingRowColors(True)
+        self.group_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.group_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.group_model = QStandardItemModel(0, 6, self.group_table)
+        self.group_model.setHorizontalHeaderLabels(
+            [
+                "Reporting topic",
+                "Context WorkGroups",
+                "Allocated work",
+                "Whole-plan hours",
+                "Selected-range scheduled",
+                "Selected-range unplaced",
+            ]
+        )
+        self.group_table.setModel(self.group_model)
+        groups.content.addWidget(self.group_table, 1)
+        group_actions = QHBoxLayout()
+        self.group_work_choice = QComboBox()
+        self.group_work_choice.setAccessibleName("Allocated work in selected reporting topic")
+        self.group_work_button = QPushButton("Open allocation...")
+        self.group_work_button.clicked.connect(self.open_group_work)
+        group_actions.addWidget(self.group_work_choice, 1)
+        group_actions.addWidget(self.group_work_button)
+        groups.content.addLayout(group_actions)
+        self.content.addWidget(groups, 1)
 
         detail = Panel("Selected person capacity")
         detail_controls = QHBoxLayout()
@@ -641,7 +696,11 @@ class PeoplePage(WorkspacePage):
         self.content.addWidget(detail, 1)
 
         session.changed.connect(self.refresh)
+        self.group_filter.currentIndexChanged.connect(self.refresh)
         self.table.selectionModel().currentChanged.connect(self._selection_changed)
+        self.group_table.selectionModel().currentChanged.connect(
+            self._group_detail_selection_changed
+        )
         self.detail_table.selectionModel().currentChanged.connect(self._detail_selection_changed)
         self.refresh()
 
@@ -654,6 +713,7 @@ class PeoplePage(WorkspacePage):
             self.selected_person_id = UUID(selected)
         self.model.removeRows(0, self.model.rowCount())
         self.breakdown = None
+        self.group_projection = None
         plan = self.session.document.plan
         if plan is None:
             self.period = None
@@ -680,12 +740,25 @@ class PeoplePage(WorkspacePage):
             scale = CapacityBucketScale(self.scale.currentData())
             breakdown = calculate_capacity_breakdown(plan, period, scale)
             self.breakdown = breakdown
+            projection = calculate_people_groups(plan, breakdown)
+            self.group_projection = projection
+            self._refresh_group_filter(projection)
             assigned = {
                 value.person_id: plan.work_calendar(value.calendar_id)
                 for value in plan.person_calendars
             }
-            for capacity in breakdown.people:
-                person = plan.person(capacity.person_id)
+            association_key = self.group_filter.currentData() or ""
+            visible_people = tuple(
+                person for person in projection.people if person.matches(association_key)
+            )
+            self.group_filter_notice.setText(
+                f"Showing {len(visible_people)} of {len(projection.people)} people. "
+                "WorkGroup associations use positive whole-plan allocations; capacity values "
+                "still include all competing work in the selected range."
+            )
+            for group_person in visible_people:
+                capacity = breakdown.person(group_person.person_id)
+                person = plan.person(group_person.person_id)
                 calendar = assigned.get(capacity.person_id)
                 nominal = nominal_capacity(calendar, period) if calendar else None
                 availability = (
@@ -705,7 +778,7 @@ class PeoplePage(WorkspacePage):
                 row = [
                     QStandardItem(value)
                     for value in (
-                        person.name,
+                        f"{person.name} [{str(person.id)[:8]}]",
                         calendar.name if calendar else "Not configured",
                         str(nominal.total_hours) if nominal else "Unknown",
                         str(nominal.working_days) if nominal else "Unknown",
@@ -718,6 +791,7 @@ class PeoplePage(WorkspacePage):
                         self._hours(capacity.remaining_hours),
                         self._hours(capacity.unplaced_hours),
                         self._state_text(capacity.state),
+                        ", ".join(association.label for association in group_person.associations),
                     )
                 ]
                 for item in row:
@@ -729,10 +803,14 @@ class PeoplePage(WorkspacePage):
                     self.table.setCurrentIndex(row[0].index())
             if not self.table.currentIndex().isValid() and self.model.rowCount():
                 self.table.setCurrentIndex(self.model.index(0, 0))
+        else:
+            self._refresh_group_filter(None)
+            self.group_filter_notice.setText("Open a plan to inspect WorkGroup associations.")
         self._refreshing = False
         self._selection_changed()
         for column in range(self.model.columnCount()):
             self.table.resizeColumnToContents(column)
+        self.table.setColumnWidth(13, min(self.table.columnWidth(13), 360))
 
     def _selection_changed(self, *args: object) -> None:
         selected_value = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
@@ -740,7 +818,28 @@ class PeoplePage(WorkspacePage):
         self.selected_person_id = UUID(selected_value) if selected_value else None
         self.assign_button.setEnabled(selected)
         self.availability_button.setEnabled(selected)
+        self._refresh_group_detail()
         self._refresh_detail()
+
+    def _refresh_group_filter(self, projection: PeopleGroupProjection | None) -> None:
+        selected = self.group_filter.currentData() or ""
+        choices = projection.filters if projection is not None else ()
+        available = {choice.key for choice in choices}
+        if selected not in available:
+            selected = ""
+        self.group_filter.blockSignals(True)
+        self.group_filter.clear()
+        self.group_filter.addItem("All WorkGroups", "")
+        for choice in choices:
+            title = (
+                f"{choice.label} [{str(choice.group_id)[:8]}]"
+                if choice.group_id is not None
+                else choice.label
+            )
+            self.group_filter.addItem(title, choice.key)
+        self.group_filter.setCurrentIndex(max(0, self.group_filter.findData(selected)))
+        self.group_filter.setEnabled(projection is not None)
+        self.group_filter.blockSignals(False)
 
     @staticmethod
     def _hours(value: Fraction | None) -> str:
@@ -806,6 +905,80 @@ class PeoplePage(WorkspacePage):
             return
         self._set_period(period)
         self.refresh()
+
+    def _refresh_group_detail(self) -> None:
+        self.group_model.removeRows(0, self.group_model.rowCount())
+        self.group_topics = ()
+        projection = self.group_projection
+        person_id = self.selected_person_id
+        if projection is None or person_id is None:
+            self.group_heading.setText("Select a person to inspect their whole-plan associations.")
+            self._group_detail_selection_changed()
+            return
+        person = projection.person(person_id)
+        self.group_topics = person.topics
+        associations = ", ".join(value.label for value in person.associations)
+        self.group_heading.setText(
+            f"{person.person_name}: whole-plan associations: {associations}. "
+            f"Range hours use {projection.period.start} to {projection.period.end}; "
+            "capacity still includes the complete competing workload."
+        )
+        for index, topic in enumerate(person.topics):
+            topic_label = (
+                f"{topic.label} [{str(topic.group_id)[:8]}]"
+                if topic.group_id is not None
+                else topic.label
+            )
+            context = ", ".join(value.label for value in topic.context_groups)
+            work = ", ".join(
+                f"{value.title} [{str(value.work_item_id)[:8]}]" for value in topic.work_items
+            )
+            row = [
+                QStandardItem(value)
+                for value in (
+                    topic_label,
+                    context,
+                    work,
+                    self._hours(topic.whole_plan_hours),
+                    self._hours(topic.scheduled_hours),
+                    self._hours(topic.unplaced_hours),
+                )
+            ]
+            for item in row:
+                item.setData(index, Qt.ItemDataRole.UserRole)
+                item.setEditable(False)
+            self.group_model.appendRow(row)
+        if self.group_model.rowCount():
+            self.group_table.setCurrentIndex(self.group_model.index(0, 0))
+        for column in range(self.group_model.columnCount()):
+            self.group_table.resizeColumnToContents(column)
+        self._group_detail_selection_changed()
+
+    def _group_detail_selection_changed(self, *args: object) -> None:
+        self.group_work_choice.clear()
+        index = self.group_table.currentIndex().data(Qt.ItemDataRole.UserRole)
+        topic = (
+            self.group_topics[index]
+            if isinstance(index, int) and index < len(self.group_topics)
+            else None
+        )
+        if topic is not None:
+            for work in topic.work_items:
+                self.group_work_choice.addItem(
+                    f"{work.title} [{str(work.work_item_id)[:8]}] - whole plan "
+                    f"{self._hours(work.whole_plan_hours)} h; selected range "
+                    f"{self._hours(work.scheduled_hours)} h; unplaced "
+                    f"{self._hours(work.unplaced_hours)} h",
+                    str(work.work_item_id),
+                )
+        self.group_work_button.setEnabled(self.group_work_choice.count() > 0)
+
+    def open_group_work(self) -> None:
+        selected = self.group_work_choice.currentData()
+        if selected:
+            dialog = AllocationDialog(self, self.session, UUID(selected))
+            dialog.exec()
+            dialog.deleteLater()
 
     def _refresh_detail(self) -> None:
         self.detail_model.removeRows(0, self.detail_model.rowCount())

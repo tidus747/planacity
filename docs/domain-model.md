@@ -68,6 +68,12 @@ additive reports one topic or an explicit exception bucket. No memberships are
 copied into descendants. Removing a referenced WorkGroup requires confirmation
 and clears only explicit primary references; work and other groups are preserved.
 
+People WorkGroup associations are also derived rather than stored. A positive
+Allocation associates its Person with every effective context group on that
+work. Additive hour reporting uses only the resolved primary topic or the
+Ungrouped/Ambiguous bucket. A Person with several groups still has one roster
+identity and one capacity total; zero-hour allocations create no association.
+
 ## Editing
 
 Entities are frozen dataclasses. Each operation in `planning/work_items.py`

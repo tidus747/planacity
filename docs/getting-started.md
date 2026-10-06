@@ -35,9 +35,13 @@ No account or network connection is needed while planning.
    controls. The roster shows nominal and available hours, named reservations,
    planning capacity, dated allocated work, signed remaining hours, and demand
    that cannot yet be placed. Unassigned calendars show Unknown rather than free
-   time. Select a person and choose a day, week, or selected-period detail scale
-   to see the duties and tasks consuming that range. The source actions reopen
-   the matching reservation or work-allocation editor.
+   time. The WorkGroup column and filter use positive allocations across the
+   whole plan; filtering people never removes competing work from their capacity
+   totals. Select a person to compare additive reporting topics, associated work,
+   whole-plan allocated hours, selected-range scheduled hours, and unplaced
+   demand. Then choose a day, week, or selected-period detail scale to see the
+   duties and tasks consuming that range. Source actions reopen the matching
+   reservation or work-allocation editor.
    See [calendar and availability setup](capacity-model.md).
    Choose **Reserve capacity...** here or from the **Planning** menu for recurring
    meetings or other duties. Enter hours per person, review sprint proration and
@@ -64,6 +68,27 @@ New, Open, Restore, and Exit ask whether to save, discard, or cancel when the
 current plan has unsaved changes. **File -> Plan properties...** edits the name,
 description, and horizon. Both appearances remain available from the sidebar and
 **View -> Appearance**; this preference is stored separately from project data.
+
+## Explain People WorkGroups
+
+People associations are calculated from positive work allocations and effective
+WorkGroup context. They are not manually maintained team memberships. One person
+keeps one roster row even when their work spans several groups. Zero-hour
+allocations do not create an association, and people with no positive allocation
+remain visible as **No assigned work**.
+
+Use the **WorkGroup** filter to focus the roster. **Ungrouped** and **Ambiguous
+group** remain available when current work cannot resolve to one reporting topic.
+The selected-person table uses the single primary reporting topic for additive
+hours while listing all inherited and override groups as context. Whole-plan
+allocated hours are intentionally separate from work scheduled or left unplaced
+inside the selected date range. The capacity columns always retain the complete
+competing workload, even while the roster is filtered.
+
+Actual People WorkGroups in both appearances:
+
+![People WorkGroups in light mode](images/people-workgroups-light.png)
+![People WorkGroups in dark mode](images/people-workgroups-dark.png)
 
 ## Filter the Plan
 

@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Derived WorkGroup associations in People. Filter the one-row-per-person roster
+  by positive whole-plan allocation context, then inspect reporting topics,
+  associated work, whole-plan hours, selected-range scheduled hours, and unplaced
+  demand. Ungrouped, Ambiguous group, and No assigned work remain explicit while
+  filtered capacity continues to include all competing work.
 - Compact Overview analysis for the fixed plan horizon. Compare planning
   capacity, scheduled work, remaining hours, and unplaced demand by person;
   review scheduled or estimated leaf effort by reporting topic; and reconcile
