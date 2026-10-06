@@ -78,6 +78,7 @@ A failed operation raises `ValueError` and leaves the original snapshot intact.
 | --- | --- |
 | `add_work_item` | Append after existing siblings; validate all references |
 | `rename_work_item` | Change the title, preserving ID, parent, and position |
+| `update_work_details` | Validate title, context, leaf estimate, and dates into one candidate snapshot |
 | `move_work_item` | Append under the new parent, preserving the item's descendants |
 | `remove_work_item` | Remove a leaf; reject descendants unless explicitly confirmed |
 

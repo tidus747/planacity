@@ -1,10 +1,13 @@
 """Immutable work metadata edits and reporting-topic resolution."""
 
 from dataclasses import dataclass, replace
+from datetime import date
+from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
 from planacity.domain import ProgramPlan, WorkItem, WorkItemType
+from planacity.planning.work_items import rename_work_item, set_work_dates, set_work_estimate
 
 
 class TopicState(StrEnum):
@@ -46,6 +49,45 @@ def update_work_context(
         plan,
         work_items=tuple(updated if item.id == item_id else item for item in plan.work_items),
     )
+
+
+def update_work_details(
+    plan: ProgramPlan,
+    item_id: UUID,
+    *,
+    title: str,
+    description: str,
+    labels: tuple[str, ...],
+    primary_group_id: UUID | None,
+    estimate_hours: Decimal | None,
+    start: date | None,
+    end: date | None,
+) -> ProgramPlan:
+    """Validate a complete inspector draft and return one immutable candidate."""
+    original = plan.work_item(item_id)
+    candidate = plan
+    if title != original.title:
+        candidate = rename_work_item(candidate, item_id, title)
+    if plan.children(item_id):
+        if estimate_hours != original.estimate_hours:
+            raise ValueError("Container estimates are derived from leaf work and cannot be edited.")
+    elif estimate_hours != original.estimate_hours:
+        candidate = set_work_estimate(candidate, item_id, estimate_hours)
+    if start != original.start or end != original.end:
+        candidate = set_work_dates(candidate, item_id, start=start, end=end)
+    if (
+        description != original.description
+        or labels != original.labels
+        or primary_group_id != original.primary_group_id
+    ):
+        candidate = update_work_context(
+            candidate,
+            item_id,
+            description=description,
+            labels=labels,
+            primary_group_id=primary_group_id,
+        )
+    return candidate
 
 
 def resolve_topic(plan: ProgramPlan, item_id: UUID) -> TopicResolution:

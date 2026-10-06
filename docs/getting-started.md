@@ -17,6 +17,9 @@ No account or network connection is needed while planning.
    correct them or press `Escape` to cancel. Epic and Task containers show
    read-only totals from their leaves. Their tooltips retain any entered or
    imported container estimate as reference and identify missing leaf estimates.
+   The inspector beside the table edits title, description, ordered labels,
+   primary reporting topic, dates, and leaf estimate together. Choose **Apply**
+   to commit the complete draft or **Cancel** to restore its saved values.
 4. Use **Move...** to select a different parent. **Delete...** previews the number
    of work items, relationships, and memberships being removed before confirming.
 5. Use **WorkGroups...** to organize Epics independently from hierarchy. Use
@@ -90,6 +93,30 @@ Actual Plan filters in both appearances:
 
 ![Plan filters in light mode](images/plan-filters-light.png)
 ![Plan filters in dark mode](images/plan-filters-dark.png)
+
+## Edit complete work details
+
+Select a matching Plan row to open its inspector. Labels use one non-blank value
+per line and retain their displayed order. Primary topic can be selected without
+changing the WorkGroup hierarchy. Leaf estimates follow the current Hours, Days,
+or Weeks preference; container effort is derived and read-only. Calendar buttons
+and exact `YYYY-MM-DD` entry use the same date rules as the Plan table.
+
+Allocated people and hours, planning findings, dependencies, stable short IDs,
+and imported reference values are context only. Imported baseline values are
+never changed by inspector edits. Ancestors shown only to explain a filtered
+match are also read-only until the filters are changed or cleared.
+
+**Apply** validates the whole draft and makes one plan change. An invalid field
+leaves every saved value unchanged and keeps the draft available for correction.
+**Cancel** discards all inspector edits. Selecting another row, changing filters,
+leaving Plan, or starting a file action while a draft exists offers
+Save/Discard/Cancel. A no-op draft does not mark the project as changed.
+
+Actual work inspector in both appearances:
+
+![Work inspector in light mode](images/work-inspector-light.png)
+![Work inspector in dark mode](images/work-inspector-dark.png)
 
 ## Try the fictional example
 

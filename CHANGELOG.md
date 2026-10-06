@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Transactional work inspector in Plan. Edit a selected item's title,
+  description, ordered labels, primary reporting topic, dates, and leaf estimate
+  as one draft with Apply/Cancel. Selection and navigation changes offer
+  Save/Discard/Cancel, while allocations, dependencies, findings, derived effort,
+  and imported baseline values remain visible as read-only context.
 - Persist plain-text descriptions, ordered labels, and an optional primary
   WorkGroup on work items. Reporting-topic resolution inherits the nearest
   explicit choice, classifies legacy single-group work, and keeps Ungrouped and

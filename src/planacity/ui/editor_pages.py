@@ -35,7 +35,7 @@ from planacity.planning.timeline import TimelineDateState
 from planacity.planning.timeline_view import TimelineFilters
 from planacity.planning.work_calendar import nominal_capacity
 from planacity.planning.work_items import add_work_item, move_work_item, remove_work_item
-from planacity.ui.allocations import AllocationDialog, allocation_summary_text
+from planacity.ui.allocations import AllocationDialog
 from planacity.ui.availability import manage_availability
 from planacity.ui.forms import CalendarLineEdit, ValidatedDelegate, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
@@ -46,6 +46,7 @@ from planacity.ui.reservations import hours_text, reserve_capacity_dialog
 from planacity.ui.session import Session
 from planacity.ui.structure_dialogs import manage_structure
 from planacity.ui.work_calendars import choose_person_calendar, manage_work_calendars
+from planacity.ui.work_inspector import WorkInspector
 
 
 class PlanPage(WorkspacePage):
@@ -115,8 +116,9 @@ class PlanPage(WorkspacePage):
         split = QSplitter()
         split.addWidget(self.table)
         detail = Panel("Selected work")
-        self.detail = label("Create or open a plan from the File menu.")
-        detail.content.addWidget(self.detail)
+        self.inspector = WorkInspector(session)
+        self.detail = self.inspector.summary
+        detail.content.addWidget(self.inspector)
         self.finding_view = FindingView("Selected work planning findings")
         detail.content.addWidget(self.finding_view)
         self.allocation_button = QPushButton("Work allocations...")
@@ -129,7 +131,7 @@ class PlanPage(WorkspacePage):
             self.buttons.append(button)
         detail.content.addStretch()
         split.addWidget(detail)
-        split.setSizes([780, 280])
+        split.setSizes([700, 430])
         self.content.addWidget(split, 1)
         self.error = label("")
         self.error.setAccessibleName("Plan validation message")
@@ -139,6 +141,8 @@ class PlanPage(WorkspacePage):
         self.table.itemDelegate().closeEditor.connect(lambda *args: self.model.refresh_filters())
         self.selected_id: UUID | None = None
         self.expanded_ids: list[UUID] = []
+        self._selection_guard = False
+        self.inspector.applied.connect(self.report_hidden)
         self.model.modelAboutToBeReset.connect(self.remember_selection)
         self.model.modelReset.connect(self.restore_selection)
         self.model.filters_about_to_change.connect(self.remember_selection)
@@ -164,7 +168,7 @@ class PlanPage(WorkspacePage):
         )
 
     def change_filters(self, filters: TimelineFilters) -> None:
-        if not self.commit_editor():
+        if not self.flush_edits():
             self.sync_filters()
             return
         self.error.clear()
@@ -222,8 +226,30 @@ class PlanPage(WorkspacePage):
         return True
 
     def manage(self, groups: bool) -> None:
-        if self.commit_editor():
+        if self.flush_edits():
             manage_structure(self, self.session, groups=groups)
+
+    def flush_edits(self) -> bool:
+        return self.commit_editor() and self.resolve_inspector_draft()
+
+    def resolve_inspector_draft(self) -> bool:
+        if not self.inspector.dirty:
+            return True
+        choice = QMessageBox.warning(
+            self,
+            "Unsaved work changes",
+            "Save changes in the work inspector before continuing?",
+            QMessageBox.StandardButton.Save
+            | QMessageBox.StandardButton.Discard
+            | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if choice == QMessageBox.StandardButton.Save:
+            return self.inspector.apply()
+        if choice == QMessageBox.StandardButton.Discard:
+            self.inspector.discard()
+            return True
+        return False
 
     def remember_selection(self) -> None:
         item = self.model.item(self.table.currentIndex())
@@ -256,36 +282,40 @@ class PlanPage(WorkspacePage):
     def selection_changed(
         self, current: QModelIndex | None = None, previous: QModelIndex | None = None
     ) -> None:
+        if self._selection_guard:
+            return
         item = self.model.item(self.table.currentIndex())
+        target_id = item.id if item is not None else None
+        if self.inspector.dirty and target_id != self.inspector.item_id:
+            original_id = self.inspector.item_id
+            self._selection_guard = True
+            accepted = self.resolve_inspector_draft()
+            if not accepted:
+                self.table.setCurrentIndex(self.model.index_for_id(original_id))
+            self._selection_guard = False
+            if not accepted:
+                return
+            item = self.model.item(self.table.currentIndex())
         self.allocation_button.setEnabled(item is not None)
-        if item is None:
-            self.detail.setText(
-                "Select work to edit it. F2 edits a cell. Add Tasks under a selected Epic, "
-                "or Subtasks under a selected Task."
-            )
-        elif item.id not in self.model.result.matches:
-            self.detail.setText(
-                f"{item.title}\n\nAncestor context, not a filter match. "
-                "Clear or change filters to edit cells. Structural actions apply "
-                "to the full subtree, including hidden work."
-            )
-        else:
-            self.detail.setText(
-                f"{item.title}\n\n{item.kind.value.title()}\n\n"
-                "Double-click a title, estimate, or date to edit. Use the calendar button or type "
-                "a date as YYYY-MM-DD. Clear a value to leave it unset. "
-                "Escape cancels an inline edit."
-            )
         if item is not None and self.model.plan is not None:
-            self.detail.setText(
-                self.detail.text() + "\n\n" + allocation_summary_text(self.model.plan, item.id)
-            )
+            if not self.inspector.dirty or self.inspector.item_id != item.id:
+                self.inspector.load(
+                    self.model.plan,
+                    item.id,
+                    editable=item.id in self.model.result.matches,
+                )
             self.finding_view.set_findings(self.source_model.findings.get(item.id, ()))
         else:
+            if not self.inspector.dirty:
+                self.inspector.clear()
+                self.detail.setText(
+                    "Select work to inspect it. Add Tasks under a selected Epic, "
+                    "or Subtasks under a selected Task."
+                )
             self.finding_view.set_findings(())
 
     def edit_allocations(self) -> None:
-        if not self.commit_editor():
+        if not self.flush_edits():
             return
         item = self.model.item(self.table.currentIndex())
         if item is None:
@@ -295,7 +325,7 @@ class PlanPage(WorkspacePage):
         dialog.deleteLater()
 
     def add_item(self, kind: WorkItemType) -> None:
-        if not self.commit_editor():
+        if not self.flush_edits():
             return
         plan = self.session.document.plan
         if plan is None:
@@ -335,7 +365,7 @@ class PlanPage(WorkspacePage):
             self.report_hidden(item_id[0])
 
     def move_item(self) -> None:
-        if not self.commit_editor():
+        if not self.flush_edits():
             return
         plan, item = self.session.document.plan, self.model.item(self.table.currentIndex())
         if plan is None or item is None:
@@ -416,7 +446,7 @@ class PlanPage(WorkspacePage):
         )
 
     def delete_item(self) -> None:
-        if not self.commit_editor():
+        if not self.flush_edits():
             return
         plan, item = self.session.document.plan, self.model.item(self.table.currentIndex())
         if plan is None or item is None:

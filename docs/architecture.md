@@ -73,6 +73,14 @@ cell edits use `dataChanged` so invalid drafts and the current editor stay intac
 File dialogs and confirmation prompts are presentation concerns; persistence and
 dirty-state transitions are independently testable without Qt.
 
+The Plan `WorkInspector` keeps one UI draft for the selected stable work ID.
+It builds a complete candidate through `planning/work_context.update_work_details`
+and calls `Session.apply` at most once after all fields validate. Apply/Cancel and
+selection-change Save/Discard/Cancel prompts never expose a partially adopted
+snapshot. Read-only allocations, findings, dependencies, rollups, and import
+references are recomputed from the canonical plan rather than copied into the
+draft. No additional persistence model or schema is required.
+
 ## Jira roundtrip
 
 The `integrations/jira` adapter parses CSV and builds an immutable candidate plan.
