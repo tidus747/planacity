@@ -6,6 +6,7 @@ from enum import StrEnum
 from uuid import UUID
 
 from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
+from planacity.planning.work_context import effective_group_ids
 
 
 class TimelineDateState(StrEnum):
@@ -78,20 +79,14 @@ def project_timeline(plan: ProgramPlan) -> TimelineProjection:
         by_parent.setdefault(item.parent_id, []).append(item)
 
     groups = tuple(TimelineGroup(id=group.id, name=group.name) for group in plan.work_groups)
-    epic_groups = {
-        item.id: tuple(group.id for group in plan.work_groups if item.id in group.epic_ids)
-        for item in plan.work_items
-        if item.kind == WorkItemType.EPIC
-    }
     rows: list[TimelineRow] = []
 
     def append_rows(
         items: tuple[WorkItem, ...] | list[WorkItem],
         depth: int,
-        inherited_groups: tuple[UUID, ...],
     ) -> None:
         for item in items:
-            group_ids = epic_groups.get(item.id, inherited_groups)
+            group_ids = effective_group_ids(plan, item.id)
             start_day = None if item.start is None else (item.start - plan.horizon.start).days
             end_day = None if item.end is None else (item.end - plan.horizon.start).days
             known_dates = tuple(value for value in (item.start, item.end) if value is not None)
@@ -117,9 +112,9 @@ def project_timeline(plan: ProgramPlan) -> TimelineProjection:
                     group_ids=group_ids,
                 )
             )
-            append_rows(by_parent.get(item.id, ()), depth + 1, group_ids)
+            append_rows(by_parent.get(item.id, ()), depth + 1)
 
-    append_rows(by_parent.get(None, ()), 0, ())
+    append_rows(by_parent.get(None, ()), 0)
     return TimelineProjection(
         horizon=plan.horizon,
         total_days=(plan.horizon.end - plan.horizon.start).days + 1,

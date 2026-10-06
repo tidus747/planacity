@@ -2,9 +2,8 @@
 
 The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
-sequencing in the [roadmap](roadmap.md). Dependency enforcement and hierarchy
-effort rollups are implemented over schema 7 inputs. Dated capacity integration
-remains planned work.
+sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
+effort, dated capacity, and work-context services operate over schema 8 inputs.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
 people, estimates, dates, groups, and relationships. See
@@ -119,6 +118,13 @@ allow inline edits. Structural actions still use the canonical plan, so deletion
 previews cover hidden descendants. Filtering after a cell commit is deferred
 until the delegate closes; selection restoration uses work UUIDs. Filters never
 enter the project or its imported snapshots.
+
+`planning/work_context.py` atomically edits descriptions, ordered labels, and an
+optional primary WorkGroup. Topic resolution walks to the nearest explicit
+primary choice, then resolves a legacy Epic with exactly one WorkGroup. No group
+is Ungrouped and several groups are Ambiguous until selected. Effective filter
+membership combines the inherited Epic memberships with that one resolved topic
+in canonical WorkGroup order; it does not persist copied membership on children.
 
 `planning/dependency_validation.py` normalizes relationship direction and computes
 cycle, incomplete-edge, and inclusive-date findings from the complete canonical

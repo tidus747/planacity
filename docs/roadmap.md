@@ -2,7 +2,7 @@
 
 Revised 2026-10-04 after the planning and demonstration review.
 This is the implementation direction, not a list of features already available
-or a release announcement. Current source remains `0.4.0.dev0`, file schema 7.
+or a release announcement. Current source remains `0.4.0.dev0`, file schema 8.
 
 The next useful outcome is: "I can explain whether this plan fits the team,
 where its capacity goes, and which assumptions still need attention."
@@ -73,8 +73,10 @@ work (#78) merged through PR #79. R03 was completed in
 [#88](https://github.com/tidus747/planacity/issues/88) and merged through
 [PR #89](https://github.com/tidus747/planacity/pull/89). R05 was completed in
 [#90](https://github.com/tidus747/planacity/issues/90) and merged through
-[PR #91](https://github.com/tidus747/planacity/pull/91). R06 is tracked in
-[#92](https://github.com/tidus747/planacity/issues/92). Later slices remain planned.
+[PR #91](https://github.com/tidus747/planacity/pull/91). R06 was completed in
+[#92](https://github.com/tidus747/planacity/issues/92) and merged through
+[PR #93](https://github.com/tidus747/planacity/pull/93). R07 is tracked in
+[#94](https://github.com/tidus747/planacity/issues/94). Later slices remain planned.
 The [implementation queue](implementation-queue.md) adds focused briefs,
 dependencies, and review evidence for the next sessions.
 
@@ -178,8 +180,8 @@ Dependencies: R03.
   Standalone tasks must be classifiable. Multi-valued labels remain separate.
 - Show legacy missing metadata as empty, preserve IDs and user text, and keep
   imported raw data/baselines intact. No implicit Jira label mapping.
-- Document the next actual schema version when implementing; do not reserve a
-  series of version bumps in advance or change schema 7 in this planning PR.
+- Schema 8 persists the new fields. Schemas 1-7 load them as empty without
+  rewriting the source file; the next save upgrades the complete document.
 
 ### R08 - Turn the right-hand panel into a work inspector
 

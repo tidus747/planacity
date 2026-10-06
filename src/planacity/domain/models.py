@@ -100,6 +100,9 @@ class WorkItem:
     estimate_hours: Decimal | None = None
     start: date | None = None
     end: date | None = None
+    description: str = ""
+    labels: tuple[str, ...] = ()
+    primary_group_id: UUID | None = None
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Work item ID")
@@ -120,6 +123,21 @@ class WorkItem:
                 raise ValueError(f"Work item {label} must be a date without a time or None.")
         if self.start is not None and self.end is not None and self.end < self.start:
             raise ValueError("Work item end must be on or after its start.")
+        if not isinstance(self.description, str):
+            raise ValueError("Work item description must be text.")
+        if not isinstance(self.labels, tuple) or any(
+            not isinstance(label, str) for label in self.labels
+        ):
+            raise ValueError("Work item labels must be a tuple of text values.")
+        if any(not label.strip() for label in self.labels):
+            raise ValueError("Work item labels must not be blank.")
+        if any(label != label.strip() for label in self.labels):
+            raise ValueError("Work item labels must not have leading or trailing whitespace.")
+        folded_labels = tuple(label.casefold() for label in self.labels)
+        if len(set(folded_labels)) != len(folded_labels):
+            raise ValueError("Work item labels must be unique, ignoring case.")
+        if self.primary_group_id is not None:
+            _require_id(self.primary_group_id, "Primary WorkGroup ID")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -318,6 +336,12 @@ def _validate_groups_and_relationships(plan: ProgramPlan) -> None:
         for epic_id in group.epic_ids:
             if epic_id not in by_id or by_id[epic_id].kind != WorkItemType.EPIC:
                 raise ValueError(f"WorkGroup '{group.name}' must reference existing Epics only.")
+    group_ids = {group.id for group in plan.work_groups}
+    for item in plan.work_items:
+        if item.primary_group_id is not None and item.primary_group_id not in group_ids:
+            raise ValueError(
+                f"Primary WorkGroup for '{item.title}' must reference an existing WorkGroup."
+            )
     if not isinstance(plan.relationships, tuple) or any(
         not isinstance(link, Relationship) for link in plan.relationships
     ):

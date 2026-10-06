@@ -8,6 +8,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
+from persistence_helpers import strip_work_context
 
 from planacity.domain import Person, PlanningHorizon, ProgramPlan, WorkCalendar
 from planacity.domain.models import ImportedWork, ImportSnapshot, WorkItem, WorkItemType
@@ -116,6 +117,7 @@ def test_legacy_schema_migrates_without_inventing_calendars(version, tmp_path):
     )
     data = json.loads(dumps(plan))
     data["schema_version"] = version
+    strip_work_context(data)
     data["plan"].pop("work_calendars")
     data["plan"].pop("person_calendars")
     data["plan"].pop("availability_events")
@@ -139,7 +141,7 @@ def test_legacy_schema_migrates_without_inventing_calendars(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
     connection.close()
 
 

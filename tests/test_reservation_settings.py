@@ -7,6 +7,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
+from persistence_helpers import strip_work_context
 from test_availability_settings import availability_plan
 from test_reservations import capacity
 
@@ -138,6 +139,7 @@ def test_older_schemas_open_without_rules_and_upgrade_on_save(version, tmp_path)
         plan = replace(plan, imports=())
     data = json.loads(dumps(plan))
     data["schema_version"] = version
+    strip_work_context(data)
     data["plan"].pop("reservation_rules")
     data["plan"].pop("estimate_preferences")
     data["plan"].pop("allocations")
@@ -164,7 +166,7 @@ def test_older_schemas_open_without_rules_and_upgrade_on_save(version, tmp_path)
     save_project(plan, path)
     assert load_project(path) == plan
     connection = sqlite3.connect(path)
-    assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
     connection.close()
 
 

@@ -26,8 +26,8 @@ from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 7
-SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7)
+SCHEMA_VERSION = 8
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8)
 
 
 def _encode(value: object) -> str:
@@ -118,26 +118,23 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
                 f"Project container version {expected_schema_version} does not match "
                 f"document schema version {root['schema_version']}."
             )
+        schema_version = root["schema_version"]
         p = _object(
             root["plan"],
             "id name description horizon work_items people work_groups relationships"
-            + (" imports" if root["schema_version"] in (2, 3, 4, 5, 6, 7) else "")
-            + (
-                " work_calendars person_calendars"
-                if root["schema_version"] in (3, 4, 5, 6, 7)
-                else ""
-            )
-            + (" availability_events" if root["schema_version"] in (4, 5, 6, 7) else "")
-            + (" reservation_rules" if root["schema_version"] in (5, 6, 7) else "")
-            + (" estimate_preferences" if root["schema_version"] in (6, 7) else "")
-            + (" allocations" if root["schema_version"] == 7 else ""),
+            + (" imports" if schema_version in (2, 3, 4, 5, 6, 7, 8) else "")
+            + (" work_calendars person_calendars" if schema_version in (3, 4, 5, 6, 7, 8) else "")
+            + (" availability_events" if schema_version in (4, 5, 6, 7, 8) else "")
+            + (" reservation_rules" if schema_version in (5, 6, 7, 8) else "")
+            + (" estimate_preferences" if schema_version in (6, 7, 8) else "")
+            + (" allocations" if schema_version in (7, 8) else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
         for value in _rows(p["people"]):
             row = _object(value, "id name")
             people.append(Person(id=_id(row["id"]), name=_text(row["name"])))
-        work = [_work(value) for value in _rows(p["work_items"])]
+        work = [_work(value, schema_version) for value in _rows(p["work_items"])]
         groups = []
         for value in _rows(p["work_groups"]):
             row = _object(value, "id name epic_ids")
@@ -168,7 +165,7 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             people=tuple(people),
             work_groups=tuple(groups),
             relationships=tuple(links),
-            imports=tuple(_source(value) for value in _rows(p.get("imports", []))),
+            imports=tuple(_source(value, schema_version) for value in _rows(p.get("imports", []))),
             work_calendars=tuple(_calendar(value) for value in _rows(p.get("work_calendars", []))),
             person_calendars=tuple(
                 _assignment(value) for value in _rows(p.get("person_calendars", []))
@@ -250,8 +247,11 @@ def _assignment(value: object) -> PersonCalendar:
     return PersonCalendar(person_id=_id(row["person_id"]), calendar_id=_id(row["calendar_id"]))
 
 
-def _work(value: object) -> WorkItem:
-    row = _object(value, "id title kind parent_id estimate_hours start end")
+def _work(value: object, schema_version: int) -> WorkItem:
+    fields = "id title kind parent_id estimate_hours start end"
+    if schema_version >= 8:
+        fields += " description labels primary_group_id"
+    row = _object(value, fields)
     return WorkItem(
         id=_id(row["id"]),
         title=_text(row["title"]),
@@ -262,10 +262,19 @@ def _work(value: object) -> WorkItem:
         else Decimal(_text(row["estimate_hours"])),
         start=None if row["start"] is None else _date(row["start"]),
         end=None if row["end"] is None else _date(row["end"]),
+        description=_text(row["description"]) if schema_version >= 8 else "",
+        labels=(
+            tuple(_text(label) for label in _rows(row["labels"])) if schema_version >= 8 else ()
+        ),
+        primary_group_id=(
+            None
+            if schema_version < 8 or row["primary_group_id"] is None
+            else _id(row["primary_group_id"])
+        ),
     )
 
 
-def _source(value: object) -> ImportSnapshot:
+def _source(value: object, schema_version: int) -> ImportSnapshot:
     row = _object(value, "id name headers rows records")
     records = []
     for entry in _rows(row["records"]):
@@ -276,7 +285,7 @@ def _source(value: object) -> ImportSnapshot:
             person = Person(id=_id(person_row["id"]), name=_text(person_row["name"]))
         records.append(
             ImportedWork(
-                item=_work(r["item"]),
+                item=_work(r["item"], schema_version),
                 external_reference=_text(r["external_reference"]),
                 external_person=_text(r["external_person"]),
                 person=person,

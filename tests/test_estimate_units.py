@@ -9,6 +9,7 @@ from fractions import Fraction
 from uuid import uuid4
 
 import pytest
+from persistence_helpers import strip_work_context
 
 from planacity.domain import PlanningHorizon, ProgramPlan, WorkCalendar, WorkItem, WorkItemType
 from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
@@ -151,6 +152,7 @@ def test_legacy_files_open_in_hours_without_inventing_conversions(version, tmp_p
         plan = replace(plan, work_calendars=())
     data = json.loads(dumps(plan))
     data["schema_version"] = version
+    strip_work_context(data)
     for key, introduced in (
         ("imports", 2),
         ("work_calendars", 3),
@@ -176,7 +178,7 @@ def test_legacy_files_open_in_hours_without_inventing_conversions(version, tmp_p
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
     connection.close()
 
 

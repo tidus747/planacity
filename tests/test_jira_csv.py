@@ -6,6 +6,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+from persistence_helpers import strip_work_context
 
 from planacity.domain import Person, PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
 from planacity.integrations.jira.csv_io import Mapping, preview_import, read_csv
@@ -156,6 +157,7 @@ def test_numeric_parent_ids_explicit_hours_and_dates(plan):
 def test_v1_migration_and_strict_baseline_validation(plan):
     data = json.loads(dumps(plan))
     data["schema_version"] = 1
+    strip_work_context(data)
     data["plan"].pop("imports")
     data["plan"].pop("work_calendars")
     data["plan"].pop("person_calendars")
@@ -225,6 +227,7 @@ def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     path = tmp_path / "old.planacity"
     data = json.loads(dumps(plan))
     data["schema_version"] = 1
+    strip_work_context(data)
     data["plan"].pop("imports")
     data["plan"].pop("work_calendars")
     data["plan"].pop("person_calendars")
@@ -243,5 +246,5 @@ def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     save_project(updated, path)
     assert load_project(path) == updated
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
     connection.close()

@@ -5,10 +5,14 @@ import sqlite3
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
+from persistence_helpers import strip_work_context
 
 from planacity.document import Document
+from planacity.domain import WorkGroup
+from planacity.domain.models import ImportedWork, ImportSnapshot
 from planacity.persistence.codec import dumps, loads
 from planacity.persistence.project import export_backup, load_project, restore_backup, save_project
 
@@ -34,6 +38,70 @@ def test_complete_example_sqlite_and_backup_round_trip(plan, tmp_path):
     assert restore_backup(backup) == plan
 
 
+def test_schema_eight_preserves_work_context_in_current_and_imported_work(plan, tmp_path):
+    group = WorkGroup(name="Reporting")
+    current = replace(
+        plan.work_items[0],
+        description="Primary integration topic\nOwner notes stay local.",
+        labels=("firmware", "Customer-A"),
+        primary_group_id=group.id,
+    )
+    baseline = replace(
+        current,
+        description="Imported source description",
+        labels=("source-label",),
+        primary_group_id=None,
+    )
+    source = ImportSnapshot(
+        name="source.csv",
+        headers=("Key", "Summary"),
+        rows=(("CTX-1", baseline.title),),
+        records=(ImportedWork(item=baseline, external_reference="CTX-1"),),
+    )
+    contextual = replace(
+        plan,
+        work_items=(current, *plan.work_items[1:]),
+        work_groups=(*plan.work_groups, group),
+        imports=(source,),
+    )
+    data = json.loads(dumps(contextual))
+
+    assert data["schema_version"] == 8
+    assert data["plan"]["work_items"][0]["description"] == current.description
+    assert data["plan"]["work_items"][0]["labels"] == list(current.labels)
+    assert data["plan"]["work_items"][0]["primary_group_id"] == str(group.id)
+    baseline_data = data["plan"]["imports"][0]["records"][0]["item"]
+    assert baseline_data["description"] == baseline.description
+    assert baseline_data["labels"] == list(baseline.labels)
+    assert loads(json.dumps(data)) == contextual
+
+    path = tmp_path / "context.planacity"
+    save_project(contextual, path)
+    assert load_project(path) == contextual
+
+
+@pytest.mark.parametrize("version", range(1, 8))
+def test_schemas_one_to_seven_load_work_context_defaults(plan, version):
+    data = json.loads(dumps(plan))
+    data["schema_version"] = version
+    strip_work_context(data)
+    for key, introduced in (
+        ("imports", 2),
+        ("work_calendars", 3),
+        ("person_calendars", 3),
+        ("availability_events", 4),
+        ("reservation_rules", 5),
+        ("estimate_preferences", 6),
+        ("allocations", 7),
+    ):
+        if version < introduced:
+            data["plan"].pop(key)
+    loaded = loads(json.dumps(data))
+    assert all(item.description == "" for item in loaded.work_items)
+    assert all(item.labels == () for item in loaded.work_items)
+    assert all(item.primary_group_id is None for item in loaded.work_items)
+
+
 def test_empty_and_incomplete_plan_round_trip(plan, tmp_path):
     plan = replace(plan, people=(), work_items=(), work_groups=(), relationships=())
     path = tmp_path / "empty.planacity"
@@ -53,6 +121,10 @@ def test_empty_and_incomplete_plan_round_trip(plan, tmp_path):
         lambda d: d["plan"]["work_items"][0].update(unknown=1),
         lambda d: d["plan"]["work_items"][1].update(estimate_hours=1.5),
         lambda d: d["plan"]["work_items"][1].update(estimate_hours="NaN"),
+        lambda d: d["plan"]["work_items"][1].update(description=1),
+        lambda d: d["plan"]["work_items"][1].update(labels="firmware"),
+        lambda d: d["plan"]["work_items"][1].update(labels=["firmware", "Firmware"]),
+        lambda d: d["plan"]["work_items"][1].update(primary_group_id=str(uuid4())),
         lambda d: d["plan"]["work_items"][1].update(
             parent_id="00000000-0000-0000-0000-000000000000"
         ),
@@ -114,6 +186,7 @@ def test_mismatched_project_and_payload_versions_are_not_opened_or_overwritten(
     save_project(plan, path)
     data = json.loads(dumps(plan))
     data["schema_version"] = payload_version
+    strip_work_context(data)
     data["plan"].pop("work_calendars")
     data["plan"].pop("person_calendars")
     data["plan"].pop("availability_events")

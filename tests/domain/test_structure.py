@@ -62,6 +62,38 @@ def test_an_epic_can_belong_to_more_than_one_group(plan: ProgramPlan) -> None:
     assert remove_work_group(changed, first.id).work_groups == (second,)
 
 
+def test_group_removal_requires_confirmation_and_clears_primary_references(
+    plan: ProgramPlan,
+) -> None:
+    group = WorkGroup(name="Machine")
+    task = replace(plan.work_items[1], primary_group_id=group.id)
+    changed = replace(
+        plan,
+        work_items=(plan.work_items[0], task, *plan.work_items[2:]),
+        work_groups=(group,),
+    )
+
+    with pytest.raises(ValueError, match="1 primary WorkGroup reference"):
+        remove_work_group(changed, group.id)
+    removed = remove_work_group(changed, group.id, clear_primary_references=True)
+
+    assert removed.work_groups == ()
+    assert removed.work_items[1] == replace(task, primary_group_id=None)
+    assert changed.work_items[1].primary_group_id == group.id
+
+
+@pytest.mark.parametrize("confirmation", ["false", 1, None])
+def test_group_reference_confirmation_must_be_boolean(
+    plan: ProgramPlan, confirmation: object
+) -> None:
+    with pytest.raises(ValueError, match="explicit boolean"):
+        remove_work_group(
+            plan,
+            uuid4(),
+            clear_primary_references=confirmation,
+        )
+
+
 def test_groups_reject_missing_or_non_epic_members_and_duplicate_ids(plan: ProgramPlan) -> None:
     for invalid_id in (uuid4(), plan.work_items[1].id):
         with pytest.raises(ValueError, match="existing Epics"):
