@@ -2,9 +2,10 @@
 
 Revised: 2026-10-06. Status: active implementation contract.
 Dependency guards, hierarchy effort, dated capacity, reusable findings, People
-breakdowns, and persisted work context are implemented. Work context introduced
-schema 8; the transactional Plan inspector now edits that context without another
-schema change. Later presentation sections remain future behavior.
+breakdowns, persisted work context, and compact Overview analysis are implemented.
+Work context introduced schema 8; the transactional Plan inspector and Overview
+analysis require no further schema change. Later presentation sections remain
+future behavior.
 See the [roadmap](roadmap.md) for order and acceptance.
 
 ## 1. One source of calculation truth

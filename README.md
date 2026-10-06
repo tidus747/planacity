@@ -53,6 +53,8 @@ default.
   and split work estimates into explicit allocations.
 - Edit complete work-item drafts in the Plan inspector while reviewing allocated
   people, dependencies, findings, derived effort, and imported reference values.
+- Review plan-horizon capacity by person, planned work by reporting topic, and
+  the complete capacity breakdown from the Overview analysis.
 - Use light or dark appearance and keyboard navigation across the main views.
 
 See the [getting-started guide](docs/getting-started.md) for the complete workflow
@@ -75,8 +77,9 @@ validation, and planning context needed for v0.4.
 
 Current reservation previews do not yet deduct program events or work
 allocations. Plan findings and People now present the shared dated-capacity
-results. The Plan inspector edits persisted work context as one validated draft,
-while program events remain a later calendar input. The [implementation roadmap](docs/roadmap.md) and
+results. Overview reconciles those same plan-horizon results with work topics and
+named deductions. The Plan inspector edits persisted work context as one
+validated draft, while program events remain a later calendar input. The [implementation roadmap](docs/roadmap.md) and
 [implementation queue](docs/implementation-queue.md) describe the ordered work;
 GitHub Issues and Milestones are the live status.
 

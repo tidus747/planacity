@@ -81,6 +81,14 @@ snapshot. Read-only allocations, findings, dependencies, rollups, and import
 references are recomputed from the canonical plan rather than copied into the
 draft. No additional persistence model or schema is required.
 
+`planning/overview_analysis.py` is a pure, read-only projection over the same
+canonical plan and dated capacity result used by findings and People. It derives
+person, reporting-topic, and named capacity-breakdown rows for the fixed plan
+horizon with exact rational totals. The Qt Overview only selects a projection,
+paints native bars, and exposes the same values in a table. Charts, coverage
+notes, and calculated totals are never persisted, so this analysis requires no
+schema migration or additional runtime dependency.
+
 ## Jira roundtrip
 
 The `integrations/jira` adapter parses CSV and builds an immutable candidate plan.

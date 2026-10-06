@@ -166,7 +166,11 @@ The nominal-calendar and availability APIs remain smaller reusable calculations;
 they do not independently claim remaining capacity. The shared engine is the
 canonical integration boundary for findings and People/Overview totals. R05
 exposes its gaps and overloads as reusable planning findings. R06 exposes the same
-exact totals and source IDs in People; program events remain a later input.
+exact totals and source IDs in People. Overview projects those same results over
+the fixed inclusive plan horizon, with known-person subtotals and explicit
+coverage notes when any result is partial. Its topic view keeps scheduled
+horizon allocations separate from whole-plan estimated leaf effort. Program
+events remain a later input.
 
 Program-event deductions follow in v0.5. They are not a prerequisite for showing
 the currently entered meetings and front-office reservations consistently.

@@ -118,6 +118,34 @@ Actual work inspector in both appearances:
 ![Work inspector in light mode](images/work-inspector-light.png)
 ![Work inspector in dark mode](images/work-inspector-dark.png)
 
+## Review the Program overview
+
+Open **Overview** and expand **Analysis** to inspect the complete inclusive plan
+horizon. This scope is fixed and is not changed by temporary Plan or Timeline
+filters. Use the analysis selector to compare:
+
+- **Capacity by person**: planning capacity, scheduled work, signed remaining
+  hours, unplaced demand, and the resulting state for every roster member.
+- **Planned work by topic**: either scheduled allocation hours inside the
+  horizon or estimated leaf effort across the whole current plan. Work with no
+  reporting topic stays in Ungrouped; conflicting inherited topics stay in
+  Ambiguous.
+- **Capacity breakdown**: nominal time, recorded unavailability, available time,
+  each named reservation rule, planning capacity, scheduled work, remaining
+  time, and unplaced demand.
+
+Solid bars show known values, dashed outlines show the comparison capacity, and
+hatching or dotted marks identify overload or incomplete inputs. The table below
+each chart is its exact keyboard-accessible equivalent. Coverage notes identify
+missing calendars, dates, estimates, or assignments instead of silently treating
+them as free capacity. Overview is read-only; use Plan or People to correct an
+input.
+
+Actual Overview analysis in both appearances:
+
+![Overview analysis in light mode](images/overview-analysis-light.png)
+![Overview analysis in dark mode](images/overview-analysis-dark.png)
+
 ## Try the fictional example
 
 Use **File -> Restore JSON backup...** and choose
