@@ -60,7 +60,7 @@ def test_bad_mapping_stays_open_and_import_edit_save_reopen(window, app, tmp_pat
     window.session.apply(wizard.candidate)
     assert window.session.document.dirty
     model = window.plan_page.model
-    assert model.data(model.index(0, 6)) == "TEST-1"
+    assert model.data(model.index(0, model.EXTERNAL_COLUMN)) == "TEST-1"
     assert model.setData(model.index(0, 0), "Agreed")
     changes = window.findChild(ChangesPage)
     assert changes.model.rowCount() == 1

@@ -19,7 +19,14 @@ from PySide6.QtWidgets import (
     QTreeView,
 )
 
-from planacity.domain import Person, PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
+from planacity.domain import (
+    Person,
+    PlanningHorizon,
+    ProgramPlan,
+    WorkItem,
+    WorkItemType,
+    WorkPriority,
+)
 from planacity.planning.availability import availability_capacity
 from planacity.planning.capacity_breakdown import (
     CapacityBreakdown,
@@ -42,11 +49,17 @@ from planacity.planning.work_calendar import nominal_capacity
 from planacity.planning.work_items import add_work_item, move_work_item, remove_work_item
 from planacity.ui.allocations import AllocationDialog
 from planacity.ui.availability import manage_availability
-from planacity.ui.forms import CalendarLineEdit, ValidatedDelegate, validated_form
+from planacity.ui.forms import (
+    CalendarLineEdit,
+    PriorityDelegate,
+    ValidatedDelegate,
+    validated_form,
+)
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.plan_filter_model import PlanFilterModel
 from planacity.ui.plan_model import PlanModel
 from planacity.ui.planning_findings import FindingView
+from planacity.ui.priority import PRIORITY_ORDER, priority_icon, priority_label
 from planacity.ui.reservations import hours_text, reserve_capacity_dialog
 from planacity.ui.session import Session
 from planacity.ui.structure_dialogs import manage_structure
@@ -67,6 +80,7 @@ class PlanPage(WorkspacePage):
         self.table.setAccessibleName("Plan work items")
         self.table.setModel(self.model)
         self.table.setItemDelegate(ValidatedDelegate(self.table))
+        self.table.setItemDelegateForColumn(PlanModel.PRIORITY_COLUMN, PriorityDelegate(self.table))
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(
@@ -74,7 +88,12 @@ class PlanPage(WorkspacePage):
             | QAbstractItemView.EditTrigger.EditKeyPressed
         )
         self.table.setColumnWidth(0, 250)
-        for column in (2, 3, 4):
+        for column in (
+            PlanModel.PRIORITY_COLUMN,
+            PlanModel.ESTIMATE_COLUMN,
+            PlanModel.START_COLUMN,
+            PlanModel.END_COLUMN,
+        ):
             self.table.setColumnWidth(column, 130)
         self.table.setMinimumHeight(260)
         filters = QHBoxLayout()
@@ -85,16 +104,28 @@ class PlanPage(WorkspacePage):
         for kind in WorkItemType:
             self.kind_filter.addItem(kind.value.title(), kind.value)
         self.group_filter = QComboBox()
+        self.priority_filter = QComboBox()
+        self.priority_filter.addItem("All priorities", "*")
+        self.priority_filter.addItem(priority_icon(None), "Unset", "")
+        for priority in PRIORITY_ORDER:
+            self.priority_filter.addItem(
+                priority_icon(priority), priority_label(priority), priority.value
+            )
         self.state_filter = QComboBox()
         self.state_filter.addItem("All schedules", "")
         for state in TimelineDateState:
             self.state_filter.addItem(state.value.replace("_", " ").title(), state.value)
         self.clear_filters_button = QPushButton("Clear filters")
+        self.priority_sort = QComboBox()
+        self.priority_sort.addItem("Plan order", False)
+        self.priority_sort.addItem("Priority: Highest first", True)
         for widget, name in (
             (self.search, "Search titles"),
             (self.kind_filter, "Work type"),
             (self.group_filter, "WorkGroup"),
+            (self.priority_filter, "Priority"),
             (self.state_filter, "Schedule state"),
+            (self.priority_sort, "Sort work"),
         ):
             widget.setAccessibleName(name)
             widget.setToolTip(name)
@@ -153,8 +184,14 @@ class PlanPage(WorkspacePage):
         self.model.filters_about_to_change.connect(self.remember_selection)
         self.model.filters_changed.connect(self.filters_changed)
         self.search.textChanged.connect(self.apply_filters)
-        for combo in (self.kind_filter, self.group_filter, self.state_filter):
+        for combo in (
+            self.kind_filter,
+            self.group_filter,
+            self.priority_filter,
+            self.state_filter,
+        ):
             combo.currentIndexChanged.connect(self.apply_filters)
+        self.priority_sort.currentIndexChanged.connect(self.change_priority_sort)
         self.clear_filters_button.clicked.connect(lambda: self.change_filters(TimelineFilters()))
         session.changed.connect(self.refresh)
         self.refresh()
@@ -162,6 +199,7 @@ class PlanPage(WorkspacePage):
     def apply_filters(self) -> None:
         kind = self.kind_filter.currentData()
         group = self.group_filter.currentData()
+        priority = self.priority_filter.currentData()
         state = self.state_filter.currentData()
         self.change_filters(
             TimelineFilters(
@@ -169,8 +207,20 @@ class PlanPage(WorkspacePage):
                 kind=WorkItemType(kind) if kind else None,
                 group_id=UUID(group) if group else None,
                 state=TimelineDateState(state) if state else None,
+                priority=WorkPriority(priority) if priority not in ("*", "") else None,
+                priority_is_set=priority != "*",
             )
         )
+
+    def change_priority_sort(self) -> None:
+        if not self.flush_edits():
+            self.priority_sort.blockSignals(True)
+            self.priority_sort.setCurrentIndex(
+                self.priority_sort.findData(self.model.priority_sort_enabled)
+            )
+            self.priority_sort.blockSignals(False)
+            return
+        self.model.set_priority_sort(bool(self.priority_sort.currentData()))
 
     def change_filters(self, filters: TimelineFilters) -> None:
         if not self.flush_edits():
@@ -180,7 +230,14 @@ class PlanPage(WorkspacePage):
         self.model.set_filters(filters)
 
     def sync_filters(self) -> None:
-        controls = (self.search, self.kind_filter, self.group_filter, self.state_filter)
+        controls = (
+            self.search,
+            self.kind_filter,
+            self.group_filter,
+            self.priority_filter,
+            self.state_filter,
+            self.priority_sort,
+        )
         for control in controls:
             control.blockSignals(True)
             control.setEnabled(self.model.plan is not None)
@@ -197,8 +254,19 @@ class PlanPage(WorkspacePage):
         self.group_filter.setCurrentIndex(
             self.group_filter.findData(str(current.group_id) if current.group_id else "")
         )
+        priority_data = (
+            current.priority.value
+            if current.priority_is_set and current.priority is not None
+            else ""
+            if current.priority_is_set
+            else "*"
+        )
+        self.priority_filter.setCurrentIndex(self.priority_filter.findData(priority_data))
         self.state_filter.setCurrentIndex(
             self.state_filter.findData(current.state.value if current.state else "")
+        )
+        self.priority_sort.setCurrentIndex(
+            self.priority_sort.findData(self.model.priority_sort_enabled)
         )
         for control in controls:
             control.blockSignals(False)

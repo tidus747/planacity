@@ -8,10 +8,10 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from persistence_helpers import strip_work_context
+from persistence_helpers import strip_work_context, strip_work_priority
 
 from planacity.document import Document
-from planacity.domain import WorkGroup
+from planacity.domain import WorkGroup, WorkPriority
 from planacity.domain.models import ImportedWork, ImportSnapshot
 from planacity.persistence.codec import dumps, loads
 from planacity.persistence.project import export_backup, load_project, restore_backup, save_project
@@ -38,19 +38,21 @@ def test_complete_example_sqlite_and_backup_round_trip(plan, tmp_path):
     assert restore_backup(backup) == plan
 
 
-def test_schema_eight_preserves_work_context_in_current_and_imported_work(plan, tmp_path):
+def test_schema_nine_preserves_context_and_priority_in_current_and_imported_work(plan, tmp_path):
     group = WorkGroup(name="Reporting")
     current = replace(
         plan.work_items[0],
         description="Primary integration topic\nOwner notes stay local.",
         labels=("firmware", "Customer-A"),
         primary_group_id=group.id,
+        priority=WorkPriority.HIGHEST,
     )
     baseline = replace(
         current,
         description="Imported source description",
         labels=("source-label",),
         primary_group_id=None,
+        priority=WorkPriority.LOW,
     )
     source = ImportSnapshot(
         name="source.csv",
@@ -66,13 +68,15 @@ def test_schema_eight_preserves_work_context_in_current_and_imported_work(plan, 
     )
     data = json.loads(dumps(contextual))
 
-    assert data["schema_version"] == 8
+    assert data["schema_version"] == 9
     assert data["plan"]["work_items"][0]["description"] == current.description
     assert data["plan"]["work_items"][0]["labels"] == list(current.labels)
     assert data["plan"]["work_items"][0]["primary_group_id"] == str(group.id)
+    assert data["plan"]["work_items"][0]["priority"] == "highest"
     baseline_data = data["plan"]["imports"][0]["records"][0]["item"]
     assert baseline_data["description"] == baseline.description
     assert baseline_data["labels"] == list(baseline.labels)
+    assert baseline_data["priority"] == "low"
     assert loads(json.dumps(data)) == contextual
 
     path = tmp_path / "context.planacity"
@@ -80,11 +84,30 @@ def test_schema_eight_preserves_work_context_in_current_and_imported_work(plan, 
     assert load_project(path) == contextual
 
 
-@pytest.mark.parametrize("version", range(1, 8))
-def test_schemas_one_to_seven_load_work_context_defaults(plan, version):
+@pytest.mark.parametrize("priority", [None, *WorkPriority])
+def test_every_priority_level_round_trips_through_project_and_backup(plan, tmp_path, priority):
+    prioritized = replace(
+        plan,
+        work_items=(replace(plan.work_items[0], priority=priority), *plan.work_items[1:]),
+    )
+    project = tmp_path / "priority.planacity"
+    backup = tmp_path / "priority.json"
+
+    save_project(prioritized, project)
+    export_backup(prioritized, backup)
+
+    assert load_project(project).work_items[0].priority == priority
+    assert restore_backup(backup).work_items[0].priority == priority
+
+
+@pytest.mark.parametrize("version", range(1, 9))
+def test_schemas_one_to_eight_load_priority_as_unset(plan, version):
     data = json.loads(dumps(plan))
     data["schema_version"] = version
-    strip_work_context(data)
+    if version < 8:
+        strip_work_context(data)
+    else:
+        strip_work_priority(data)
     for key, introduced in (
         ("imports", 2),
         ("work_calendars", 3),
@@ -100,6 +123,10 @@ def test_schemas_one_to_seven_load_work_context_defaults(plan, version):
     assert all(item.description == "" for item in loaded.work_items)
     assert all(item.labels == () for item in loaded.work_items)
     assert all(item.primary_group_id is None for item in loaded.work_items)
+    assert all(item.priority is None for item in loaded.work_items)
+    assert all(
+        record.item.priority is None for source in loaded.imports for record in source.records
+    )
 
 
 def test_empty_and_incomplete_plan_round_trip(plan, tmp_path):
@@ -125,6 +152,7 @@ def test_empty_and_incomplete_plan_round_trip(plan, tmp_path):
         lambda d: d["plan"]["work_items"][1].update(labels="firmware"),
         lambda d: d["plan"]["work_items"][1].update(labels=["firmware", "Firmware"]),
         lambda d: d["plan"]["work_items"][1].update(primary_group_id=str(uuid4())),
+        lambda d: d["plan"]["work_items"][1].update(priority="urgent"),
         lambda d: d["plan"]["work_items"][1].update(
             parent_id="00000000-0000-0000-0000-000000000000"
         ),

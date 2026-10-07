@@ -2,7 +2,7 @@
 
 Revised 2026-10-04 after the planning and demonstration review.
 This is the implementation direction, not a list of features already available
-or a release announcement. Current source remains `0.4.0.dev0`, file schema 8.
+or a release announcement. Current source remains `0.4.0.dev0`, file schema 9.
 
 The next useful outcome is: "I can explain whether this plan fits the team,
 where its capacity goes, and which assumptions still need attention."
@@ -81,8 +81,10 @@ work (#78) merged through PR #79. R03 was completed in
 [#96](https://github.com/tidus747/planacity/issues/96) and merged through
 [PR #97](https://github.com/tidus747/planacity/pull/97). R09 was completed in
 [#98](https://github.com/tidus747/planacity/issues/98) and merged through
-[PR #99](https://github.com/tidus747/planacity/pull/99). R10 is tracked in
-[#100](https://github.com/tidus747/planacity/issues/100). Later slices remain planned.
+[PR #99](https://github.com/tidus747/planacity/pull/99). R10 was completed by
+[#100](https://github.com/tidus747/planacity/issues/100) and
+[PR #101](https://github.com/tidus747/planacity/pull/101). P01 is tracked in
+[#103](https://github.com/tidus747/planacity/issues/103). Later slices remain planned.
 The [implementation queue](implementation-queue.md) adds focused briefs,
 dependencies, and review evidence for the next sessions.
 

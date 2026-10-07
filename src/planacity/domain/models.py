@@ -30,6 +30,16 @@ class WorkItemType(StrEnum):
     SUBTASK = "subtask"
 
 
+class WorkPriority(StrEnum):
+    """Optional canonical planning priority, ordered from highest to lowest."""
+
+    HIGHEST = "highest"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    LOWEST = "lowest"
+
+
 @dataclass(frozen=True, kw_only=True)
 class Person:
     """A roster entry; work allocation is a separate future concept."""
@@ -103,6 +113,7 @@ class WorkItem:
     description: str = ""
     labels: tuple[str, ...] = ()
     primary_group_id: UUID | None = None
+    priority: WorkPriority | None = None
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Work item ID")
@@ -138,6 +149,8 @@ class WorkItem:
             raise ValueError("Work item labels must be unique, ignoring case.")
         if self.primary_group_id is not None:
             _require_id(self.primary_group_id, "Primary WorkGroup ID")
+        if self.priority is not None and not isinstance(self.priority, WorkPriority):
+            raise ValueError("Work priority must be Highest, High, Medium, Low, Lowest, or unset.")
 
 
 @dataclass(frozen=True, kw_only=True)

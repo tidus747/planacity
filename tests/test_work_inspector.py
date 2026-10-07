@@ -66,6 +66,7 @@ def test_inspector_shows_context_and_applies_one_complete_draft(app, loaded, the
     inspector.description.setPlainText("First line\nSecond line")
     inspector.labels.setPlainText("hardware\nCustomer-A")
     inspector.primary_group.setCurrentIndex(1)
+    inspector.priority.setCurrentIndex(inspector.priority.findData("high"))
     inspector.estimate.setText("125.5")
     inspector.start.setText("2026-10-05")
     inspector.end.setText("2026-10-30")
@@ -79,6 +80,7 @@ def test_inspector_shows_context_and_applies_one_complete_draft(app, loaded, the
     assert item.description == "First line\nSecond line"
     assert item.labels == ("hardware", "Customer-A")
     assert item.primary_group_id == plan.work_groups[0].id
+    assert item.priority.value == "high"
     assert item.estimate_hours == Decimal("125.5")
     assert (item.start, item.end) == (date(2026, 10, 5), date(2026, 10, 30))
     assert updated.imports == plan.imports
@@ -95,6 +97,26 @@ def test_noop_apply_does_not_dirty_or_emit_a_change(app, loaded):
 
     assert changed.count() == 0
     assert not window.session.document.dirty
+
+
+def test_priority_can_be_cleared_and_cancel_restores_the_saved_value(app, loaded):
+    window, page, plan = loaded
+    inspector = page.inspector
+    task = plan.work_items[1]
+
+    inspector.priority.setCurrentIndex(inspector.priority.findData("highest"))
+    assert inspector.apply()
+    assert window.session.document.plan.work_item(task.id).priority.value == "highest"
+
+    inspector.priority.setCurrentIndex(inspector.priority.findData(""))
+    assert inspector.dirty
+    inspector.cancel_button.click()
+    assert not inspector.dirty
+    assert inspector.priority.currentData() == "highest"
+
+    inspector.priority.setCurrentIndex(inspector.priority.findData(""))
+    assert inspector.apply()
+    assert window.session.document.plan.work_item(task.id).priority is None
 
 
 def test_invalid_complete_draft_changes_nothing_and_stays_selected(app, loaded, monkeypatch):

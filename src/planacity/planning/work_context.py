@@ -6,7 +6,7 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
-from planacity.domain import ProgramPlan, WorkItem, WorkItemType
+from planacity.domain import ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.planning.work_items import rename_work_item, set_work_dates, set_work_estimate
 
 
@@ -51,6 +51,26 @@ def update_work_context(
     )
 
 
+def set_work_priority(
+    plan: ProgramPlan,
+    item_id: UUID,
+    priority: WorkPriority | None,
+) -> ProgramPlan:
+    """Set one explicit priority without changing any other planning input."""
+    item = plan.work_item(item_id)
+    if priority is not None and not isinstance(priority, WorkPriority):
+        raise ValueError("Work priority must be Highest, High, Medium, Low, Lowest, or unset.")
+    if priority == item.priority:
+        return plan
+    updated = replace(item, priority=priority)
+    return replace(
+        plan,
+        work_items=tuple(
+            updated if current.id == item_id else current for current in plan.work_items
+        ),
+    )
+
+
 def update_work_details(
     plan: ProgramPlan,
     item_id: UUID,
@@ -59,6 +79,7 @@ def update_work_details(
     description: str,
     labels: tuple[str, ...],
     primary_group_id: UUID | None,
+    priority: WorkPriority | None,
     estimate_hours: Decimal | None,
     start: date | None,
     end: date | None,
@@ -75,6 +96,8 @@ def update_work_details(
         candidate = set_work_estimate(candidate, item_id, estimate_hours)
     if start != original.start or end != original.end:
         candidate = set_work_dates(candidate, item_id, start=start, end=end)
+    if priority != original.priority:
+        candidate = set_work_priority(candidate, item_id, priority)
     if (
         description != original.description
         or labels != original.labels

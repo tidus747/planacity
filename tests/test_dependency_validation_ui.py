@@ -61,7 +61,7 @@ def test_plan_keyboard_conflict_keeps_editor_open_and_escape_cancels(app, window
     window.show_page(1)
     table = window.plan_page.table
     item_index = window.plan_page.model.index_for_id(plan.work_items[0].id)
-    end_index = item_index.siblingAtColumn(4)
+    end_index = item_index.siblingAtColumn(window.plan_page.source_model.END_COLUMN)
     table.setCurrentIndex(end_index)
     table.edit(end_index)
     app.processEvents()

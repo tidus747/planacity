@@ -10,9 +10,17 @@ from planacity.domain import ProgramPlan, WorkItem
 from planacity.planning.plan_filters import filter_plan
 from planacity.planning.timeline_view import TimelineFilters
 from planacity.ui.plan_model import Index, PlanModel
+from planacity.ui.priority import priority_rank
 
 
 class PlanFilterModel(QSortFilterProxyModel):
+    PRIORITY_COLUMN = PlanModel.PRIORITY_COLUMN
+    ESTIMATE_COLUMN = PlanModel.ESTIMATE_COLUMN
+    START_COLUMN = PlanModel.START_COLUMN
+    END_COLUMN = PlanModel.END_COLUMN
+    NOTES_COLUMN = PlanModel.NOTES_COLUMN
+    EXTERNAL_COLUMN = PlanModel.EXTERNAL_COLUMN
+
     error = Signal(str)
     filters_about_to_change = Signal()
     filters_changed = Signal()
@@ -24,6 +32,7 @@ class PlanFilterModel(QSortFilterProxyModel):
         self.result = filter_plan(source.plan, self.filters)
         self.plan_id = source.plan.id if source.plan else None
         self.pending = False
+        self.priority_sort_enabled = False
         self.refresh_timer = QTimer(self)
         self.refresh_timer.setSingleShot(True)
         self.refresh_timer.timeout.connect(self.refresh_filters)
@@ -71,13 +80,36 @@ class PlanFilterModel(QSortFilterProxyModel):
         self.result = result
         # Cell edits that keep the same rows must preserve their proxy indexes.
         # Invalidating them unnecessarily can leave editors with stale Qt pointers.
-        if visibility_changed:
+        if visibility_changed or self.priority_sort_enabled:
             self.invalidate()
         self.filters_changed.emit()
 
     def set_filters(self, filters: TimelineFilters) -> None:
         self.filters = filters
         self.refresh_filters()
+
+    def set_priority_sort(self, enabled: bool) -> None:
+        if enabled == self.priority_sort_enabled:
+            return
+        self.filters_about_to_change.emit()
+        self.priority_sort_enabled = enabled
+        self.sort(
+            PlanModel.PRIORITY_COLUMN if enabled else -1,
+            Qt.SortOrder.AscendingOrder,
+        )
+        self.filters_changed.emit()
+
+    def lessThan(self, left: Index, right: Index) -> bool:
+        if self.priority_sort_enabled and left.column() == PlanModel.PRIORITY_COLUMN:
+            left_item = self.source.item(left)
+            right_item = self.source.item(right)
+            if left_item is not None and right_item is not None:
+                left_rank = priority_rank(left_item.priority)
+                right_rank = priority_rank(right_item.priority)
+                return (
+                    left_rank < right_rank if left_rank != right_rank else left.row() < right.row()
+                )
+        return left.row() < right.row()
 
     def filterAcceptsRow(self, source_row: int, source_parent: Index) -> bool:
         item = self.source.item(self.source.index(source_row, 0, source_parent))
@@ -95,7 +127,7 @@ class PlanFilterModel(QSortFilterProxyModel):
                 return (
                     "Ancestor context, not a filter match. Clear or change filters to edit cells."
                 )
-            if role == Qt.ItemDataRole.DisplayRole and index.column() == 5:
+            if role == Qt.ItemDataRole.DisplayRole and index.column() == PlanModel.NOTES_COLUMN:
                 original = super().data(index, role)
                 return "Context only" + (f"; {original}" if original else "")
         return super().data(index, role)

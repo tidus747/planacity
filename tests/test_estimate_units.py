@@ -178,7 +178,7 @@ def test_legacy_files_open_in_hours_without_inventing_conversions(version, tmp_p
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
     connection.close()
 
 

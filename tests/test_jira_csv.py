@@ -246,5 +246,5 @@ def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     save_project(updated, path)
     assert load_project(path) == updated
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
     connection.close()

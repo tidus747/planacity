@@ -14,12 +14,14 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QApplication, QStyle
 
-from planacity.domain import ProgramPlan, WorkItem
+from planacity.domain import ProgramPlan, WorkItem, WorkPriority
 from planacity.planning.allocations import WorkAllocationSummary, summarize_allocations
 from planacity.planning.estimate_units import conversion_description, estimate_text, parse_estimate
 from planacity.planning.findings import PlanningFinding, findings_for_work, planning_findings
+from planacity.planning.work_context import set_work_priority
 from planacity.planning.work_items import rename_work_item, set_work_dates, set_work_estimate
 from planacity.ui.planning_findings import finding_details, finding_note
+from planacity.ui.priority import priority_icon, priority_label
 from planacity.ui.session import Session
 
 Index = QModelIndex | QPersistentModelIndex
@@ -31,12 +33,21 @@ class PlanModel(QAbstractItemModel):
     headers = (
         "Work item",
         "Type",
+        "Priority",
         "Estimate (h)",
         "Start",
         "End",
         "Planning notes",
         "External reference",
     )
+    TITLE_COLUMN = 0
+    TYPE_COLUMN = 1
+    PRIORITY_COLUMN = 2
+    ESTIMATE_COLUMN = 3
+    START_COLUMN = 4
+    END_COLUMN = 5
+    NOTES_COLUMN = 6
+    EXTERNAL_COLUMN = 7
 
     def __init__(self, session: Session) -> None:
         super().__init__(session)
@@ -168,6 +179,7 @@ class PlanModel(QAbstractItemModel):
         values = (
             item.title,
             item.kind.value.title(),
+            priority_label(item.priority),
             estimate,
             "" if item.start is None else item.start.isoformat(),
             "" if item.end is None else item.end.isoformat(),
@@ -176,13 +188,32 @@ class PlanModel(QAbstractItemModel):
         )
         if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
             value = values[index.column()]
-            if role == Qt.ItemDataRole.DisplayRole and index.column() in (2, 3, 4) and not value:
+            if role == Qt.ItemDataRole.EditRole and index.column() == self.PRIORITY_COLUMN:
+                return "" if item.priority is None else item.priority.value
+            if (
+                role == Qt.ItemDataRole.DisplayRole
+                and index.column()
+                in (
+                    self.ESTIMATE_COLUMN,
+                    self.START_COLUMN,
+                    self.END_COLUMN,
+                )
+                and not value
+            ):
                 return "Not set"
             return value
-        if role == Qt.ItemDataRole.DecorationRole and index.column() == 5 and values[5]:
+        if role == Qt.ItemDataRole.DecorationRole and index.column() == self.PRIORITY_COLUMN:
+            return priority_icon(item.priority)
+        if (
+            role == Qt.ItemDataRole.DecorationRole
+            and index.column() == self.NOTES_COLUMN
+            and values[self.NOTES_COLUMN]
+        ):
             return QApplication.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning)
         if role in (Qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleDescriptionRole):
-            if index.column() == 2:
+            if index.column() == self.PRIORITY_COLUMN:
+                return "Explicit planning priority. It does not change dates, effort, or capacity."
+            if index.column() == self.ESTIMATE_COLUMN:
                 if effort.is_container:
                     reference = (
                         f"Entered reference estimate: {item.estimate_hours} h. "
@@ -205,7 +236,7 @@ class PlanModel(QAbstractItemModel):
                     else "Estimate is not set. "
                 ) + conversion_description(self.plan)
             return (
-                (finding_details(item_findings) if item_findings else values[5])
+                (finding_details(item_findings) if item_findings else values[self.NOTES_COLUMN])
                 or "Dates: calendar button or YYYY-MM-DD. Estimates: use the column unit. "
                 "Clear a cell to leave it unset."
             )
@@ -220,7 +251,7 @@ class PlanModel(QAbstractItemModel):
         self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole
     ) -> object:
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
-            if section == 2 and self.plan is not None:
+            if section == self.ESTIMATE_COLUMN and self.plan is not None:
                 return f"Estimate ({self.plan.estimate_preferences.unit.symbol})"
             return self.headers[section] if 0 <= section < len(self.headers) else None
         return None
@@ -233,7 +264,12 @@ class PlanModel(QAbstractItemModel):
         estimate_is_editable = bool(
             item is not None and self.plan is not None and not self.plan.children(item.id)
         )
-        if index.column() in (0, 3, 4) or (index.column() == 2 and estimate_is_editable):
+        if index.column() in (
+            self.TITLE_COLUMN,
+            self.PRIORITY_COLUMN,
+            self.START_COLUMN,
+            self.END_COLUMN,
+        ) or (index.column() == self.ESTIMATE_COLUMN and estimate_is_editable):
             flags |= Qt.ItemFlag.ItemIsEditable
         return flags
 
@@ -241,9 +277,17 @@ class PlanModel(QAbstractItemModel):
         item = self.item(index)
         if item is None or self.plan is None:
             raise ValueError("Select an existing work item first.")
-        if index.column() == 0:
+        if index.column() == self.TITLE_COLUMN:
             return rename_work_item(self.plan, item.id, text)
-        if index.column() == 2:
+        if index.column() == self.PRIORITY_COLUMN:
+            try:
+                priority = WorkPriority(text) if text else None
+            except ValueError as error:
+                raise ValueError(
+                    "Work priority must be Highest, High, Medium, Low, Lowest, or unset."
+                ) from error
+            return set_work_priority(self.plan, item.id, priority)
+        if index.column() == self.ESTIMATE_COLUMN:
             if self.plan.children(item.id):
                 raise ValueError(
                     "Container estimates are derived from leaf work and cannot be edited."
@@ -254,7 +298,7 @@ class PlanModel(QAbstractItemModel):
                 if hours == item.estimate_hours
                 else set_work_estimate(self.plan, item.id, hours)
             )
-        if index.column() in (3, 4):
+        if index.column() in (self.START_COLUMN, self.END_COLUMN):
             try:
                 value = date.fromisoformat(text) if text.strip() else None
             except ValueError as error:
@@ -264,8 +308,8 @@ class PlanModel(QAbstractItemModel):
             return set_work_dates(
                 self.plan,
                 item.id,
-                start=value if index.column() == 3 else item.start,
-                end=value if index.column() == 4 else item.end,
+                start=value if index.column() == self.START_COLUMN else item.start,
+                end=value if index.column() == self.END_COLUMN else item.end,
             )
         raise ValueError("This column is read-only.")
 

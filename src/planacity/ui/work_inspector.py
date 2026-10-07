@@ -16,13 +16,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from planacity.domain import ProgramPlan, WorkItem
+from planacity.domain import ProgramPlan, WorkItem, WorkPriority
 from planacity.planning.allocations import summarize_allocations
 from planacity.planning.estimate_units import estimate_text, parse_estimate
 from planacity.planning.work_context import resolve_topic, update_work_details
 from planacity.ui.allocations import allocation_summary_text
 from planacity.ui.forms import CalendarLineEdit
 from planacity.ui.pages import label
+from planacity.ui.priority import PRIORITY_ORDER, priority_icon, priority_label
 from planacity.ui.session import Session
 
 
@@ -84,6 +85,12 @@ class WorkInspector(QWidget):
         self.primary_group = QComboBox()
         self.primary_group.setObjectName("workInspectorPrimaryGroup")
         self.primary_group.setAccessibleName("Primary reporting topic")
+        self.priority = QComboBox()
+        self.priority.setObjectName("workInspectorPriority")
+        self.priority.setAccessibleName("Work priority")
+        self.priority.addItem(priority_icon(None), "Unset", "")
+        for priority in PRIORITY_ORDER:
+            self.priority.addItem(priority_icon(priority), priority_label(priority), priority.value)
         self.topic = label("")
         self.topic.setAccessibleName("Resolved reporting topic")
         self.estimate = QLineEdit()
@@ -102,6 +109,7 @@ class WorkInspector(QWidget):
             ("&Description", self.description),
             ("&Labels", self.labels),
             ("Primary &topic", self.primary_group),
+            ("&Priority", self.priority),
             ("Topic status", self.topic),
             ("&Estimate", self.estimate),
             ("&Start", self.start),
@@ -140,6 +148,7 @@ class WorkInspector(QWidget):
         for text_editor in (self.description, self.labels):
             text_editor.textChanged.connect(self._update_dirty)
         self.primary_group.currentIndexChanged.connect(self._update_dirty)
+        self.priority.currentIndexChanged.connect(self._update_dirty)
         self.apply_button.clicked.connect(self.apply)
         self.cancel_button.clicked.connect(self.discard)
         self.clear()
@@ -150,6 +159,7 @@ class WorkInspector(QWidget):
             self.description,
             self.labels,
             self.primary_group,
+            self.priority,
             self.estimate,
             self.start,
             self.end,
@@ -157,11 +167,13 @@ class WorkInspector(QWidget):
 
     def _values(self) -> tuple[str, ...]:
         selected = self.primary_group.currentData()
+        priority = self.priority.currentData()
         return (
             self.title.text(),
             self.description.toPlainText(),
             self.labels.toPlainText(),
             "" if selected is None else str(selected),
+            "" if priority is None else str(priority),
             self.estimate.text(),
             self.start.text(),
             self.end.text(),
@@ -190,6 +202,7 @@ class WorkInspector(QWidget):
         self.description.clear()
         self.labels.clear()
         self.primary_group.clear()
+        self.priority.setCurrentIndex(0)
         self.estimate.clear()
         self.start.clear()
         self.end.clear()
@@ -225,6 +238,12 @@ class WorkInspector(QWidget):
             str(item.primary_group_id) if item.primary_group_id is not None else None
         )
         self.primary_group.setCurrentIndex(max(0, selected))
+        self.priority.setCurrentIndex(
+            max(
+                0,
+                self.priority.findData("" if item.priority is None else item.priority.value),
+            )
+        )
         resolution = resolve_topic(plan, item_id)
         if resolution.group_id is not None:
             resolved = plan.work_group(resolution.group_id).name
@@ -263,6 +282,7 @@ class WorkInspector(QWidget):
         self.description.setReadOnly(context_only)
         self.labels.setReadOnly(context_only)
         self.primary_group.setEnabled(editable)
+        self.priority.setEnabled(editable)
         self.estimate.setReadOnly(context_only or effort.is_container)
         self.start.setReadOnly(context_only)
         self.end.setReadOnly(context_only)
@@ -300,6 +320,7 @@ class WorkInspector(QWidget):
             value for line in self.labels.toPlainText().splitlines() if (value := line.strip())
         )
         selected = self.primary_group.currentData()
+        priority = self.priority.currentData()
         estimate = (
             item.estimate_hours
             if plan.children(item.id)
@@ -312,6 +333,7 @@ class WorkInspector(QWidget):
             description=self.description.toPlainText(),
             labels=labels,
             primary_group_id=UUID(selected) if selected else None,
+            priority=WorkPriority(priority) if priority else None,
             estimate_hours=estimate,
             start=_parse_date(self.start.text()),
             end=_parse_date(self.end.text()),

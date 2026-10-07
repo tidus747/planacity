@@ -139,7 +139,7 @@ def test_plan_row_and_draft_preview_share_concurrent_overload_finding(app, windo
     page.table.setCurrentIndex(page.model.index_for_id(first.id))
     app.processEvents()
 
-    notes = page.model.index_for_id(first.id).siblingAtColumn(5)
+    notes = page.model.index_for_id(first.id).siblingAtColumn(page.source_model.NOTES_COLUMN)
     assert "Capacity overload" in page.model.data(notes)
     icon = page.model.data(notes, Qt.ItemDataRole.DecorationRole)
     assert not icon.isNull()
@@ -208,7 +208,12 @@ def test_allocations_always_use_hours_even_when_plan_displays_days(app, loaded):
     drive_dialog(app, dialog.edit_button.click, hours_form("2"))
     save(dialog)
     assert window.session.document.plan.allocations[0].hours == 2
-    assert window.plan_page.model.headerData(2, Qt.Orientation.Horizontal) == "Estimate (d)"
+    assert (
+        window.plan_page.model.headerData(
+            window.plan_page.source_model.ESTIMATE_COLUMN, Qt.Orientation.Horizontal
+        )
+        == "Estimate (d)"
+    )
 
 
 def test_empty_roster_and_stale_document_have_actionable_guidance(app, loaded):

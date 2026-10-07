@@ -8,7 +8,8 @@ The proposal is not implemented by the architecture documentation change.
 The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
-effort, dated capacity, and work-context services operate over schema 8 inputs.
+effort, dated capacity, work-context, and priority services operate over schema 9
+inputs.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
 people, estimates, dates, groups, and relationships. See
@@ -85,6 +86,13 @@ selection-change Save/Discard/Cancel prompts never expose a partially adopted
 snapshot. Read-only allocations, findings, dependencies, rollups, and import
 references are recomputed from the canonical plan rather than copied into the
 draft. No additional persistence model or schema is required.
+
+Priority is a validated optional domain value introduced in schema 9. Plan's
+tree model exposes the label and icon while its proxy owns temporary exact-value
+filtering and stable sibling ordering. The inspector and inline combo both call
+the same planning service. Jira mapping remains outside this slice, so current
+Jira imports create Unset priorities and editing the plan does not rewrite their
+baseline snapshots.
 
 `planning/overview_analysis.py` is a pure, read-only projection over the same
 canonical plan and dated capacity result used by findings and People. It derives

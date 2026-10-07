@@ -15,7 +15,7 @@ estimates, which remain exact Decimal hours. See [estimate units](estimate-units
 | --- | --- | --- |
 | `PlanningHorizon` | `start`, `end` | Inclusive dates; end cannot precede start |
 | `ProgramPlan` | `id`, `name`, `description`, `horizon`, `work_items`, `people`, `work_groups`, `relationships` | Valid immutable collections and references |
-| `WorkItem` | `id`, `title`, `kind`, `parent_id`, `estimate_hours`, `start`, `end`, `description`, `labels`, `primary_group_id` | Valid hierarchy, estimates, dates, text metadata, and optional reporting topic |
+| `WorkItem` | `id`, `title`, `kind`, `parent_id`, `estimate_hours`, `start`, `end`, `description`, `labels`, `primary_group_id`, `priority` | Valid hierarchy, estimates, dates, context, and optional priority |
 | `Person` | `id`, `name` | Non-blank name; unique ID within the roster |
 | `WorkGroup` | `id`, `name`, `epic_ids` | Named group of existing Epics |
 | `Relationship` | `id`, `source_id`, `target_id`, `kind` | Existing distinct endpoints; no duplicate links |
@@ -74,6 +74,19 @@ work. Additive hour reporting uses only the resolved primary topic or the
 Ungrouped/Ambiguous bucket. A Person with several groups still has one roster
 identity and one capacity total; zero-hour allocations create no association.
 
+## Work priority
+
+`WorkItem.priority` is optional and accepts only Highest, High, Medium, Low, or
+Lowest. `None` is the explicit Unset state, not Medium. Priority belongs to the
+individual item and is never inherited from an ancestor. It does not affect
+dates, effort rollups, dependencies, capacity, person load, or future
+critical-path calculations.
+
+`planning/work_context.set_work_priority` returns one validated immutable plan
+candidate. `update_work_details` includes the same value in the inspector's
+single atomic draft. The Plan proxy filters exact priority values, including
+Unset, and can stably order siblings Highest through Lowest with Unset last.
+
 ## Editing
 
 Entities are frozen dataclasses. Each operation in `planning/work_items.py`
@@ -84,7 +97,8 @@ A failed operation raises `ValueError` and leaves the original snapshot intact.
 | --- | --- |
 | `add_work_item` | Append after existing siblings; validate all references |
 | `rename_work_item` | Change the title, preserving ID, parent, and position |
-| `update_work_details` | Validate title, context, leaf estimate, and dates into one candidate snapshot |
+| `set_work_priority` | Set or clear one explicit priority without changing other planning inputs |
+| `update_work_details` | Validate title, context, priority, leaf estimate, and dates into one candidate snapshot |
 | `move_work_item` | Append under the new parent, preserving the item's descendants |
 | `remove_work_item` | Remove a leaf; reject descendants unless explicitly confirmed |
 
