@@ -43,7 +43,7 @@ default.
 ## What you can do today
 
 - Build and save Program Plans with Epics, Tasks, Subtasks, WorkGroups, people,
-  relationships, estimates, and optional dates.
+  relationships, estimates, optional dates, and optional work priorities.
 - Enter estimates in hours, days, or weeks while preserving exact stored hours.
 - Import Jira CSV files through reusable mappings, keep a baseline, review
   changes, and export the agreed structure back to CSV.
@@ -68,7 +68,7 @@ and load the fictional `examples/aurora.planacity.json` plan to explore the app.
 | --- | --- |
 | Source version | `0.4.0.dev0` |
 | Active milestone | v0.4 - Team & Capacity |
-| Project file schema | 8 |
+| Project file schema | 9 |
 | Distribution | Source preview - no stable installer yet |
 
 The v0.1 planning foundation and v0.2 Jira roundtrip are implemented. The v0.3

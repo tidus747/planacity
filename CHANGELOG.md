@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Optional canonical work priority with Highest, High, Medium, Low, Lowest, and
+  an explicit Unset state. Edit priority inline or in the transactional Plan
+  inspector, combine it with existing filters, and sort siblings from highest
+  to lowest while preserving selection. Text labels and distinct icons remain
+  readable in both appearances; priority never changes scheduling or capacity.
 - Derived WorkGroup associations in People. Filter the one-row-per-person roster
   by positive whole-plan allocation context, then inspect reporting topics,
   associated work, whole-plan hours, selected-range scheduled hours, and unplaced
@@ -82,10 +87,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   Timeline date edits reject only new or worsened conflicts, with affected work
   and permitted boundaries; legacy conflicts and incomplete edges remain visible
   and repairable without automatic rescheduling.
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 8
-  to retain work context alongside calendars, availability, reservation rules,
-  estimate preferences, and work allocations. Schemas 1-7 open with empty work
-  context; schemas 1-6 open without inferred allocations.
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 9
+  to retain optional work priority alongside context, calendars, availability,
+  reservation rules, estimate preferences, and work allocations. Schemas 1-8
+  open with priority unset; schemas 1-7 open with empty work context; schemas
+  1-6 open without inferred allocations.
   Schemas 1-5 open with estimates displayed in hours; keep a backup or use Save As
   for older builds.
 - Removing a person now identifies affected reservation rules before confirmation.

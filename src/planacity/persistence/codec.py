@@ -21,13 +21,14 @@ from planacity.domain import (
     WorkGroup,
     WorkItem,
     WorkItemType,
+    WorkPriority,
 )
 from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 8
-SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8)
+SCHEMA_VERSION = 9
+SUPPORTED_SCHEMA_VERSIONS = tuple(range(1, SCHEMA_VERSION + 1))
 
 
 def _encode(value: object) -> str:
@@ -122,12 +123,12 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
         p = _object(
             root["plan"],
             "id name description horizon work_items people work_groups relationships"
-            + (" imports" if schema_version in (2, 3, 4, 5, 6, 7, 8) else "")
-            + (" work_calendars person_calendars" if schema_version in (3, 4, 5, 6, 7, 8) else "")
-            + (" availability_events" if schema_version in (4, 5, 6, 7, 8) else "")
-            + (" reservation_rules" if schema_version in (5, 6, 7, 8) else "")
-            + (" estimate_preferences" if schema_version in (6, 7, 8) else "")
-            + (" allocations" if schema_version in (7, 8) else ""),
+            + (" imports" if schema_version >= 2 else "")
+            + (" work_calendars person_calendars" if schema_version >= 3 else "")
+            + (" availability_events" if schema_version >= 4 else "")
+            + (" reservation_rules" if schema_version >= 5 else "")
+            + (" estimate_preferences" if schema_version >= 6 else "")
+            + (" allocations" if schema_version >= 7 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -251,6 +252,8 @@ def _work(value: object, schema_version: int) -> WorkItem:
     fields = "id title kind parent_id estimate_hours start end"
     if schema_version >= 8:
         fields += " description labels primary_group_id"
+    if schema_version >= 9:
+        fields += " priority"
     row = _object(value, fields)
     return WorkItem(
         id=_id(row["id"]),
@@ -270,6 +273,11 @@ def _work(value: object, schema_version: int) -> WorkItem:
             None
             if schema_version < 8 or row["primary_group_id"] is None
             else _id(row["primary_group_id"])
+        ),
+        priority=(
+            None
+            if schema_version < 9 or row["priority"] is None
+            else WorkPriority(_text(row["priority"]))
         ),
     )
 

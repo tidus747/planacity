@@ -5,7 +5,7 @@ from datetime import date
 from enum import StrEnum
 from uuid import UUID
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
+from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.planning.work_context import effective_group_ids
 
 
@@ -34,6 +34,7 @@ class TimelineRow:
     parent_id: UUID | None
     title: str
     kind: WorkItemType
+    priority: WorkPriority | None
     depth: int
     start: date | None
     end: date | None
@@ -96,6 +97,7 @@ def project_timeline(plan: ProgramPlan) -> TimelineProjection:
                     parent_id=item.parent_id,
                     title=item.title,
                     kind=item.kind,
+                    priority=item.priority,
                     depth=depth,
                     start=item.start,
                     end=item.end,

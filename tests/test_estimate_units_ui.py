@@ -61,8 +61,8 @@ def test_settings_preview_validation_and_keyboard_estimate_entry(app, loaded, th
     drive_dialog(app, window.estimate_units_action.trigger, configure)
     assert window.session.document.plan.work_items == original.work_items
     model, table = window.plan_page.model, window.plan_page.table
-    assert model.headerData(2, Qt.Orientation.Horizontal) == "Estimate (d)"
-    index = model.index(0, 2)
+    assert model.headerData(model.ESTIMATE_COLUMN, Qt.Orientation.Horizontal) == "Estimate (d)"
+    index = model.index(0, model.ESTIMATE_COLUMN)
     assert model.data(index) == "5"
     assert "Stored estimate: 27 h" in model.data(index, Qt.ItemDataRole.ToolTipRole)
     table.setCurrentIndex(index)
@@ -91,7 +91,7 @@ def test_rounded_editor_noop_and_cancel_do_not_change_hours_or_dirty_state(app, 
     window.session.document.saved_plan = plan
     window.session.changed.emit()
     model, table = window.plan_page.model, window.plan_page.table
-    index = model.index(0, 2)
+    index = model.index(0, model.ESTIMATE_COLUMN)
     assert model.data(index).startswith("~")
     table.setCurrentIndex(index)
     table.edit(index)
@@ -128,7 +128,9 @@ def test_container_rollup_uses_display_units_without_replacing_reference_estimat
     plan = replace(plan, work_items=(parent, *children))
     plan = set_estimate_preferences(plan, EstimateUnit.DAYS, plan.work_calendars[0].id)
     window.session.apply(plan)
-    index = window.plan_page.model.index_for_id(parent.id).siblingAtColumn(2)
+    index = window.plan_page.model.index_for_id(parent.id).siblingAtColumn(
+        window.plan_page.source_model.ESTIMATE_COLUMN
+    )
     assert window.plan_page.model.data(index) == "10"
     tooltip = window.plan_page.model.data(index, Qt.ItemDataRole.ToolTipRole)
     assert "54 h known" in tooltip
@@ -139,7 +141,7 @@ def test_container_rollup_uses_display_units_without_replacing_reference_estimat
 def test_invalid_open_editor_blocks_unit_settings(app, loaded):
     window = loaded
     page = window.plan_page
-    index = page.model.index(0, 2)
+    index = page.model.index(0, page.source_model.ESTIMATE_COLUMN)
     page.table.setCurrentIndex(index)
     page.table.edit(index)
     app.processEvents()

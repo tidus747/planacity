@@ -17,6 +17,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QAction, QKeyEvent
 from PySide6.QtWidgets import (
     QAbstractItemDelegate,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -34,6 +35,7 @@ from planacity.ui.calendars import PlanacityCalendar
 from planacity.ui.icons import svg_icon
 from planacity.ui.plan_filter_model import PlanFilterModel
 from planacity.ui.plan_model import PlanModel
+from planacity.ui.priority import PRIORITY_ORDER, priority_icon, priority_label
 
 T = TypeVar("T")
 
@@ -131,7 +133,11 @@ class ValidatedDelegate(QStyledItemDelegate):
         option: QStyleOptionViewItem,
         index: QModelIndex | QPersistentModelIndex,
     ) -> QWidget:
-        editor = CalendarLineEdit(parent) if index.column() in (3, 4) else QLineEdit(parent)
+        editor = (
+            CalendarLineEdit(parent)
+            if index.column() in (PlanModel.START_COLUMN, PlanModel.END_COLUMN)
+            else QLineEdit(parent)
+        )
         editor.setProperty("planIndex", QPersistentModelIndex(index))
         if isinstance(editor, CalendarLineEdit):
             editor.date_selected.connect(lambda: self._commit_calendar_date(editor))
@@ -182,3 +188,39 @@ class ValidatedDelegate(QStyledItemDelegate):
             if not self._validate(editor):
                 return True
         return super().eventFilter(editor, event)
+
+
+class PriorityDelegate(QStyledItemDelegate):
+    """Edit the finite priority vocabulary without accepting free-form values."""
+
+    def createEditor(
+        self,
+        parent: QWidget,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> QWidget:
+        editor = QComboBox(parent)
+        editor.setAccessibleName("Work priority")
+        editor.addItem(priority_icon(None), "Unset", "")
+        for priority in PRIORITY_ORDER:
+            editor.addItem(priority_icon(priority), priority_label(priority), priority.value)
+        editor.activated.connect(lambda: self._commit(editor))
+        return editor
+
+    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:
+        if isinstance(editor, QComboBox):
+            selected = editor.findData(index.data(Qt.ItemDataRole.EditRole))
+            editor.setCurrentIndex(max(0, selected))
+
+    def setModelData(
+        self,
+        editor: QWidget,
+        model: object,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
+        if isinstance(editor, QComboBox) and hasattr(model, "setData"):
+            model.setData(index, editor.currentData(), Qt.ItemDataRole.EditRole)
+
+    def _commit(self, editor: QComboBox) -> None:
+        self.commitData.emit(editor)
+        self.closeEditor.emit(editor, QAbstractItemDelegate.EndEditHint.NoHint)

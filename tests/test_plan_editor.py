@@ -5,8 +5,9 @@ from pathlib import Path
 
 from PySide6.QtCore import QDate, QModelIndex, Qt
 from PySide6.QtTest import QAbstractItemModelTester, QTest
-from PySide6.QtWidgets import QCalendarWidget, QLineEdit, QMessageBox
+from PySide6.QtWidgets import QCalendarWidget, QComboBox, QLineEdit, QMessageBox
 
+from planacity.domain import WorkPriority
 from planacity.persistence.project import restore_backup
 from planacity.planning.work_items import move_work_item, remove_work_item
 from planacity.ui.forms import CalendarLineEdit
@@ -41,10 +42,10 @@ def test_tree_indexes_edits_and_structural_changes(app):
     assert session.document.plan == plan
     assert model.setData(task, "Assemble fixture")
     assert session.document.plan.work_items[2].id == plan.work_items[2].id
-    assert not model.setData(subtask.siblingAtColumn(2), "-1")
-    assert model.setData(subtask.siblingAtColumn(2), "0.125")
-    assert model.setData(epic.siblingAtColumn(3), "2026-09-30")
-    assert "Outside" in model.data(epic.siblingAtColumn(5))
+    assert not model.setData(subtask.siblingAtColumn(model.ESTIMATE_COLUMN), "-1")
+    assert model.setData(subtask.siblingAtColumn(model.ESTIMATE_COLUMN), "0.125")
+    assert model.setData(epic.siblingAtColumn(model.START_COLUMN), "2026-09-30")
+    assert "Outside" in model.data(epic.siblingAtColumn(model.NOTES_COLUMN))
     moved = move_work_item(session.document.plan, plan.work_items[2].id, plan.work_items[4].id)
     session.apply(moved)
     task = model.index_for_id(plan.work_items[2].id)
@@ -62,9 +63,9 @@ def test_container_estimate_is_derived_read_only_and_keeps_entered_reference(app
     plan = example()
     session.document.new(plan)
     model = PlanModel(session)
-    epic = model.index_for_id(plan.work_items[0].id).siblingAtColumn(2)
-    task = model.index_for_id(plan.work_items[2].id).siblingAtColumn(2)
-    leaf = model.index_for_id(plan.work_items[3].id).siblingAtColumn(2)
+    epic = model.index_for_id(plan.work_items[0].id).siblingAtColumn(model.ESTIMATE_COLUMN)
+    task = model.index_for_id(plan.work_items[2].id).siblingAtColumn(model.ESTIMATE_COLUMN)
+    leaf = model.index_for_id(plan.work_items[3].id).siblingAtColumn(model.ESTIMATE_COLUMN)
 
     assert model.data(epic) == "20.75"
     assert model.data(task) == "4.25"
@@ -76,6 +77,34 @@ def test_container_estimate_is_derived_read_only_and_keeps_entered_reference(app
     assert model.flags(leaf) & Qt.ItemFlag.ItemIsEditable
     assert not model.setData(task, "10")
     assert session.document.plan.work_item(plan.work_items[2].id).estimate_hours == 40
+
+
+def test_inline_priority_combo_commits_canonical_value_and_icon(app, window):
+    plan = example()
+    window.session.document.new(plan)
+    window.session.changed.emit()
+    try:
+        window.show_page(1)
+        table, model = window.plan_page.table, window.plan_page.model
+        index = model.index(0, model.PRIORITY_COLUMN)
+
+        assert model.data(index) == "Unset"
+        assert not model.data(index, Qt.ItemDataRole.DecorationRole).isNull()
+        table.setCurrentIndex(index)
+        table.edit(index)
+        app.processEvents()
+        editor = next(combo for combo in table.findChildren(QComboBox) if combo.isVisible())
+        selected = editor.findData("highest")
+        editor.setCurrentIndex(selected)
+        editor.activated.emit(selected)
+        app.processEvents()
+
+        changed = window.session.document.plan.work_items[0]
+        assert changed.priority == WorkPriority.HIGHEST
+        assert changed.start == plan.work_items[0].start
+        assert changed.estimate_hours == plan.work_items[0].estimate_hours
+    finally:
+        window.session.document.saved_plan = window.session.document.plan
 
 
 def test_inline_invalid_draft_remains_editable_then_save_commits_it(
@@ -112,7 +141,7 @@ def test_invalid_date_draft_stays_open_with_actionable_guidance(app, window):
     window.session.changed.emit()
     window.show_page(1)
     table, model = window.plan_page.table, window.plan_page.model
-    index = model.index(0, 3)
+    index = model.index(0, model.START_COLUMN)
     table.setCurrentIndex(index)
     table.edit(index)
     app.processEvents()
@@ -140,7 +169,7 @@ def test_inline_date_calendar_selects_and_commits_iso_date(app, window):
     try:
         window.show_page(1)
         table, model = window.plan_page.table, window.plan_page.model
-        index = model.index(0, 4)
+        index = model.index(0, model.END_COLUMN)
         table.setCurrentIndex(index)
         table.edit(index)
         app.processEvents()

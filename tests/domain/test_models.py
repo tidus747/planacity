@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import pytest
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
+from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.planning.work_items import add_work_item
 
 
@@ -97,6 +97,19 @@ def test_explicit_ids_survive_reconstruction(plan: ProgramPlan) -> None:
     )
     assert reconstructed.id == plan.id
     assert reconstructed.work_item(item.id).id == item.id
+
+
+@pytest.mark.parametrize("priority", [None, *WorkPriority])
+def test_work_priority_accepts_only_canonical_optional_levels(
+    priority: WorkPriority | None,
+) -> None:
+    item = WorkItem(title="Build test bench", kind=WorkItemType.TASK, priority=priority)
+    assert item.priority == priority
+
+
+def test_work_priority_rejects_free_form_values() -> None:
+    with pytest.raises(ValueError, match="Highest, High, Medium, Low, Lowest, or unset"):
+        WorkItem(title="Build test bench", kind=WorkItemType.TASK, priority="urgent")
 
 
 def test_domain_and_planning_import_without_qt() -> None:

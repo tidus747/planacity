@@ -11,6 +11,7 @@ from planacity.domain.models import (
     WorkGroup,
     WorkItem,
     WorkItemType,
+    WorkPriority,
 )
 from planacity.domain.reservations import ReservationRule
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
@@ -28,5 +29,6 @@ __all__ = [
     "WorkGroup",
     "WorkCalendar",
     "WorkItem",
+    "WorkPriority",
     "WorkItemType",
 ]

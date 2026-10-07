@@ -9,7 +9,8 @@ No account or network connection is needed while planning.
    can span any dates, not only a quarter.
 2. Open **Plan**. Add an Epic, select it and add a Task, then select that Task and
    add a Subtask. With no Epic selected, Add Task creates a standalone Task.
-3. Double-click a title, estimate, start, or end cell, or press `F2` to edit.
+3. Double-click a title, priority, estimate, start, or end cell, or press `F2`
+   to edit.
    Estimates default to hours, including fractional hours. Choose days or weeks
    in **Planning -> Estimate units...** with an explicit reference calendar.
    See [estimate units](estimate-units.md) for conversions. Clear a value to leave it
@@ -18,8 +19,8 @@ No account or network connection is needed while planning.
    read-only totals from their leaves. Their tooltips retain any entered or
    imported container estimate as reference and identify missing leaf estimates.
    The inspector beside the table edits title, description, ordered labels,
-   primary reporting topic, dates, and leaf estimate together. Choose **Apply**
-   to commit the complete draft or **Cancel** to restore its saved values.
+   primary reporting topic, priority, dates, and leaf estimate together. Choose
+   **Apply** to commit the complete draft or **Cancel** to restore its saved values.
 4. Use **Move...** to select a different parent. **Delete...** previews the number
    of work items, relationships, and memberships being removed before confirming.
 5. Use **WorkGroups...** to organize Epics independently from hierarchy. Use
@@ -92,9 +93,10 @@ Actual People WorkGroups in both appearances:
 
 ## Filter the Plan
 
-Combine title search, work type, WorkGroup, and schedule state above the Plan
-table, using the same choices as Timeline. Title search ignores case and leading
-or trailing spaces. WorkGroup membership includes descendants of its Epics.
+Combine title search, work type, WorkGroup, priority, and schedule state above
+the Plan table. Title search ignores case and leading or trailing spaces.
+WorkGroup membership includes descendants of its Epics. Priority includes an
+explicit Unset choice.
 The summary distinguishes actual matches from ancestors retained for context.
 Matching branches expand automatically; canonical sibling order stays unchanged.
 
@@ -119,13 +121,38 @@ Actual Plan filters in both appearances:
 ![Plan filters in light mode](images/plan-filters-light.png)
 ![Plan filters in dark mode](images/plan-filters-dark.png)
 
+## Prioritize work explicitly
+
+Priority is optional. The ordered values are Highest, High, Medium, Low, and
+Lowest; Unset is separate and never means Medium. Double-click the Priority cell
+or select it and press `F2`, then choose a value with the arrow keys and press
+`Enter`. The inspector offers the same field as part of its complete Apply/Cancel
+draft. Distinct arrow and line icons accompany the text, so meaning does not
+depend on color.
+
+Choose **Priority: Highest first** in the sort control to order siblings within
+each hierarchy level. Equal priorities retain canonical plan order and Unset is
+last. Choose **Plan order** to restore the saved sibling order. Filtering and
+sorting preserve selection by stable work ID and never rewrite hierarchy.
+
+Priority is a planning decision only. It does not change dates, estimates,
+allocations, capacity, dependencies, or criticality, and it is not inherited by
+children. Existing schema 1-8 projects open with priority Unset. Jira CSV
+priority mapping follows in P02; current imports do not guess source meanings.
+
+Actual priority editing and ordering in both appearances:
+
+![Work priority in light mode](images/work-priority-light.png)
+![Work priority in dark mode](images/work-priority-dark.png)
+
 ## Edit complete work details
 
 Select a matching Plan row to open its inspector. Labels use one non-blank value
-per line and retain their displayed order. Primary topic can be selected without
-changing the WorkGroup hierarchy. Leaf estimates follow the current Hours, Days,
-or Weeks preference; container effort is derived and read-only. Calendar buttons
-and exact `YYYY-MM-DD` entry use the same date rules as the Plan table.
+per line and retain their displayed order. Primary topic and priority can be
+selected without changing the WorkGroup hierarchy. Leaf estimates follow the
+current Hours, Days, or Weeks preference; container effort is derived and
+read-only. Calendar buttons and exact `YYYY-MM-DD` entry use the same date rules
+as the Plan table.
 
 Allocated people and hours, planning findings, dependencies, stable short IDs,
 and imported reference values are context only. Imported baseline values are

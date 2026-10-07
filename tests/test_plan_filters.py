@@ -10,7 +10,14 @@ from PySide6.QtTest import QAbstractItemModelTester, QSignalSpy, QTest
 from PySide6.QtWidgets import QComboBox, QDialogButtonBox, QLineEdit, QMessageBox
 from test_editor_forms import drive_dialog
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkGroup, WorkItem, WorkItemType
+from planacity.domain import (
+    PlanningHorizon,
+    ProgramPlan,
+    WorkGroup,
+    WorkItem,
+    WorkItemType,
+    WorkPriority,
+)
 from planacity.planning.plan_filters import filter_plan
 from planacity.planning.timeline import TimelineDateState
 from planacity.planning.timeline_view import TimelineFilters
@@ -20,16 +27,27 @@ from planacity.ui.theme import Theme
 @pytest.fixture
 def plan():
     epic = WorkItem(title="Platform", kind=WorkItemType.EPIC)
-    task = WorkItem(title="Build", kind=WorkItemType.TASK, parent_id=epic.id)
+    task = WorkItem(
+        title="Build",
+        kind=WorkItemType.TASK,
+        parent_id=epic.id,
+        priority=WorkPriority.LOW,
+    )
     child = WorkItem(
         title="Check hardware",
         kind=WorkItemType.SUBTASK,
         parent_id=task.id,
         start=date(2026, 10, 1),
         end=date(2026, 10, 2),
+        priority=WorkPriority.HIGH,
     )
-    hidden = WorkItem(title="Documentation", kind=WorkItemType.TASK, parent_id=epic.id)
-    other = WorkItem(title="Check software", kind=WorkItemType.TASK)
+    hidden = WorkItem(
+        title="Documentation",
+        kind=WorkItemType.TASK,
+        parent_id=epic.id,
+        priority=WorkPriority.HIGHEST,
+    )
+    other = WorkItem(title="Check software", kind=WorkItemType.TASK, priority=WorkPriority.MEDIUM)
     return ProgramPlan(
         name="Filter checks",
         horizon=PlanningHorizon(date(2026, 10, 1), date(2026, 12, 31)),
@@ -55,6 +73,8 @@ def test_combined_filters_inherit_groups_and_keep_ancestor_context(plan):
         kind=WorkItemType.SUBTASK,
         group_id=plan.work_groups[0].id,
         state=TimelineDateState.SCHEDULED,
+        priority=WorkPriority.HIGH,
+        priority_is_set=True,
     )
     result = filter_plan(plan, filters)
     assert result.matches == {plan.work_items[2].id}
@@ -73,6 +93,7 @@ def test_controls_context_and_clear_do_not_change_plan(app, page, plan):
     page.search.setText("check")
     page.kind_filter.setCurrentIndex(page.kind_filter.findData("subtask"))
     page.group_filter.setCurrentIndex(page.group_filter.findData(str(plan.work_groups[0].id)))
+    page.priority_filter.setCurrentIndex(page.priority_filter.findData("high"))
     page.state_filter.setCurrentIndex(page.state_filter.findData("scheduled"))
     assert page.model.result.matches == {plan.work_items[2].id}
     assert "1 of 5" in page.filter_summary.text()
@@ -80,7 +101,9 @@ def test_controls_context_and_clear_do_not_change_plan(app, page, plan):
     ancestor = page.model.index_for_id(plan.work_items[0].id)
     assert page.table.isExpanded(ancestor)
     assert not page.model.flags(ancestor) & Qt.ItemFlag.ItemIsEditable
-    assert "Context only" in page.model.data(ancestor.siblingAtColumn(5))
+    assert "Context only" in page.model.data(
+        ancestor.siblingAtColumn(page.source_model.NOTES_COLUMN)
+    )
     assert not page.model.setData(ancestor, "Accidental rename")
     assert page.session.document.plan is plan
     assert not page.session.document.dirty
@@ -91,6 +114,44 @@ def test_controls_context_and_clear_do_not_change_plan(app, page, plan):
     assert page.model.rowCount() == 2
     assert page.session.document.plan is plan
     assert not page.session.document.dirty
+
+
+def test_priority_filter_and_stable_sibling_sort_preserve_selection(app, page, plan):
+    page.priority_filter.setCurrentIndex(page.priority_filter.findData(""))
+    assert page.model.result.matches == {plan.work_items[0].id}
+    page.clear_filters_button.click()
+
+    same_priority = WorkItem(
+        title="Second medium root",
+        kind=WorkItemType.TASK,
+        priority=WorkPriority.MEDIUM,
+    )
+    page.session.apply(replace(plan, work_items=(*plan.work_items, same_priority)))
+    app.processEvents()
+
+    selected = plan.work_items[1]
+    page.table.setCurrentIndex(page.model.index_for_id(selected.id))
+    page.priority_sort.setCurrentIndex(page.priority_sort.findData(True))
+    app.processEvents()
+
+    assert page.model.item(page.table.currentIndex()).id == selected.id
+    roots = [page.model.item(page.model.index(row, 0)) for row in range(page.model.rowCount())]
+    assert [item.priority for item in roots] == [WorkPriority.MEDIUM, WorkPriority.MEDIUM, None]
+    assert [item.id for item in roots[:2]] == [plan.work_items[4].id, same_priority.id]
+    epic = page.model.index_for_id(plan.work_items[0].id)
+    children = [
+        page.model.item(page.model.index(row, 0, epic)) for row in range(page.model.rowCount(epic))
+    ]
+    assert [item.priority for item in children] == [WorkPriority.HIGHEST, WorkPriority.LOW]
+
+    page.priority_sort.setCurrentIndex(page.priority_sort.findData(False))
+    app.processEvents()
+    assert page.model.item(page.table.currentIndex()).id == selected.id
+    assert [page.model.item(page.model.index(row, 0)).id for row in range(3)] == [
+        plan.work_items[0].id,
+        plan.work_items[4].id,
+        same_priority.id,
+    ]
 
 
 @pytest.mark.parametrize("theme", list(Theme))
@@ -147,7 +208,7 @@ def test_date_edit_stops_matching_after_commit(app, page, plan):
     page.change_filters(TimelineFilters(state=TimelineDateState.SCHEDULED))
     index = page.model.index_for_id(plan.work_items[2].id)
     page.table.setCurrentIndex(index)
-    assert page.model.setData(index.siblingAtColumn(4), "")
+    assert page.model.setData(index.siblingAtColumn(page.source_model.END_COLUMN), "")
     app.processEvents()
     assert not page.model.result.matches
     assert not page.table.currentIndex().isValid()
@@ -169,7 +230,9 @@ def test_hidden_selection_does_not_jump_to_another_match(app, page, plan):
 
 
 def test_cell_edits_preserve_indexes_when_visible_rows_do_not_change(app, page, plan):
-    index = page.model.index_for_id(plan.work_items[2].id).siblingAtColumn(4)
+    index = page.model.index_for_id(plan.work_items[2].id).siblingAtColumn(
+        page.source_model.END_COLUMN
+    )
     layouts = QSignalSpy(page.model.layoutChanged)
     assert page.model.setData(index, "2026-10-03")
     app.processEvents()

@@ -166,7 +166,7 @@ def test_older_schemas_open_without_rules_and_upgrade_on_save(version, tmp_path)
     save_project(plan, path)
     assert load_project(path) == plan
     connection = sqlite3.connect(path)
-    assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
     connection.close()
 
 

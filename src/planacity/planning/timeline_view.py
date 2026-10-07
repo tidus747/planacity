@@ -4,7 +4,7 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 from uuid import UUID
 
-from planacity.domain import WorkItemType
+from planacity.domain import WorkItemType, WorkPriority
 from planacity.planning.timeline import TimelineDateState, TimelineProjection, TimelineRow
 
 
@@ -20,6 +20,8 @@ class TimelineFilters:
     kind: WorkItemType | None = None
     group_id: UUID | None = None
     state: TimelineDateState | None = None
+    priority: WorkPriority | None = None
+    priority_is_set: bool = False
 
     def matches(self, row: TimelineRow) -> bool:
         return (
@@ -27,6 +29,7 @@ class TimelineFilters:
             and (self.kind is None or row.kind == self.kind)
             and (self.group_id is None or self.group_id in row.group_ids)
             and (self.state is None or row.date_state == self.state)
+            and (not self.priority_is_set or row.priority == self.priority)
         )
 
 

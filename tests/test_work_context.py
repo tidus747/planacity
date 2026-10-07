@@ -15,6 +15,7 @@ from planacity.domain import (
     WorkGroup,
     WorkItem,
     WorkItemType,
+    WorkPriority,
 )
 from planacity.planning.plan_filters import filter_plan
 from planacity.planning.timeline import project_timeline
@@ -169,6 +170,7 @@ def test_complete_work_details_update_is_atomic(plan: ProgramPlan) -> None:
         description="Acceptance notes",
         labels=("hardware", "customer-a"),
         primary_group_id=alpha.id,
+        priority=WorkPriority.HIGH,
         estimate_hours=Decimal("12.5"),
         start=date(2026, 2, 2),
         end=date(2026, 2, 6),
@@ -180,6 +182,7 @@ def test_complete_work_details_update_is_atomic(plan: ProgramPlan) -> None:
         description="Acceptance notes",
         labels=("hardware", "customer-a"),
         primary_group_id=alpha.id,
+        priority=WorkPriority.HIGH,
         estimate_hours=Decimal("12.5"),
         start=date(2026, 2, 2),
         end=date(2026, 2, 6),
@@ -199,6 +202,7 @@ def test_complete_update_rejects_container_estimate_without_partial_changes(
             description="Not applied",
             labels=(),
             primary_group_id=None,
+            priority=None,
             estimate_hours=Decimal(1),
             start=None,
             end=None,
@@ -238,6 +242,7 @@ def test_complete_update_rejects_dependency_conflict_without_partial_changes(
             description="Not applied",
             labels=("blocked",),
             primary_group_id=None,
+            priority=WorkPriority.LOWEST,
             estimate_hours=task.estimate_hours,
             start=task.start,
             end=successor.start,

@@ -22,7 +22,7 @@ personal configuration, credentials, or repository automation instructions.
 
 ## Existing foundations and limits
 
-The current format is schema 8. The canonical format is defined by
+The current format is schema 9. The canonical format is defined by
 `persistence/codec.py` and described in [project files](project-file-format.md).
 `.planacity` is a SQLite container, not a text file for an assistant to rewrite.
 JSON backups are the interchange boundary. The strict decoder rejects unknown
@@ -58,8 +58,8 @@ share a schema while having different findings or editing behavior.
 Review guide compatibility on every release, including patches. Update field
 tables, examples and restrictions when the codec or domain behavior changes.
 Do not advertise fields from the roadmap until the installed build supports them.
-In particular, schema 8 has work descriptions, labels and primary groups, but
-does not yet have the proposed priority field or first-class deliveries.
+In particular, schema 9 has work descriptions, labels, primary groups, and
+optional canonical priority, but it does not yet have first-class deliveries.
 
 ## Planning kit and task instructions
 

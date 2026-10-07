@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 from PySide6.QtWidgets import QApplication
 
+from planacity.domain import WorkPriority
 from planacity.ui.icons import image_icon, image_pixmap, navigation_icon
+from planacity.ui.priority import priority_icon
 
 
 def test_packaged_icons_load_from_another_directory(
@@ -18,6 +20,8 @@ def test_packaged_icons_load_from_another_directory(
     for name in ("Overview", "Plan", "Timeline", "People", "Import"):
         for color in ("#142033", "#e7eef7"):
             assert not navigation_icon(name, color).pixmap(24, 24).isNull()
+    for priority in (None, *WorkPriority):
+        assert not priority_icon(priority).pixmap(24, 24).isNull()
 
 
 def test_invalid_packaged_image_is_rejected(

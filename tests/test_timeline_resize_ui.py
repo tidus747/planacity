@@ -141,7 +141,7 @@ def test_keyboard_dates_updates_plan_and_changes_views(app, settings):
         assert not errors
         model = window.plan_page.model
         index = model.index_for_id(original.work_items[0].id)
-        assert model.index(index.row(), 4, index.parent()).data() == "2024-02-29"
+        assert model.index(index.row(), model.END_COLUMN, index.parent()).data() == "2024-02-29"
         assert work_changes(window.session.document.plan)[0].fields == ("end",)
         changes_page = window.findChild(ChangesPage)
         assert changes_page.model.item(0, 3).text() == "end"
