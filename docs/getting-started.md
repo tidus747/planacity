@@ -137,13 +137,32 @@ sorting preserve selection by stable work ID and never rewrite hierarchy.
 
 Priority is a planning decision only. It does not change dates, estimates,
 allocations, capacity, dependencies, or criticality, and it is not inherited by
-children. Existing schema 1-8 projects open with priority Unset. Jira CSV
-priority mapping follows in P02; current imports do not guess source meanings.
+children. Existing schema 1-8 projects open with priority Unset.
 
 Actual priority editing and ordering in both appearances:
 
 ![Work priority in light mode](images/work-priority-light.png)
 ![Work priority in dark mode](images/work-priority-dark.png)
+
+## Map Jira priorities without guessing
+
+On the first Jira import page, map the optional Priority CSV column. The next
+page lists every distinct nonblank value. Exact default names receive a visible
+suggestion; custom labels stay **Unmapped -> Unset** until you choose a canonical
+level. The review page shows source and Planacity values side by side, including
+the unresolved state. Save a version 2 mapping profile to reuse those choices.
+
+During export, set one explicit target label for each canonical level and review
+the per-row result. Unchanged imported work keeps its exact original label. Edited
+or new priorities use the target label. Unresolved source values remain visible
+and preserved, while a genuine Unset value exports blank. Duplicate target labels
+disable export instead of creating an ambiguous CSV. Save or load an export
+profile to reuse headers, units, delimiter, date format, and target labels.
+
+Actual Jira priority mapping in both appearances:
+
+![Jira priority mapping in light mode](images/jira-priority-mapping-light.png)
+![Jira priority mapping in dark mode](images/jira-priority-mapping-dark.png)
 
 ## Edit complete work details
 

@@ -30,7 +30,15 @@ def work_changes(plan: ProgramPlan) -> tuple[WorkChange, ...]:
             continue
         fields = tuple(
             field
-            for field in ("title", "kind", "parent_id", "estimate_hours", "start", "end")
+            for field in (
+                "title",
+                "kind",
+                "parent_id",
+                "estimate_hours",
+                "start",
+                "end",
+                "priority",
+            )
             if getattr(item, field) != getattr(record.item, field)
         )
         if fields:

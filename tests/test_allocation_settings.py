@@ -173,8 +173,8 @@ def test_jira_export_keeps_stored_container_estimate_instead_of_rollup():
     parent = replace(plan.work_items[0], estimate_hours=Decimal("150"))
     plan = replace(plan, work_items=(parent, *plan.work_items[1:]))
     table = read_csv(export_csv(plan, ExportOptions(estimate_unit="hours")))
-    assert table.rows[0][5] == "150"
-    assert table.rows[1][5] == "100"
+    assert table.rows[0][6] == "150"
+    assert table.rows[1][6] == "100"
     assert summarize_allocations(plan, ()).work[0].known_estimate_hours == 100
 
 
@@ -249,7 +249,7 @@ def test_older_schemas_open_without_inferred_allocations(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
     connection.close()
 
 

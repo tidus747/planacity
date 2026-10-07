@@ -11,6 +11,7 @@ def strip_work_context(data: dict) -> None:
         for record in source["records"]:
             for field in fields:
                 record["item"].pop(field)
+            record.pop("external_priority", None)
 
 
 def strip_work_priority(data: dict) -> None:
@@ -20,3 +21,10 @@ def strip_work_priority(data: dict) -> None:
     for source in data["plan"].get("imports", ()):
         for record in source["records"]:
             record["item"].pop("priority")
+
+
+def strip_external_priority(data: dict) -> None:
+    """Remove the imported source field introduced by schema 10."""
+    for source in data["plan"].get("imports", ()):
+        for record in source["records"]:
+            record.pop("external_priority", None)

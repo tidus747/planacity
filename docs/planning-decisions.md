@@ -1,11 +1,13 @@
 # Planning consistency and visibility decisions
 
-Revised: 2026-10-06. Status: active implementation contract.
+Revised: 2026-10-07. Status: active implementation contract.
 Dependency guards, hierarchy effort, dated capacity, reusable findings, People
 breakdowns, persisted work context, compact Overview analysis, and derived People
-WorkGroup associations and canonical work priority are implemented. Work context
-introduced schema 8 and priority schema 9; the transactional Plan inspector,
-Overview analysis, and People associations require no further schema change.
+WorkGroup associations, canonical work priority, and explicit Jira CSV priority
+mapping are implemented. Work context introduced schema 8, priority schema 9,
+and preserved Jira source-priority text schema 10; the transactional Plan
+inspector, Overview analysis, and People associations require no further schema
+change.
 Later presentation sections remain future behavior.
 See the [roadmap](roadmap.md) for order and acceptance.
 
@@ -233,9 +235,12 @@ dates nor effort nor dependencies. Labels/icons must work without color alone.
 
 Jira ships these five defaults but allows administrators to change priorities
 and schemes. See [Atlassian's priority configuration documentation](https://support.atlassian.com/jira-cloud-administration/docs/configure-priorities-for-projects/).
-Therefore P02 maps CSV values explicitly, preserving source values and baselines;
-it must not hardcode Jira numeric IDs or assume every instance uses these names.
-P01 owns storage and editing; P02 owns previewed import/export mappings.
+P02 maps CSV values explicitly, preserving source values and baselines. Exact
+default-name matches are reviewable suggestions, custom values may remain visibly
+unresolved/Unset, and no numeric ID is treated as a universal order. Unchanged
+work exports its original nonblank label; edits and new work use explicit target
+labels. P01 owns canonical storage/editing; P02 owns previewed import/export
+mappings and the schema 10 source-text copy.
 
 ## 11. Initial critical-path analysis contract
 

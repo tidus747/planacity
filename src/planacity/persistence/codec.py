@@ -27,7 +27,7 @@ from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 SUPPORTED_SCHEMA_VERSIONS = tuple(range(1, SCHEMA_VERSION + 1))
 
 
@@ -286,7 +286,10 @@ def _source(value: object, schema_version: int) -> ImportSnapshot:
     row = _object(value, "id name headers rows records")
     records = []
     for entry in _rows(row["records"]):
-        r = _object(entry, "item external_reference external_person person status")
+        fields = "item external_reference external_person person status"
+        if schema_version >= 10:
+            fields += " external_priority"
+        r = _object(entry, fields)
         person = None
         if r["person"] is not None:
             person_row = _object(r["person"], "id name")
@@ -298,6 +301,7 @@ def _source(value: object, schema_version: int) -> ImportSnapshot:
                 external_person=_text(r["external_person"]),
                 person=person,
                 status=_text(r["status"]),
+                external_priority=(_text(r["external_priority"]) if schema_version >= 10 else ""),
             )
         )
     return ImportSnapshot(

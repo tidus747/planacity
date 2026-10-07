@@ -16,6 +16,10 @@ connection are used.
    are retained and flagged in the Plan view.
 3. Map every external type to Epic, Task, or Subtask. Unsupported types such as
    Story require an explicit choice; their original cells remain in the source.
+   If Priority is mapped, review each distinct nonblank source value. Highest,
+   High, Medium, Low, and Lowest receive case-insensitive default suggestions.
+   Custom labels remain **Unmapped -> Unset** until you choose a canonical value.
+   Blank and unresolved values never silently become Medium.
    Match each nonblank external person to a roster entry or explicitly create
    one. This records identity mapping, not work allocations or capacity.
 4. Review the complete preview and choose **Import**. Errors keep the wizard open;
@@ -30,9 +34,12 @@ dates use `%Y-%m-%d`.
 
 Use **Save profile...** and **Load profile...** on the column-mapping page to
 reuse a local JSON profile. After choosing custom type mappings, go Back to the
-first page to save them. Profiles require the same headers in the same order;
+first page to save them. Priority value mappings follow the same workflow.
+Profiles require the same headers in the same order;
 they never silently adapt a changed CSV. They contain column names, positions,
-type mappings, units, and date format, not CSV rows or person identities.
+type and priority-value mappings, units, and date format, not CSV rows or person
+identities. Version 1 profiles remain readable; newly saved version 2 profiles
+include priority mappings.
 Profiles with duplicate JSON fields are rejected rather than choosing one value.
 Remove the duplicate fields or save a new profile from the wizard. A failed load
 keeps the current mapping unchanged.
@@ -40,8 +47,10 @@ keeps the current mapping unchanged.
 ## Preserved baseline
 
 The project stores original cell values, including unmapped fields, together
-with original work items, external references, original status, and person
-mapping snapshots. Editing or removing local work does not rewrite that source.
+with original work items, external references, original status, original priority
+text, and person mapping snapshots. The mapped canonical priority is stored on
+the baseline WorkItem separately from that source text. Editing or removing local
+work does not rewrite either value.
 JSON backups retain it too. Keep these files local if the imported data is
 sensitive. Baseline person names remain even if a roster entry is later removed.
 
@@ -57,12 +66,20 @@ restore integral seconds when the difference is only division roundoff.
 ## Changes
 
 **Changes** (Ctrl+5) lists added, modified, and removed work against all imported
-work snapshots. It compares title, type, parent, estimate, and dates. Work with
+work snapshots. It compares title, type, parent, estimate, dates, and priority. Work with
 no imported snapshot appears as Added once a baseline exists. Roster changes,
 WorkGroups, and relationships are outside this initial comparison. Status and
 external assignees are preserved for export and are not editable in v0.2.
 
 ## Validation record
+
+The P02 checks cover all canonical levels, exact default suggestions, custom and
+repeated values, blanks, visible unresolved values, import profile v1/v2
+compatibility, reusable export profiles, CSV escaping, priority Changes,
+schema 1-9 migration, and baseline-preserving export. The complete suite passes
+756 tests; three focused dialogs also pass with Qt's native Windows plugin.
+Ruff, mypy, and source/wheel builds pass. Both appearances were captured from the
+real Qt mapping and export dialogs with fictional data.
 
 The Windows/Python 3.12/PySide6 6.11.2 checks cover import mapping and correction,
 preview cancellation, explicit type and people mapping, profile reuse, the real
@@ -74,6 +91,8 @@ GitHub CI also checks Windows and Linux with Python 3.11 and 3.13.
 
 Real screenshots using only the fictional example:
 
+![Priority mapping in light mode](images/jira-priority-mapping-light.png)
+![Priority mapping in dark mode](images/jira-priority-mapping-dark.png)
 ![Import preview in light mode](images/import-light.png)
 ![Import preview in dark mode](images/import-dark.png)
 ![Changes in light mode](images/changes-light.png)

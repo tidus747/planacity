@@ -8,7 +8,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from persistence_helpers import strip_work_context, strip_work_priority
+from persistence_helpers import strip_external_priority, strip_work_context, strip_work_priority
 
 from planacity.document import Document
 from planacity.domain import WorkGroup, WorkPriority
@@ -38,7 +38,7 @@ def test_complete_example_sqlite_and_backup_round_trip(plan, tmp_path):
     assert restore_backup(backup) == plan
 
 
-def test_schema_nine_preserves_context_and_priority_in_current_and_imported_work(plan, tmp_path):
+def test_schema_ten_preserves_context_priority_and_imported_source_priority(plan, tmp_path):
     group = WorkGroup(name="Reporting")
     current = replace(
         plan.work_items[0],
@@ -58,7 +58,13 @@ def test_schema_nine_preserves_context_and_priority_in_current_and_imported_work
         name="source.csv",
         headers=("Key", "Summary"),
         rows=(("CTX-1", baseline.title),),
-        records=(ImportedWork(item=baseline, external_reference="CTX-1"),),
+        records=(
+            ImportedWork(
+                item=baseline,
+                external_reference="CTX-1",
+                external_priority="Customer blocker",
+            ),
+        ),
     )
     contextual = replace(
         plan,
@@ -68,7 +74,7 @@ def test_schema_nine_preserves_context_and_priority_in_current_and_imported_work
     )
     data = json.loads(dumps(contextual))
 
-    assert data["schema_version"] == 9
+    assert data["schema_version"] == 10
     assert data["plan"]["work_items"][0]["description"] == current.description
     assert data["plan"]["work_items"][0]["labels"] == list(current.labels)
     assert data["plan"]["work_items"][0]["primary_group_id"] == str(group.id)
@@ -77,6 +83,7 @@ def test_schema_nine_preserves_context_and_priority_in_current_and_imported_work
     assert baseline_data["description"] == baseline.description
     assert baseline_data["labels"] == list(baseline.labels)
     assert baseline_data["priority"] == "low"
+    assert data["plan"]["imports"][0]["records"][0]["external_priority"] == "Customer blocker"
     assert loads(json.dumps(data)) == contextual
 
     path = tmp_path / "context.planacity"
@@ -108,6 +115,7 @@ def test_schemas_one_to_eight_load_priority_as_unset(plan, version):
         strip_work_context(data)
     else:
         strip_work_priority(data)
+    strip_external_priority(data)
     for key, introduced in (
         ("imports", 2),
         ("work_calendars", 3),
@@ -126,6 +134,18 @@ def test_schemas_one_to_eight_load_priority_as_unset(plan, version):
     assert all(item.priority is None for item in loaded.work_items)
     assert all(
         record.item.priority is None for source in loaded.imports for record in source.records
+    )
+
+
+def test_schema_nine_loads_imported_source_priority_as_empty(plan):
+    data = json.loads(dumps(plan))
+    data["schema_version"] = 9
+    strip_external_priority(data)
+
+    loaded = loads(json.dumps(data))
+
+    assert all(
+        record.external_priority == "" for source in loaded.imports for record in source.records
     )
 
 

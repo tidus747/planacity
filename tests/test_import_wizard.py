@@ -5,11 +5,11 @@ from datetime import date
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from planacity.domain import PlanningHorizon, ProgramPlan
-from planacity.integrations.jira.csv_io import read_csv
+from planacity.domain import PlanningHorizon, ProgramPlan, WorkPriority
+from planacity.integrations.jira.csv_io import Mapping, preview_import, read_csv
 from planacity.persistence.project import load_project
 from planacity.ui.import_wizard import ImportWizard
-from planacity.ui.jira_pages import ChangesPage
+from planacity.ui.jira_pages import ChangesPage, ExportDialog
 
 
 def empty_plan():
@@ -130,6 +130,87 @@ def test_ambiguous_profile_keeps_existing_wizard_mapping(app, tmp_path, monkeypa
     wizard.deleteLater()
 
 
+def test_priority_defaults_unresolved_preview_and_profile_reuse(app, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog
+
+    path = tmp_path / "priority-mapping.json"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a: (str(path), ""))
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a: (str(path), ""))
+    table = read_csv(
+        "Issue key,Summary,Issue Type,Priority\n"
+        "TEST-1,Default,Task,Highest\n"
+        "TEST-2,Custom,Task,Urgent\n"
+        "TEST-3,Repeated,Task,Urgent\n"
+        "TEST-4,Blank,Task,\n"
+    )
+    wizard = ImportWizard(empty_plan(), table, "priority.csv")
+    wizard.advance()
+
+    assert wizard.priority_boxes["Highest"].currentData() == "highest"
+    assert wizard.priority_boxes["Urgent"].currentData() == ""
+    wizard.advance()
+    assert wizard.pages.currentIndex() == 2
+    assert wizard.candidate.work_items[0].priority == WorkPriority.HIGHEST
+    assert wizard.candidate.work_items[1].priority is None
+    assert wizard.preview_model.item(1, 3).text() == "Urgent"
+    assert wizard.preview_model.item(1, 4).text() == "Unresolved -> Unset"
+    assert "2 source priority value(s) remain unresolved" in wizard.preview.toPlainText()
+
+    wizard.go_back()
+    wizard.priority_boxes["Urgent"].setCurrentIndex(
+        wizard.priority_boxes["Urgent"].findData("high")
+    )
+    wizard.advance()
+    wizard.go_back()
+    wizard.go_back()
+    wizard.save_profile()
+    profile = path.read_text(encoding="utf-8")
+    assert '"version": 2' in profile and '"Urgent", "high"' in profile
+
+    other = ImportWizard(empty_plan(), table, "priority-again.csv")
+    other.load_profile()
+    other.advance()
+    assert other.priority_boxes["Urgent"].currentData() == "high"
+    other.advance()
+    assert other.candidate.work_items[1].priority == WorkPriority.HIGH
+    wizard.deleteLater()
+    other.deleteLater()
+
+
+def test_export_priority_preview_profiles_and_label_conflicts(app, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog
+
+    table = read_csv("Issue key,Summary,Issue Type,Priority\nTEST-1,Custom,Task,Urgent\n")
+    mapping = Mapping(
+        (("reference", 0), ("title", 1), ("type", 2), ("priority", 3)),
+        priorities=(("Urgent", None),),
+    )
+    plan = preview_import(empty_plan(), table, mapping, {}, "priority.csv")
+    dialog = ExportDialog(plan, ",")
+
+    assert dialog.options is not None
+    assert dialog.preview_model.item(0, 3).text() == "Urgent"
+    assert dialog.preview_model.item(0, 4).text() == "Unresolved source preserved"
+    assert "1 unresolved source value" in dialog.notice.text()
+
+    dialog.priority_labels[WorkPriority.HIGH].setText("Highest")
+    assert dialog.options is None
+    assert "must be unique" in dialog.notice.text()
+    dialog.priority_labels[WorkPriority.HIGH].setText("Customer high")
+    assert dialog.options is not None
+    profile = tmp_path / "jira-export.json"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a: (str(profile), ""))
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a: (str(profile), ""))
+    dialog.delimiters.setCurrentIndex(dialog.delimiters.findData(";"))
+    dialog.save_profile()
+    dialog.priority_labels[WorkPriority.HIGH].setText("Temporary")
+    dialog.delimiters.setCurrentIndex(dialog.delimiters.findData(","))
+    dialog.load_profile()
+    assert dialog.priority_labels[WorkPriority.HIGH].text() == "Customer high"
+    assert dialog.delimiters.currentData() == ";"
+    dialog.deleteLater()
+
+
 def test_import_page_and_real_export_form(window, app, tmp_path, monkeypatch):
     from pathlib import Path
 
@@ -178,7 +259,7 @@ def test_import_page_and_real_export_form(window, app, tmp_path, monkeypatch):
     page.export_file()
     output = read_csv(target.read_text(encoding="utf-8"))
     assert len(output.rows) == 4
-    assert output.rows[2][4] == output.rows[1][1]
+    assert output.rows[2][5] == output.rows[1][1]
     assert window.session.document.plan == plan
     # Even a project with an unconventional .csv extension is protected.
     active = tmp_path / "active.csv"

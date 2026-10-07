@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 9)
+# Project files and JSON backups (schema 10)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 9` is the schema version.
+- `PRAGMA user_version = 10` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,7 +26,7 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`9`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`10`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
@@ -107,7 +107,9 @@ Schemas 1-6 open with no allocations; no assignments are inferred.
 Schemas 1-7 open with empty work descriptions, labels, and primary groups.
 Schemas 1-8 open with work priority unset. Imported baseline WorkItems follow
 the same migration without inventing a source priority.
-Saving writes schema 9; older builds cannot open the upgraded file. Keep a
+Schemas 1-9 open with `external_priority` empty because earlier files did not
+store a separate copy of that source cell. Raw imported rows remain untouched.
+Saving writes schema 10; older builds cannot open the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.
@@ -124,7 +126,10 @@ unsaved copy; it does not compare it with the original or guarantee feasibility.
 
 Each entry in `imports` contains a UUID, source name, original headers, raw rows,
 and one record per row. Records contain the original WorkItem, external
-reference, external person, mapped Person snapshot (or null), and original status.
+reference, external person, mapped Person snapshot (or null), original status,
+and exact original priority text. The baseline WorkItem holds the separately
+mapped canonical priority. An unresolved custom source value therefore remains
+recoverable even while its canonical value is null/Unset.
 Headers may repeat; every row must match their width. Baseline work forms its own
 validated hierarchy. References and work IDs cannot be duplicated across sources.
 Baseline records remain valid when current work or roster entries are removed.
