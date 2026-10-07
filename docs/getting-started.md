@@ -327,14 +327,19 @@ testing remain release work. No release tag or application download is published
 
 ![Plan workspace in dark appearance](images/plan-dark.png)
 
-## Split work between people
+## Assign work to people
 
-In Plan, select work and choose **Work allocations...**. Add people from the
-roster with explicit hours, or edit/remove existing assignments. Review the
-effective estimate, entered reference, allocated hours, and remaining effort
-before Save. Container summaries separate direct and descendant allocations.
-New allocations belong to leaves; legacy direct container effort can be moved
-to a named leaf without changing allocation IDs or hours. Cancel discards all
-dialog edits. Allocation hours are independent of the estimate display unit.
-Save the project to retain assignments after reopening. See the
-[allocation guide](allocation-model.md) for screenshots and calculation limits.
+In Plan, select executable leaf work and choose **Work allocations...**. Add one
+person from the roster with explicit hours, or edit, reassign, or remove the
+existing assignment. Review the effective estimate, entered reference, allocated
+hours, and remaining effort before Save. Container summaries separate direct and
+descendant allocations. Represent collaborative work as a parent with separately
+assigned leaves.
+
+Legacy multi-person leaves keep every assignment and hour. They show **Multiple
+assignments need resolution** and reject another entry, but still allow editing
+or incremental removal. Legacy direct container effort can be moved to a named
+leaf without changing allocation IDs or hours. Cancel discards all dialog edits.
+Allocation hours are independent of the estimate display unit. Save the project
+to retain assignments after reopening. See the [allocation guide](allocation-model.md)
+for screenshots and calculation limits.

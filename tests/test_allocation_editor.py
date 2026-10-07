@@ -56,7 +56,9 @@ def test_filtered_plan_edits_exact_hours_validates_and_saves_once(app, loaded, t
 
     def interact(dialog):
         assert isinstance(dialog, AllocationDialog)
+        assert "one roster member" in dialog.findChildren(QLabel)[0].text()
         assert "Allocated: 100 h" in dialog.summary.text()
+        assert "Multiple assignments need resolution" in dialog.findings.text()
         assert "Estimate and allocation differ" not in dialog.findings.text()
         assert "Missing work dates" in dialog.findings.text()
         dialog.table.setCurrentIndex(dialog.model.index(0, 0))
@@ -75,9 +77,18 @@ def test_filtered_plan_edits_exact_hours_validates_and_saves_once(app, loaded, t
         assert "exceed the estimate" in dialog.summary.text()
         assert "Estimate and allocation differ" in dialog.findings.text()
         assert window.session.document.plan is original
-        drive_dialog(app, dialog.add_button.click, hours_form("2.5", 2))
-        assert len(dialog.candidate.allocations) == 3
-        dialog.remove_button.click()
+
+        def reject_second(form):
+            form.findChild(QComboBox).setCurrentIndex(2)
+            form.findChild(QLineEdit).setText("2.5")
+            accept(form)
+            assert form.isVisible()
+            assert any(
+                "at most one allocation" in label.text() for label in form.findChildren(QLabel)
+            )
+            QTest.keyClick(form, Qt.Key.Key_Escape)
+
+        drive_dialog(app, dialog.add_button.click, reject_second)
         assert len(dialog.candidate.allocations) == 2
         assert window.session.document.plan is original
         save(dialog)
@@ -160,11 +171,11 @@ def test_plan_row_and_draft_preview_share_concurrent_overload_finding(app, windo
 def test_cancel_discards_add_edit_and_remove_drafts(app, loaded):
     window = loaded
     original = window.session.document.plan
-    dialog = AllocationDialog(window, window.session, original.work_items[1].id)
+    dialog = AllocationDialog(window, window.session, original.work_items[2].id)
     dialog.show()
+    drive_dialog(app, dialog.add_button.click, hours_form("5", 2))
     dialog.table.setCurrentIndex(dialog.model.index(0, 0))
     drive_dialog(app, dialog.edit_button.click, hours_form("75"))
-    drive_dialog(app, dialog.add_button.click, hours_form("5", 2))
     dialog.remove_button.click()
     QTest.keyClick(dialog, Qt.Key.Key_Escape)
     assert not dialog.isVisible()
@@ -172,7 +183,7 @@ def test_cancel_discards_add_edit_and_remove_drafts(app, loaded):
     assert not window.session.document.dirty
 
 
-def test_missing_estimate_zero_and_duplicate_person_are_explicit(app, loaded):
+def test_missing_estimate_zero_duplicate_and_second_person_are_explicit(app, loaded):
     window = loaded
     plan = window.session.document.plan
     dialog = AllocationDialog(window, window.session, plan.work_items[2].id)
@@ -189,10 +200,13 @@ def test_missing_estimate_zero_and_duplicate_person_are_explicit(app, loaded):
         assert any("same work/person pair" in label.text() for label in form.findChildren(QLabel))
         form.findChild(QComboBox).setCurrentIndex(1)
         accept(form)
+        assert form.isVisible()
+        assert any("at most one allocation" in label.text() for label in form.findChildren(QLabel))
+        QTest.keyClick(form, Qt.Key.Key_Escape)
 
     drive_dialog(app, dialog.add_button.click, duplicate)
     save(dialog)
-    assert len(window.session.document.plan.allocations) == 4
+    assert len(window.session.document.plan.allocations) == 3
     assert window.session.document.plan.work_items[2].estimate_hours is None
 
 

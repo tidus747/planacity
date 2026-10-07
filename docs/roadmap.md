@@ -1,6 +1,6 @@
 # Planacity implementation roadmap
 
-Revised 2026-10-04 after the planning and demonstration review.
+Revised 2026-10-07 after the assignment-policy review.
 This is the implementation direction, not a list of features already available
 or a release announcement. Current source remains `0.4.0.dev0`, file schema 10.
 
@@ -11,8 +11,9 @@ where its capacity goes, and which assumptions still need attention."
 
 The repository has the required foundations: work hierarchy, Jira CSV roundtrip,
 Timeline date editing and arrows, calendars, availability, recurring reservations,
-and explicit multi-person work allocations. The pieces need a shared calculation
-and a clearer editing workflow before more charts can be trusted.
+and explicit work allocations with preserved legacy multi-person data. The pieces
+need a shared calculation and a clearer editing workflow before more charts can be
+trusted.
 
 The table records the original review findings; see tracking below for progress.
 

@@ -1,10 +1,10 @@
 # Single-person assignments and visual work identity
 
-Date: 2026-10-07. Status: proposed implementation contract for product review.
-This decision supersedes the earlier multi-person-task target. Existing builds
-still accept several allocations per item; this documentation does not change
-files or silently migrate saved work. See S01-S03 and V07 in the
-[implementation queue](implementation-queue.md).
+Date: 2026-10-07. Status: accepted implementation contract. S01 now enforces the
+transition policy and reports legacy conflicts without changing the wire format.
+S02-S03 and V07 remain planned in the [implementation queue](implementation-queue.md).
+This decision supersedes the earlier multi-person-task target and never silently
+migrates saved work.
 
 ## One person per executable item
 

@@ -8,6 +8,7 @@ from uuid import UUID
 
 from planacity.domain import PlanningHorizon, ProgramPlan
 from planacity.planning.allocations import summarize_allocations
+from planacity.planning.assignment_policy import assignment_policy_conflicts
 from planacity.planning.capacity import (
     CapacityGap,
     CapacityGapKind,
@@ -28,6 +29,7 @@ class FindingRule(StrEnum):
     MISSING_ESTIMATE = "work.missing_estimate"
     UNALLOCATED_WORK = "work.unallocated"
     ALLOCATION_MISMATCH = "work.allocation_mismatch"
+    UNRESOLVED_ASSIGNMENT = "work.unresolved_assignment"
     HIERARCHY_EFFORT = "work.hierarchy_effort"
     UNRESOLVED_RESERVATION = "capacity.unresolved_reservation"
     NO_PLANNING_CAPACITY = "capacity.no_planning_capacity"
@@ -210,8 +212,25 @@ def planning_findings(plan: ProgramPlan) -> tuple[PlanningFinding, ...]:
     """Calculate deterministic advisory findings from the complete current plan."""
     summaries = summarize_allocations(plan, plan.allocations).work
     findings: list[PlanningFinding] = []
+    conflicts = {conflict.work_item_id: conflict for conflict in assignment_policy_conflicts(plan)}
     for item, summary in zip(plan.work_items, summaries, strict=True):
         if not summary.is_container:
+            conflict = conflicts.get(item.id)
+            if conflict is not None:
+                findings.append(
+                    PlanningFinding(
+                        FindingRule.UNRESOLVED_ASSIGNMENT,
+                        FindingSeverity.WARNING,
+                        "Multiple assignments need resolution",
+                        f"{item.title} retains {len(conflict.person_ids)} legacy assignments. "
+                        "Every stored allocation and hour still counts.",
+                        "Keep one allocation on this leaf, or split collaborative work into "
+                        "separately assigned leaves.",
+                        work_item_ids=(item.id,),
+                        person_ids=conflict.person_ids,
+                        source_ids=conflict.allocation_ids,
+                    )
+                )
             if item.start is None or item.end is None:
                 findings.append(
                     PlanningFinding(
@@ -255,7 +274,7 @@ def planning_findings(plan: ProgramPlan) -> tuple[PlanningFinding, ...]:
                         "Estimate and allocation differ",
                         f"{item.title} has {summary.estimate_hours} h estimated and "
                         f"{summary.allocated_hours} h allocated.",
-                        "Review the estimate or explicit allocation split.",
+                        "Review the estimate or explicit allocated hours.",
                         work_item_ids=(item.id,),
                         source_ids=_ids(
                             {

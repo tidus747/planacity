@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Single-person assignment transitions for executable leaf work. New leaves
+  accept zero or one explicit Allocation, while legacy multi-person leaves keep
+  every ID and exact hour, remain saveable and editable, and receive an
+  actionable resolution finding. Reassignment preserves the existing Allocation;
+  no estimate, dependency, Jira baseline, or file schema is rewritten.
 - Explicit Jira CSV priority mapping. Map each distinct source label to a
   canonical priority or visible Unset state, reuse it in versioned profiles, and
   preserve the original source text in the imported baseline. Export previews

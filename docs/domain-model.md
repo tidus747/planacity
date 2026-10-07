@@ -48,7 +48,9 @@ children, allowing a future loader to resolve a complete snapshot before validat
 `plan.work_item(item_id)` retrieves an item or raises an actionable `ValueError`.
 
 WorkGroups and relationships are separate concepts, not extra hierarchy levels.
-Assignment uses separate Allocations; no single owner field is introduced.
+Assignment uses separate Allocations; no single owner field is introduced. New
+executable leaves accept zero or one Allocation. Legacy multi-person leaves keep
+every allocation and receive a calculated resolution finding.
 
 ## Work context and reporting topics
 

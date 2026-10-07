@@ -53,10 +53,9 @@ same invariants available to the future UI and file loaders without Qt imports.
   database service, HTTP API, or cloud component is needed.
 - Use canonical IDs and Python dates. A planning horizon is any valid date range.
   Parent/child hierarchy, WorkGroups, and relationships are distinct concepts.
-- v0.1 people management does not need capacity calculations. If work assignment
-  is introduced, it must use a separate Allocation entity supporting multiple
-  people; do not add a single `WorkItem.owner` shortcut. Allocation editing and
-  capacity accounting remain v0.4 work in this breakdown.
+- Work assignment uses a separate Allocation entity and never a
+  `WorkItem.owner` shortcut. The transition policy permits zero or one Allocation
+  per executable leaf while preserving historical multi-person data.
 - Do not pre-create adapters, scenarios, calendar, reports, or milestone models.
   Add them when their roadmap release needs them.
 - Astro is a static product site independent of the desktop. Node is needed only
@@ -275,3 +274,10 @@ New allocations target leaf work. A legacy direct container allocation stays
 visible and counted until the user moves it to a newly named leaf or removes it.
 The move preserves allocation IDs/hours and does not alter dates, groups,
 relationships, imported baselines, or unrelated descendants.
+
+`planning/assignment_policy.py` detects multi-person leaves independently from
+structural decoding. Allocation lifecycle services reject new or worsened
+conflicts but allow an existing conflict to keep its IDs and hours or reduce it
+incrementally. `planning/findings.py` exposes each conflict as advisory work;
+summary and capacity services continue counting every stored allocation once.
+The wire representation and schema 10 remain unchanged.

@@ -55,7 +55,7 @@ def configured_plan(
     )
 
 
-def test_exact_100_hour_split_is_one_task_total_and_distinct_person_demand():
+def test_legacy_100_hour_split_keeps_exact_demand_and_adds_resolution_finding():
     alex, sam = Person(name="Alex"), Person(name="Sam")
     task = WorkItem(
         title="Integration",
@@ -70,11 +70,18 @@ def test_exact_100_hour_split_is_one_task_total_and_distinct_person_demand():
 
     findings = planning_findings(plan)
 
+    rules = {finding.rule_key for finding in findings}
+    assert FindingRule.UNRESOLVED_ASSIGNMENT in rules
     assert not {
         FindingRule.ALLOCATION_MISMATCH,
         FindingRule.UNALLOCATED_WORK,
         FindingRule.OVERLOAD,
-    }.intersection(finding.rule_key for finding in findings)
+    }.intersection(rules)
+    unresolved = next(
+        finding for finding in findings if finding.rule_key == FindingRule.UNRESOLVED_ASSIGNMENT
+    )
+    assert unresolved.person_ids == tuple(sorted((alex.id, sam.id), key=str))
+    assert unresolved.source_ids == tuple(sorted((alex_share.id, sam_share.id), key=str))
     assert planning_findings(plan) == findings
 
 
