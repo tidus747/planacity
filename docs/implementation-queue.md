@@ -8,9 +8,9 @@ because its specification is written here.
 
 ## Start the next session
 
-1. Check main, the working tree, open issues, and pending PRs. R01-R10 are
-   merged; P01 is tracked in issue #103. Do not merge without maintainer approval.
-2. Finish or review P01 before selecting P02, its explicit Jira mapping slice.
+1. Check main, the working tree, open issues, and pending PRs. R01-R10 and P01 are
+   merged; P02 is tracked in issue #105. Do not merge without maintainer approval.
+2. Finish or review P02 before selecting D01, the Moon Heist demonstration.
 3. Turn each later brief into one issue with outcome, non-goals, dependencies,
    examples, persistence impact, and validation. Assign the release milestone.
 4. Implement and review that slice alone, updating docs and user-facing changelog

@@ -8,8 +8,8 @@ The proposal is not implemented by the architecture documentation change.
 The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
-effort, dated capacity, work-context, and priority services operate over schema 9
-inputs.
+effort, dated capacity, work-context, priority, and Jira mapping services operate
+over schema 10 inputs.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
 people, estimates, dates, groups, and relationships. See
@@ -90,9 +90,9 @@ draft. No additional persistence model or schema is required.
 Priority is a validated optional domain value introduced in schema 9. Plan's
 tree model exposes the label and icon while its proxy owns temporary exact-value
 filtering and stable sibling ordering. The inspector and inline combo both call
-the same planning service. Jira mapping remains outside this slice, so current
-Jira imports create Unset priorities and editing the plan does not rewrite their
-baseline snapshots.
+the same planning service. Schema 10 adds original source-priority text to
+`ImportedWork`. The Jira adapter maps visible source labels explicitly while
+keeping blank or unresolved values Unset and preserving every baseline snapshot.
 
 `planning/overview_analysis.py` is a pure, read-only projection over the same
 canonical plan and dated capacity result used by findings and People. It derives
@@ -110,10 +110,21 @@ The wizard commits that candidate only after validation and explicit confirmatio
 canonical model, without Jira API dependencies. Current roster entries and work
 may change or be deleted without invalidating their original snapshots.
 
-`planning/changes.py` computes differences; it never writes a baseline. CSV export
-serializes the current hierarchy and carries original references, status, and
-external people. Project schema 2 stores imports; schema 1 loads with none.
+`planning/changes.py` computes differences, including canonical priority; it
+never writes a baseline. CSV export serializes the current hierarchy and carries
+original references, status, external people, and priority output. Project schema
+2 stores imports; schema 1 loads with none. Schema 10 retains the exact priority
+source cell separately from its mapped canonical value.
+
 Mapping profiles are separate local files with no imported rows or people.
+Profile version 2 stores exact source-priority labels and nullable canonical
+targets; version 1 remains readable. Case-insensitive matches to the five default
+names are reviewable suggestions, not hidden conversions. Export preserves a
+nonblank source label while canonical priority is unchanged; an edit uses one
+explicit target label per canonical level. The pure export preview reports
+preserved, unresolved, edited, canonical, and blank outcomes before writing.
+Separate export profiles retain output headers, units, dates, delimiter, and
+target labels without storing plan rows or identities.
 
 ## Visual planning
 

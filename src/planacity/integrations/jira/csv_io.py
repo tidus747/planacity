@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal, DecimalException
 from uuid import uuid4
 
-from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType
+from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FIELDS = (
@@ -21,6 +21,7 @@ FIELDS = (
     "end",
     "person",
     "status",
+    "priority",
 )
 DATE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d/%b/%y")
 
@@ -42,6 +43,7 @@ class Mapping:
         ("Sub-task", WorkItemType.SUBTASK),
         ("Subtask", WorkItemType.SUBTASK),
     )
+    priorities: tuple[tuple[str, WorkPriority | None], ...] = ()
 
     def __post_init__(self) -> None:
         names = [name for name, _ in self.columns]
@@ -60,6 +62,11 @@ class Mapping:
             not name.strip() or not isinstance(kind, WorkItemType) for name, kind in self.types
         ):
             raise ValueError("Map each external work type exactly once.")
+        if len({name for name, _ in self.priorities}) != len(self.priorities) or any(
+            not name.strip() or (priority is not None and not isinstance(priority, WorkPriority))
+            for name, priority in self.priorities
+        ):
+            raise ValueError("Map each nonblank external priority at most once.")
 
 
 def read_csv(text: str, delimiter: str = ",") -> CsvTable:
@@ -95,6 +102,17 @@ def validate_columns(table: CsvTable, mapping: Mapping) -> None:
 def external_people(table: CsvTable, mapping: Mapping) -> tuple[str, ...]:
     validate_columns(table, mapping)
     index = dict(mapping.columns).get("person")
+    return (
+        ()
+        if index is None
+        else tuple(dict.fromkeys(row[index] for row in table.rows if row[index].strip()))
+    )
+
+
+def external_priorities(table: CsvTable, mapping: Mapping) -> tuple[str, ...]:
+    """Return distinct nonblank source labels in first-seen order."""
+    validate_columns(table, mapping)
+    index = dict(mapping.columns).get("priority")
     return (
         ()
         if index is None
@@ -150,6 +168,7 @@ def preview_import(
                 )
             seen.add(value)
     mapped_types = tuple(dict(mapping.types).get(cell(row, "type")) for row in table.rows)
+    priority_values = dict(mapping.priorities)
     types_by_identity = dict(zip(identities, mapped_types, strict=True))
     imported = {r.external_reference for source in plan.imports for r in source.records}
     if imported.intersection(references):
@@ -193,6 +212,7 @@ def preview_import(
                 estimate_hours=estimate,
                 start=dates[0],
                 end=dates[1],
+                priority=priority_values.get(cell(row, "priority")),
             )
             person = cell(row, "person")
             records.append(
@@ -202,6 +222,7 @@ def preview_import(
                     external_person=person,
                     person=people.get(person),
                     status=cell(row, "status"),
+                    external_priority=cell(row, "priority"),
                 )
             )
         except DecimalException:

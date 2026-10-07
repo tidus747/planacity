@@ -162,13 +162,18 @@ class ImportedWork:
     external_person: str = ""
     person: Person | None = None
     status: str = ""
+    external_priority: str = ""
 
     def __post_init__(self) -> None:
         if not isinstance(self.item, WorkItem):
             raise ValueError("Imported work requires a valid work item.")
         _require_text(self.external_reference, "External reference")
-        if not isinstance(self.external_person, str) or not isinstance(self.status, str):
-            raise ValueError("External person and status must be text.")
+        if (
+            not isinstance(self.external_person, str)
+            or not isinstance(self.status, str)
+            or not isinstance(self.external_priority, str)
+        ):
+            raise ValueError("External person, status, and priority must be text.")
         if self.person is not None and not isinstance(self.person, Person):
             raise ValueError("Imported person must be a Person snapshot.")
 

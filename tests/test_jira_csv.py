@@ -6,20 +6,41 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-from persistence_helpers import strip_work_context
+from persistence_helpers import strip_external_priority, strip_work_context
 
-from planacity.domain import Person, PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
-from planacity.integrations.jira.csv_io import Mapping, preview_import, read_csv
-from planacity.integrations.jira.export import ExportOptions, export_csv
-from planacity.integrations.jira.profiles import dump_profile, load_profile
+from planacity.domain import (
+    Person,
+    PlanningHorizon,
+    ProgramPlan,
+    WorkItem,
+    WorkItemType,
+    WorkPriority,
+)
+from planacity.integrations.jira.csv_io import (
+    Mapping,
+    external_priorities,
+    preview_import,
+    read_csv,
+)
+from planacity.integrations.jira.export import (
+    ExportOptions,
+    export_csv,
+    priority_export_preview,
+)
+from planacity.integrations.jira.profiles import (
+    dump_export_profile,
+    dump_profile,
+    load_export_profile,
+    load_profile,
+)
 from planacity.persistence.codec import dumps, loads
 from planacity.persistence.project import load_project, save_project
 from planacity.planning.changes import work_changes
 
 CSV = (
-    "Issue key,Summary,Issue Type,Parent,Original Estimate,Assignee,Status,Custom,Custom\n"
-    'A-2,"Task, with commas",Task,A-1,3601,Alice,Open,one,two\n'
-    'A-1,"Epic\nmultiline",Epic,,,Alice,Open,three,four\n'
+    "Issue key,Summary,Issue Type,Parent,Original Estimate,Assignee,Status,Priority,Custom,Custom\n"
+    'A-2,"Task, with commas",Task,A-1,3601,Alice,Open,Blocker,one,two\n'
+    'A-1,"Epic\nmultiline",Epic,,,Alice,Open,Highest,three,four\n'
 )
 MAPPING = Mapping(
     (
@@ -30,7 +51,9 @@ MAPPING = Mapping(
         ("estimate", 4),
         ("person", 5),
         ("status", 6),
-    )
+        ("priority", 7),
+    ),
+    priorities=(("Blocker", WorkPriority.HIGH), ("Highest", WorkPriority.HIGHEST)),
 )
 
 
@@ -62,9 +85,10 @@ def test_roundtrip_preserves_baseline_and_unmapped_cells(plan, tmp_path):
     assert len(changes) == 1 and changes[0].fields == ("title",)
     output = read_csv(export_csv(reopened))
     assert output.rows[0][0] == "A-1"
-    assert output.rows[1][4] == output.rows[0][1]
-    assert output.rows[1][5] == "3601"
+    assert output.rows[1][5] == output.rows[0][1]
+    assert output.rows[1][6] == "3601"
     assert output.rows[1][3] == "Agreed"
+    assert output.rows[1][4] == "Blocker"
     assert reopened.imports == baseline
 
 
@@ -149,9 +173,100 @@ def test_numeric_parent_ids_explicit_hours_and_dates(plan):
     assert result.work_items[0].end == date(2026, 1, 31)
     profile = dump_profile(table.headers, mapping)
     assert load_profile(profile, table.headers) == mapping
+    legacy = json.loads(profile)
+    legacy["version"] = 1
+    legacy.pop("priorities")
+    assert load_profile(json.dumps(legacy), table.headers).priorities == ()
     with pytest.raises(ValueError, match="columns differ"):
         load_profile(profile, tuple(reversed(table.headers)))
     assert "31/01/2026" not in profile
+
+
+def test_priority_mapping_preserves_source_unmapped_and_blank_values(plan):
+    table = read_csv(
+        "Key,Title,Type,Priority\n"
+        "P-1,Default,Task,Highest\n"
+        "P-2,Custom,Task,Urgent\n"
+        "P-3,Repeated,Task,Urgent\n"
+        "P-4,Blank,Task,\n"
+    )
+    mapping = Mapping(
+        (("reference", 0), ("title", 1), ("type", 2), ("priority", 3)),
+        priorities=(("Highest", WorkPriority.HIGHEST), ("Urgent", None)),
+    )
+
+    assert external_priorities(table, mapping) == ("Highest", "Urgent")
+    result = preview_import(plan, table, mapping, {}, "priority.csv")
+    assert [item.priority for item in result.work_items] == [
+        WorkPriority.HIGHEST,
+        None,
+        None,
+        None,
+    ]
+    assert [record.external_priority for record in result.imports[0].records] == [
+        "Highest",
+        "Urgent",
+        "Urgent",
+        "",
+    ]
+
+
+def test_priority_export_preserves_source_then_uses_explicit_target_labels(plan):
+    result = imported(plan)
+    task, epic = result.work_items
+    options = ExportOptions(
+        priority_labels=tuple(
+            (priority, "Major, customer")
+            if priority == WorkPriority.LOW
+            else (priority, priority.value)
+            for priority in WorkPriority
+        )
+    )
+
+    unchanged = read_csv(export_csv(result, options))
+    assert unchanged.rows[1][4] == "Blocker"
+    assert priority_export_preview(result, options)[1].result == "Original source preserved"
+
+    edited = replace(
+        result,
+        work_items=(replace(task, priority=WorkPriority.LOW), replace(epic, priority=None)),
+    )
+    output = read_csv(export_csv(edited, options))
+    assert output.rows[1][4] == "Major, customer"
+    assert output.rows[0][4] == ""
+    assert {change.fields for change in work_changes(edited)} == {("priority",)}
+    assert result.imports[0].records[0].external_priority == "Blocker"
+    assert load_export_profile(dump_export_profile(options)) == options
+
+
+def test_export_profile_rejects_ambiguous_or_invalid_priority_labels():
+    profile = dump_export_profile(ExportOptions())
+    ambiguous = profile[:-1] + ', "delimiter": ";"}'
+    with pytest.raises(ValueError, match="Duplicate mapping profile field: delimiter"):
+        load_export_profile(ambiguous)
+
+    data = json.loads(profile)
+    data["priority_labels"][1][1] = data["priority_labels"][0][1]
+    with pytest.raises(ValueError, match="must be unique"):
+        load_export_profile(json.dumps(data))
+
+
+def test_unresolved_source_priority_is_preserved_until_user_edits(plan):
+    table = read_csv("Key,Title,Type,Priority\nP-1,Custom,Task,Urgent\n")
+    mapping = Mapping(
+        (("reference", 0), ("title", 1), ("type", 2), ("priority", 3)),
+        priorities=(("Urgent", None),),
+    )
+    result = preview_import(plan, table, mapping, {}, "custom.csv")
+    assert read_csv(export_csv(result)).rows[0][4] == "Urgent"
+    assert priority_export_preview(result)[0].result == "Unresolved source preserved"
+
+    cleared = replace(
+        result, work_items=(replace(result.work_items[0], priority=WorkPriority.MEDIUM),)
+    )
+    assert read_csv(export_csv(cleared)).rows[0][4] == "Medium"
+    cleared = replace(cleared, work_items=(replace(cleared.work_items[0], priority=None),))
+    assert read_csv(export_csv(cleared)).rows[0][4] == "Urgent"
 
 
 def test_v1_migration_and_strict_baseline_validation(plan):
@@ -179,7 +294,7 @@ def test_configurable_export_preserves_unicode_and_quotes(plan):
     result = replace(plan, work_items=(item,))
     table = read_csv(export_csv(result, ExportOptions(estimate_unit="hours", delimiter=";")), ";")
     assert table.rows[0][3] == item.title
-    assert table.rows[0][5] == "1.25"
+    assert table.rows[0][6] == "1.25"
     assert table.rows[0][0] == ""
 
 
@@ -191,6 +306,7 @@ def test_configurable_export_preserves_unicode_and_quotes(plan):
         ("columns", [["title", -1]]),
         ("types", [[3, "task"]]),
         ("types", [["Task", "unknown"]]),
+        ("priorities", [["Urgent", "unknown"]]),
         ("version", True),
     ],
 )
@@ -246,5 +362,17 @@ def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     save_project(updated, path)
     assert load_project(path) == updated
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
     connection.close()
+
+
+def test_schema_nine_imports_load_without_external_priority(plan):
+    data = json.loads(dumps(imported(plan)))
+    data["schema_version"] = 9
+    strip_external_priority(data)
+
+    loaded = loads(json.dumps(data))
+
+    assert all(
+        record.external_priority == "" for source in loaded.imports for record in source.records
+    )

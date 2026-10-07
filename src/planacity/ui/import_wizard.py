@@ -19,13 +19,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from planacity.domain import Person, ProgramPlan, WorkItemType
+from planacity.domain import Person, ProgramPlan, WorkItemType, WorkPriority
 from planacity.integrations.jira.csv_io import (
     DATE_FORMATS,
     FIELDS,
     CsvTable,
     Mapping,
     external_people,
+    external_priorities,
     preview_import,
 )
 from planacity.integrations.jira.profiles import dump_profile, load_profile
@@ -42,6 +43,7 @@ ALIASES = {
     "end": ("Due Date",),
     "person": ("Assignee",),
     "status": ("Status",),
+    "priority": ("Priority",),
 }
 
 
@@ -64,12 +66,14 @@ class ImportWizard(QDialog):
         self.columns: dict[str, QComboBox] = {}
         self.person_boxes: dict[str, QComboBox] = {}
         self.type_boxes: dict[str, QComboBox] = {}
+        self.priority_boxes: dict[str, QComboBox] = {}
         self.profile_types: tuple[tuple[str, WorkItemType], ...] = (
             ("Epic", WorkItemType.EPIC),
             ("Task", WorkItemType.TASK),
             ("Sub-task", WorkItemType.SUBTASK),
             ("Subtask", WorkItemType.SUBTASK),
         )
+        self.profile_priorities: tuple[tuple[str, WorkPriority | None], ...] = ()
         layout = QVBoxLayout(self)
         self.heading = label("1. Map CSV columns", "heading")
         layout.addWidget(self.heading)
@@ -158,6 +162,7 @@ class ImportWizard(QDialog):
             self.units.currentText(),
             self.date_format.currentText(),
             self.profile_types,
+            self.profile_priorities,
         )
 
     def advance(self) -> None:
@@ -179,8 +184,16 @@ class ImportWizard(QDialog):
                         (name, WorkItemType(box.currentData()))
                         for name, box in self.type_boxes.items()
                     ),
+                    tuple(
+                        (
+                            name,
+                            None if not box.currentData() else WorkPriority(box.currentData()),
+                        )
+                        for name, box in self.priority_boxes.items()
+                    ),
                 )
                 self.profile_types = self.mapping.types
+                self.profile_priorities = self.mapping.priorities
                 people = {}
                 for name, box in self.person_boxes.items():
                     selected = box.currentData()
@@ -199,9 +212,29 @@ class ImportWizard(QDialog):
                     "Mapped people join the roster; this does not allocate work or capacity.",
                     "Status and external assignees are preserved for export, not edited here.",
                 ]
+                unresolved = sum(
+                    1
+                    for record in source.records
+                    if record.external_priority.strip() and record.item.priority is None
+                )
+                if unresolved:
+                    lines.append(
+                        f"{unresolved} source priority value(s) remain unresolved: "
+                        "Planacity keeps them Unset and preserves their original text."
+                    )
                 self.preview_model.clear()
                 self.preview_model.setHorizontalHeaderLabels(
-                    ["Reference", "Type", "Title", "Hours", "Person", "Start", "End"]
+                    [
+                        "Reference",
+                        "Type",
+                        "Title",
+                        "Source priority",
+                        "Planacity priority",
+                        "Hours",
+                        "Person",
+                        "Start",
+                        "End",
+                    ]
                 )
                 for record in source.records:
                     item = record.item
@@ -209,6 +242,14 @@ class ImportWizard(QDialog):
                         record.external_reference,
                         item.kind.value.title(),
                         item.title,
+                        record.external_priority or "Blank",
+                        (
+                            "Unresolved -> Unset"
+                            if record.external_priority.strip() and item.priority is None
+                            else "Unset"
+                            if item.priority is None
+                            else item.priority.value.title()
+                        ),
                         "Unknown" if item.estimate_hours is None else str(item.estimate_hours),
                         record.person.name if record.person else "Unassigned",
                         "Not set" if item.start is None else str(item.start),
@@ -218,7 +259,7 @@ class ImportWizard(QDialog):
                     for cell in row:
                         cell.setEditable(False)
                     self.preview_model.appendRow(row)
-                for column in range(7):
+                for column in range(9):
                     self.preview_table.resizeColumnToContents(column)
                 self.preview.setPlainText("\n".join(lines))
             else:
@@ -237,6 +278,7 @@ class ImportWizard(QDialog):
         form = QFormLayout(page)
         self.type_boxes = {}
         self.person_boxes = {}
+        self.priority_boxes = {}
         column = dict(self.mapping.columns)["type"]
         form.addRow(label("Map every external work type explicitly."))
         for name in dict.fromkeys(row[column] for row in self.table.rows):
@@ -248,6 +290,38 @@ class ImportWizard(QDialog):
             if mapped is not None:
                 box.setCurrentIndex(box.findData(mapped.value))
             self.type_boxes[name] = box
+            form.addRow(label(name), box)
+        source_priorities = external_priorities(self.table, self.mapping)
+        if source_priorities:
+            form.addRow(
+                label(
+                    "Map source priorities explicitly. Unmapped values stay Unset and "
+                    "their original text is preserved."
+                )
+            )
+        saved_priorities = dict(self.profile_priorities)
+        for name in source_priorities:
+            box = QComboBox()
+            box.addItem("Unmapped -> Unset", "")
+            for priority in WorkPriority:
+                box.addItem(priority.value.title(), priority.value)
+            if name in saved_priorities:
+                mapped_priority = saved_priorities[name]
+                box.setCurrentIndex(
+                    box.findData("" if mapped_priority is None else mapped_priority.value)
+                )
+            else:
+                exact = next(
+                    (
+                        priority
+                        for priority in WorkPriority
+                        if priority.value.casefold() == name.casefold()
+                    ),
+                    None,
+                )
+                if exact is not None:
+                    box.setCurrentIndex(box.findData(exact.value))
+            self.priority_boxes[name] = box
             form.addRow(label(name), box)
         form.addRow(label("Map external people. Names are not matched automatically."))
         for name in external_people(self.table, self.mapping):
@@ -271,7 +345,7 @@ class ImportWizard(QDialog):
     def update_step(self) -> None:
         step = self.pages.currentIndex()
         self.heading.setText(
-            ("1. Map CSV columns", "2. Match types and people", "3. Review import")[step]
+            ("1. Map CSV columns", "2. Match values and people", "3. Review import")[step]
         )
         self.back.setEnabled(step > 0)
         self.next.setText("Import" if step == 2 else "Next")
@@ -311,6 +385,7 @@ class ImportWizard(QDialog):
             self.units.setCurrentText(mapping.estimate_unit)
             self.date_format.setCurrentText(mapping.date_format)
             self.profile_types = mapping.types
+            self.profile_priorities = mapping.priorities
             self.error.clear()
         except (OSError, ValueError) as error:
             self.error.setPlainText(str(error))
