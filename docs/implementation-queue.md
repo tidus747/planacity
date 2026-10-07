@@ -1,6 +1,6 @@
 # Implementation queue and review briefs
 
-Planning revision: 2026-10-04. These are future implementation briefs, not
+Planning revision: 2026-10-07. These are future implementation briefs, not
 completed features. Read the [roadmap](roadmap.md) and
 [calculation decisions](planning-decisions.md) together with this queue.
 GitHub owns live status. Do not duplicate an existing issue or close it merely
