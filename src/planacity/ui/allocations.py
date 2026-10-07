@@ -95,7 +95,7 @@ class AllocationDialog(QDialog):
         guidance = (
             "Review direct and descendant effort; add new allocations to leaf work."
             if self.original.children(work_id)
-            else "Split this work between roster members."
+            else "Assign this leaf to one roster member with explicit hours."
         )
         layout.addWidget(label(f"{work.title}\n{guidance}"))
         self.summary = label("")
@@ -133,9 +133,11 @@ class AllocationDialog(QDialog):
             label(
                 "Enter explicit hours, regardless of the Plan estimate display unit. "
                 "Container totals include descendant work once; direct legacy allocations "
-                "remain visible until moved or removed. The preview compares dated demand with "
-                "the whole team's calendars, availability, reservations, and concurrent work. "
-                "Save applies all changes. Cancel discards them."
+                "remain visible until moved or removed. Legacy multiple assignments keep all "
+                "hours and show a resolution finding; new leaves accept at most one allocation. "
+                "The preview compares dated demand with the whole team's calendars, "
+                "availability, reservations, and concurrent work. Save applies all changes. "
+                "Cancel discards them."
             )
         )
         self.error = label("")

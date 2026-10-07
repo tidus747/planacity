@@ -51,7 +51,7 @@ default.
 - Explore work on a Timeline with day, week, and month scales, grouping, filters,
   dependency arrows, and direct date editing.
 - Define personal work calendars and availability, reserve recurring capacity,
-  and split work estimates into explicit allocations.
+  and assign leaf work through explicit allocations.
 - Filter People by derived WorkGroup associations and trace each reporting topic
   to its allocated work without duplicating team membership or capacity.
 - Edit complete work-item drafts in the Plan inspector while reviewing allocated

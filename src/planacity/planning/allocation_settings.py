@@ -4,6 +4,7 @@ from dataclasses import replace
 from uuid import UUID
 
 from planacity.domain import Allocation, ProgramPlan
+from planacity.planning.assignment_policy import validate_assignment_transition
 
 
 def allocation_by_id(plan: ProgramPlan, allocation_id: UUID) -> Allocation:
@@ -18,7 +19,9 @@ def add_allocation(plan: ProgramPlan, allocation: Allocation) -> ProgramPlan:
         raise ValueError(
             "Allocate effort to leaf work. Container totals are derived from their children."
         )
-    return replace(plan, allocations=(*plan.allocations, allocation))
+    candidate = replace(plan, allocations=(*plan.allocations, allocation))
+    validate_assignment_transition(plan, candidate)
+    return candidate
 
 
 def update_allocation(plan: ProgramPlan, allocation: Allocation) -> ProgramPlan:
@@ -27,14 +30,20 @@ def update_allocation(plan: ProgramPlan, allocation: Allocation) -> ProgramPlan:
         raise ValueError(
             "Allocate effort to leaf work. Container totals are derived from their children."
         )
-    return replace(
+    candidate = replace(
         plan,
         allocations=tuple(
             allocation if current.id == allocation.id else current for current in plan.allocations
         ),
     )
+    validate_assignment_transition(plan, candidate)
+    return candidate
 
 
 def remove_allocation(plan: ProgramPlan, allocation_id: UUID) -> ProgramPlan:
     allocation_by_id(plan, allocation_id)
-    return replace(plan, allocations=tuple(a for a in plan.allocations if a.id != allocation_id))
+    candidate = replace(
+        plan, allocations=tuple(a for a in plan.allocations if a.id != allocation_id)
+    )
+    validate_assignment_transition(plan, candidate)
+    return candidate
