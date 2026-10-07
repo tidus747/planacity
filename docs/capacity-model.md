@@ -172,6 +172,13 @@ coverage notes when any result is partial. Its topic view keeps scheduled
 horizon allocations separate from whole-plan estimated leaf effort. Program
 events remain a later input.
 
+People WorkGroup filtering is a presentation over the same complete person
+result. It never recalculates capacity from only the visible group. Whole-plan
+positive allocations establish derived navigation associations; selected-range
+scheduled and unplaced hours come from the shared engine and use one additive
+reporting topic. A person's planning and remaining hours are never duplicated
+across groups.
+
 Program-event deductions follow in v0.5. They are not a prerequisite for showing
 the currently entered meetings and front-office reservations consistently.
 The recurring reservation API (#8) now consumes explicit daily capacity after

@@ -51,6 +51,8 @@ default.
   dependency arrows, and direct date editing.
 - Define personal work calendars and availability, reserve recurring capacity,
   and split work estimates into explicit allocations.
+- Filter People by derived WorkGroup associations and trace each reporting topic
+  to its allocated work without duplicating team membership or capacity.
 - Edit complete work-item drafts in the Plan inspector while reviewing allocated
   people, dependencies, findings, derived effort, and imported reference values.
 - Review plan-horizon capacity by person, planned work by reporting topic, and
@@ -78,8 +80,10 @@ validation, and planning context needed for v0.4.
 Current reservation previews do not yet deduct program events or work
 allocations. Plan findings and People now present the shared dated-capacity
 results. Overview reconciles those same plan-horizon results with work topics and
-named deductions. The Plan inspector edits persisted work context as one
-validated draft, while program events remain a later calendar input. The [implementation roadmap](docs/roadmap.md) and
+named deductions. People derives whole-plan WorkGroup associations and keeps them
+separate from selected-range hours. The Plan inspector edits persisted work
+context as one validated draft, while program events remain a later calendar
+input. The [implementation roadmap](docs/roadmap.md) and
 [implementation queue](docs/implementation-queue.md) describe the ordered work;
 GitHub Issues and Milestones are the live status.
 

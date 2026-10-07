@@ -147,6 +147,15 @@ is Ungrouped and several groups are Ambiguous until selected. Effective filter
 membership combines the inherited Epic memberships with that one resolved topic
 in canonical WorkGroup order; it does not persist copied membership on children.
 
+`planning/people_groups.py` derives person associations from positive allocations
+and that effective context. It receives the already calculated selected-period
+capacity breakdown, then keeps whole-plan allocations, scheduled range hours,
+and unplaced range demand distinct. Additive rows use one resolved reporting
+topic or the Ungrouped/Ambiguous exception buckets; context labels may include
+several inherited groups. The Qt People filter only changes roster visibility,
+not the complete capacity inputs. No Person membership, calculated total, or
+filter choice is persisted.
+
 `planning/dependency_validation.py` normalizes relationship direction and computes
 cycle, incomplete-edge, and inclusive-date findings from the complete canonical
 plan. The same validator guards relationship creation and every date setter. It
