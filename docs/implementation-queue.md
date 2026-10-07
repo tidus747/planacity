@@ -8,9 +8,9 @@ because its specification is written here.
 
 ## Start the next session
 
-1. Check main, the working tree, open issues, and pending PRs. R01-R10 and P01
+1. Check main, the working tree, open issues, and pending PRs. R01-R10 and P01-P02
    are merged. Do not merge without maintainer approval.
-2. Check P02 (#105 / PR #106), then implement S01-S03 before the D01 example.
+2. Implement S01-S03 before selecting D01, the Moon Heist demonstration.
 3. Turn each later brief into one issue with outcome, non-goals, dependencies,
    examples, persistence impact, and validation. Assign the release milestone.
 4. Implement and review that slice alone, updating docs and user-facing changelog

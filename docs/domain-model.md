@@ -19,6 +19,7 @@ estimates, which remain exact Decimal hours. See [estimate units](estimate-units
 | `Person` | `id`, `name` | Non-blank name; unique ID within the roster |
 | `WorkGroup` | `id`, `name`, `epic_ids` | Named group of existing Epics |
 | `Relationship` | `id`, `source_id`, `target_id`, `kind` | Existing distinct endpoints; no duplicate links |
+| `ImportedWork` | `item`, `external_reference`, `external_person`, `person`, `status`, `external_priority` | Immutable source baseline and original integration text |
 
 IDs are Python `uuid.UUID` values. Constructors generate UUIDs by default and
 accept explicit UUIDs when reconstructing existing data. Editing preserves IDs.
@@ -244,7 +245,10 @@ never invents missing dates. This module has no Qt or Jira dependency.
 
 `ProgramPlan.imports` holds immutable `ImportSnapshot` sources. Each snapshot
 contains original headers and cells plus `ImportedWork` records with original
-WorkItems, external references, status, and person identity snapshots.
+WorkItems, external references, status, source priority text, and person identity
+snapshots. Schema 10 stores source priority separately from the canonical mapped
+`WorkItem.priority`, so an unresolved custom Jira label can remain Unset without
+being lost or silently interpreted as Medium.
 The imported person mapping does not make `WorkItem.owner` part of the model and
 does not represent an Allocation. Explicit allocation editing is separate.
 

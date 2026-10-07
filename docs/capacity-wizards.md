@@ -175,7 +175,7 @@ The wizard uses a separate desktop adapter and retains these boundaries explicit
 
 `ProgramPlan.reservation_rules` contains the canonical rules. SQLite and JSON
 round-trip IDs, selected people, dates, intervals, and exact Decimal hours.
-Schemas 1-4 load without rules; saving upgrades to schema 9. Keep a backup or
+Schemas 1-4 load without rules; saving upgrades to schema 10. Keep a backup or
 use Save As if an older build must still read the plan.
 
 `add_reservation`, `update_reservation`, and `remove_reservation` return validated

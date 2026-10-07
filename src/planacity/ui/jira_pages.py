@@ -6,27 +6,211 @@ from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
+    QDialogButtonBox,
     QFileDialog,
+    QFormLayout,
+    QGridLayout,
+    QHBoxLayout,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QTreeView,
+    QVBoxLayout,
     QWidget,
 )
 
+from planacity.domain import ProgramPlan, WorkPriority
 from planacity.integrations.jira.csv_io import DATE_FORMATS, read_csv
 from planacity.integrations.jira.export import (
     DEFAULT_HEADERS,
+    DEFAULT_PRIORITY_LABELS,
     EXPORT_FIELDS,
     ExportOptions,
     export_csv,
+    priority_export_preview,
 )
+from planacity.integrations.jira.profiles import dump_export_profile, load_export_profile
 from planacity.persistence.project import export_text
 from planacity.planning.changes import work_changes
-from planacity.ui.forms import validated_form
 from planacity.ui.import_wizard import ImportWizard
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.session import Session
+
+
+class ExportDialog(QDialog):
+    """Review explicit CSV labels and their per-row priority result before export."""
+
+    def __init__(
+        self,
+        plan: ProgramPlan,
+        delimiter: str,
+        parent: QWidget | None = None,
+        project_path: Path | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.plan = plan
+        self.project_path = project_path
+        self.options: ExportOptions | None = None
+        self.setWindowTitle("Export Jira CSV")
+        self.resize(980, 760)
+        layout = QVBoxLayout(self)
+        layout.addWidget(
+            label(
+                "Choose output columns and explicit Jira priority labels. The preview "
+                "shows when original source text is preserved or a target label is used."
+            )
+        )
+        layout.addWidget(label("CSV column labels", "heading"))
+        header_grid = QGridLayout()
+        self.headers = [QLineEdit(header) for header in DEFAULT_HEADERS]
+        for index, (field, edit) in enumerate(zip(EXPORT_FIELDS, self.headers, strict=True)):
+            edit.setAccessibleName(f"{field.title()} CSV header")
+            row, group = divmod(index, 2)
+            header_grid.addWidget(label(field.replace("_", " ").title()), row, group * 2)
+            header_grid.addWidget(edit, row, group * 2 + 1)
+        header_grid.setColumnStretch(1, 1)
+        header_grid.setColumnStretch(3, 1)
+        layout.addLayout(header_grid)
+        form = QFormLayout()
+        self.units, self.dates = QComboBox(), QComboBox()
+        self.delimiters = QComboBox()
+        self.units.addItems(["seconds", "hours"])
+        self.dates.addItems(DATE_FORMATS)
+        for name, value in (("Comma", ","), ("Semicolon", ";"), ("Tab", "\t")):
+            self.delimiters.addItem(name, value)
+        self.delimiters.setCurrentIndex(self.delimiters.findData(delimiter))
+        form.addRow("Estimate units", self.units)
+        form.addRow("Date format", self.dates)
+        form.addRow("Delimiter", self.delimiters)
+        priority_row = QHBoxLayout()
+        self.priority_labels: dict[WorkPriority, QLineEdit] = {}
+        for priority, default in DEFAULT_PRIORITY_LABELS:
+            edit = QLineEdit(default)
+            edit.setAccessibleName(f"{priority.value.title()} target priority label")
+            edit.setPlaceholderText(priority.value.title())
+            self.priority_labels[priority] = edit
+            priority_row.addWidget(label(priority.value.title()))
+            priority_row.addWidget(edit)
+        form.addRow("Priority target labels", priority_row)
+        profiles = QHBoxLayout()
+        for text, callback in (
+            ("Load profile...", self.load_profile),
+            ("Save profile...", self.save_profile),
+        ):
+            button = QPushButton(text)
+            button.clicked.connect(callback)
+            profiles.addWidget(button)
+        form.addRow(profiles)
+        layout.addLayout(form)
+        self.notice = label("")
+        self.notice.setAccessibleName("Export priority preview status")
+        layout.addWidget(self.notice)
+        self.preview_model = QStandardItemModel(self)
+        self.preview_model.setHorizontalHeaderLabels(
+            ["Reference", "Work item", "Planacity priority", "CSV priority", "Result"]
+        )
+        self.preview = QTreeView()
+        self.preview.setRootIsDecorated(False)
+        self.preview.setModel(self.preview_model)
+        layout.addWidget(self.preview, 1)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+        for edit in (*self.headers, *self.priority_labels.values()):
+            edit.textChanged.connect(self.refresh_preview)
+        self.units.currentTextChanged.connect(self.refresh_preview)
+        self.dates.currentTextChanged.connect(self.refresh_preview)
+        self.delimiters.currentIndexChanged.connect(self.refresh_preview)
+        self.refresh_preview()
+
+    def _current_options(self) -> ExportOptions:
+        return ExportOptions(
+            tuple(edit.text() for edit in self.headers),
+            self.units.currentText(),
+            self.dates.currentText(),
+            self.delimiters.currentData(),
+            tuple((priority, edit.text()) for priority, edit in self.priority_labels.items()),
+        )
+
+    def refresh_preview(self) -> None:
+        self.preview_model.removeRows(0, self.preview_model.rowCount())
+        try:
+            options = self._current_options()
+            rows = priority_export_preview(self.plan, options)
+            unresolved = 0
+            for entry in rows:
+                values = (
+                    entry.reference,
+                    entry.title,
+                    entry.planacity_priority,
+                    entry.csv_priority or "Blank",
+                    entry.result,
+                )
+                row = [QStandardItem(value) for value in values]
+                for cell in row:
+                    cell.setEditable(False)
+                self.preview_model.appendRow(row)
+                unresolved += entry.result == "Unresolved source preserved"
+            self.notice.setText(
+                f"{len(rows)} rows ready. {unresolved} unresolved source value(s) will be "
+                "preserved unchanged; Unset edits export as blank."
+            )
+            self.options = options
+            self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+            for column in range(5):
+                self.preview.resizeColumnToContents(column)
+        except ValueError as error:
+            self.options = None
+            self.notice.setText(f"Cannot export: {error}")
+            self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
+
+    def accept(self) -> None:
+        self.refresh_preview()
+        if self.options is not None:
+            super().accept()
+
+    def save_profile(self) -> None:
+        try:
+            options = self._current_options()
+            filename, _ = QFileDialog.getSaveFileName(
+                self, "Save export mapping profile", "jira-export.json", "JSON (*.json)"
+            )
+            if not filename:
+                return
+            target = Path(filename)
+            if target.suffix.lower() != ".json":
+                raise ValueError("Choose a filename ending in .json.")
+            active = self.project_path
+            if active is not None and (
+                target.resolve() == active.resolve()
+                or (target.exists() and target.samefile(active))
+            ):
+                raise ValueError("A profile cannot replace the active project.")
+            export_text(dump_export_profile(options), target)
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "Cannot save export profile", str(error))
+
+    def load_profile(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Load export mapping profile", "", "JSON (*.json)"
+        )
+        if not filename:
+            return
+        try:
+            options = load_export_profile(Path(filename).read_text(encoding="utf-8"))
+            for edit, value in zip(self.headers, options.headers, strict=True):
+                edit.setText(value)
+            self.units.setCurrentText(options.estimate_unit)
+            self.dates.setCurrentText(options.date_format)
+            self.delimiters.setCurrentIndex(self.delimiters.findData(options.delimiter))
+            for priority, value in options.priority_labels:
+                self.priority_labels[priority].setText(value)
+            self.refresh_preview()
+        except (OSError, ValueError) as error:
+            self.notice.setText(str(error))
 
 
 class ImportPage(WorkspacePage):
@@ -54,8 +238,8 @@ class ImportPage(WorkspacePage):
         panel.content.addWidget(
             label(
                 "Imported source cells stay in the project. Export includes "
-                "work structure, hours, dates, original status and external "
-                "assignees. WorkGroups, relationships, and unmapped columns "
+                "work structure, hours, dates, explicitly mapped priority, original "
+                "status and external assignees. WorkGroups, relationships, and unmapped columns "
                 "are not exported. Keep a JSON backup for the complete plan."
             )
         )
@@ -98,27 +282,17 @@ class ImportPage(WorkspacePage):
         plan = self.session.document.plan
         if plan is None:
             return
-        headers = [QLineEdit(header) for header in DEFAULT_HEADERS]
-        units, dates = QComboBox(), QComboBox()
-        units.addItems(["seconds", "hours"])
-        dates.addItems(DATE_FORMATS)
-        fields: list[tuple[str, QWidget]] = [
-            (field.title(), edit) for field, edit in zip(EXPORT_FIELDS, headers, strict=True)
-        ]
-        fields.extend([("Estimate units", units), ("Date format", dates)])
-        options = validated_form(
+        dialog = ExportDialog(
+            plan,
+            self.delimiter.currentData(),
             self,
-            "Export Jira CSV",
-            fields,
-            lambda: ExportOptions(
-                tuple(edit.text() for edit in headers),
-                units.currentText(),
-                dates.currentText(),
-                self.delimiter.currentData(),
-            ),
+            self.session.document.path,
         )
-        if options is None:
+        if dialog.exec() != QDialog.DialogCode.Accepted or dialog.options is None:
+            dialog.deleteLater()
             return
+        options = dialog.options
+        dialog.deleteLater()
         filename, _ = QFileDialog.getSaveFileName(
             self, "Export Jira CSV", "plan.csv", "CSV (*.csv)"
         )
