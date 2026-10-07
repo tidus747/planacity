@@ -95,7 +95,13 @@ For an existing plan, the instructions require:
 4. Preserve exact decimal hours as strings, ISO dates, explicit nulls and required
    empty arrays. Unknown effort is not zero. Never normalize user text to match
    documentation punctuation conventions.
-5. Keep Allocation separate from work, hierarchy separate from dependencies, and
+5. Follow the assignment policy actually shipped with the guide. After S01-S03,
+   use at most one Allocation per executable leaf; represent collaboration with
+   separately assigned subtasks. Preserve unresolved legacy assignments until
+   an explicit resolution is requested, and report them in proposal notes.
+   See the [assignment revision](single-person-visual-planning.md). Do not claim
+   a current build enforces this future rule. Keep Allocation separate from work,
+   hierarchy separate from dependencies, and
    stored inputs separate from computed totals. Use supported field names only.
 6. Modify only the requested scope. Explain removals and affected allocations or
    relationships. Do not silently delete unresolved work or reduce effort to

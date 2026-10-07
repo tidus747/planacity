@@ -42,7 +42,7 @@ wave in the running application before starting the next.
 | v0.4 A - Reliable editing | Configure effort units and trust hierarchy/dependency edits | R01-R03 |
 | v0.4 B - Explainable capacity | See hours consumed by duties and work, with missing-data and overload findings | R04-R06 |
 | v0.4 C - Understand the plan | Edit context and topics; inspect workload and effort distribution in Overview | R07-R09 |
-| v0.4 D - Review and demonstrate | See People groups, edit/map priorities, and explore the Moon Heist example | R10, P01-P02, D01 |
+| v0.4 D - Review and demonstrate | People groups, priorities, single-person leaf assignments, and Moon Heist | R10, P01-P02, S01-S03, D01 |
 | v0.5 A - Team visibility | See people, absences, duties, dependency graphs, and critical paths in Timeline | V01-V06 |
 | v0.5 B - Program Calendar | Add shared holidays/events and file-based availability providers | Calendar slices below |
 | v0.6 - Milestones & Deliveries | Model outcomes, readiness links, and risk as first-class entities | Preserve the existing milestone goal |
@@ -85,8 +85,9 @@ work (#78) merged through PR #79. R03 was completed in
 [#100](https://github.com/tidus747/planacity/issues/100) and
 [PR #101](https://github.com/tidus747/planacity/pull/101). P01 was completed by
 [#103](https://github.com/tidus747/planacity/issues/103) and
-[PR #104](https://github.com/tidus747/planacity/pull/104). P02 is tracked in
-[#105](https://github.com/tidus747/planacity/issues/105). Later slices remain planned.
+[PR #104](https://github.com/tidus747/planacity/pull/104). P02 was completed by
+[#105](https://github.com/tidus747/planacity/issues/105) and
+[PR #106](https://github.com/tidus747/planacity/pull/106). Later slices remain planned.
 The [implementation queue](implementation-queue.md) adds focused briefs,
 dependencies, and review evidence for the next sessions.
 
@@ -226,7 +227,7 @@ Dependencies: R03-R08.
 The October review adds R10 (People work groups) after R06/R07 and P01/P02
 (priorities and CSV mapping) after the inspector. These are separate PRs, not
 extra acceptance criteria silently added to R06 or R08. Finish the existing
-R03-R09 sequence first, then R10, P01, P02, and the D01 demonstration dataset.
+R03-R09 sequence first, then R10, P01, P02, S01-S03, and the D01 demonstration.
 See the implementation queue for their acceptance criteria. D01 ships only
 implemented fields; graph and critical-path exercises are later extensions.
 
@@ -244,6 +245,16 @@ implemented features from the remaining roadmap. This planning change does not
 edit the Astro site or publish a new release. v0.4 is not complete merely because
 the previous issue queue is empty; release approval follows this acceptance gate.
 
+### Assignment revision before the demonstration
+
+The October 7 product review replaces multi-person leaf assignment with at most
+one person per executable item. This materially changes editing and legacy-data
+handling, not the capacity arithmetic. Implement S01-S03 as separate issues before
+D01 and the v0.4 acceptance gate. Preserve every legacy allocation until explicit
+resolution. Earlier multi-person examples describe current/legacy behavior.
+See the [cross-feature review](single-person-visual-planning.md) for the impact
+on hierarchy, People, topics, Jira snapshots, agent guidance, and Timeline.
+
 ## v0.5 visual work, before new calendar providers
 
 | Key | Slice | Depends on | Acceptance |
@@ -259,6 +270,11 @@ Use existing Qt graphics for V04. Start with immediate neighbours and a bounded
 view, not a full-program layout engine. Show when nodes are omitted and allow
 navigation to their list. No Graphviz executable, browser, Mermaid runtime, or
 network service is required. Parent/child hierarchy is not a dependency edge.
+
+V07 adds primary-WorkGroup bar colors and distinct Epic/Task/Subtask shapes.
+It depends on existing topic resolution and Timeline painting, not on V05/V06.
+Implement it before the critical overlay so group identity, selection, warnings
+and criticality have independent visual channels. See the implementation queue.
 
 ### Complete the v0.5 Program Calendar goal
 

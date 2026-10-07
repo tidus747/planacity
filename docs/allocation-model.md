@@ -1,5 +1,11 @@
 # Work allocations
 
+This page describes implemented behavior. The
+[single-person assignment proposal](single-person-visual-planning.md) changes
+future editing to one person per executable leaf, with explicit legacy repair.
+It is not implemented yet. The examples below remain valid descriptions of
+current builds and legacy compatibility, not the target new-plan workflow.
+
 An `Allocation` is an explicit link between one WorkItem and one Person, with
 its own UUID and finite, non-negative Decimal hours. Several people can share
 one task, such as 60 hours for Alex and 40 hours for Sam on a 100-hour task.
