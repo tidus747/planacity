@@ -9,6 +9,16 @@ Overview analysis, and People associations require no further schema change.
 Later presentation sections remain future behavior.
 See the [roadmap](roadmap.md) for order and acceptance.
 
+## Assignment-policy revision (2026-10-07)
+
+The [single-person and visual planning decision](single-person-visual-planning.md)
+supersedes multi-person assignment as the target editing model. S01-S03 will
+limit each executable leaf to zero or one Allocation, retaining Allocation as a
+domain entity and preserving legacy data. Containers show their aggregate team.
+Until those slices ship, multiple allocations remain supported by the application.
+Existing calculation and preservation rules below still apply to every stored
+allocation. V07 adds group-colored bars and type-specific shapes independently.
+
 ## 1. One source of calculation truth
 
 Keep immutable ProgramPlan inputs and pure planning services. Plan, People,

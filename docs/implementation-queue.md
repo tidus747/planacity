@@ -8,9 +8,9 @@ because its specification is written here.
 
 ## Start the next session
 
-1. Check main, the working tree, open issues, and pending PRs. R01-R10 are
-   merged; P01 is tracked in issue #103. Do not merge without maintainer approval.
-2. Finish or review P01 before selecting P02, its explicit Jira mapping slice.
+1. Check main, the working tree, open issues, and pending PRs. R01-R10 and P01
+   are merged. Do not merge without maintainer approval.
+2. Check P02 (#105 / PR #106), then implement S01-S03 before the D01 example.
 3. Turn each later brief into one issue with outcome, non-goals, dependencies,
    examples, persistence impact, and validation. Assign the release milestone.
 4. Implement and review that slice alone, updating docs and user-facing changelog
@@ -26,8 +26,8 @@ release. Backlog keys below can become GitHub issues as their prerequisites land
 | --- | --- | --- |
 | v0.4 foundations | R03 -> R04 -> R05 -> R06 | Trust estimates, workload, findings, and People totals |
 | v0.4 context | R07 -> R08 -> R09 | Persist descriptions/topics, edit them, explain the plan |
-| v0.4 finishing slices | R10 -> P01 -> P02 -> D01 | People groups, priorities, CSV mapping, a memorable example |
-| v0.5 visual planning | V01 -> V02 -> V03 -> V04 -> V05 -> V06 | Team visibility, dependency cards, then critical-path analysis |
+| v0.4 finishing slices | R10 -> P01 -> P02 -> S01 -> S02 -> S03 -> D01 | Groups, priorities, single-person assignments, then the example |
+| v0.5 visual planning | V07 -> V01 -> V02 -> V03 -> V04 -> V05 -> V06 | Visual identity, team visibility, dependency cards, critical paths |
 
 This is a suggested serial order, not permission to implement the whole table
 at once. Existing R03-R09 and V01-V04 acceptance criteria stay in the roadmap.
@@ -51,7 +51,7 @@ Outcome: selecting a person explains which work groups use their capacity.
   hour breakdowns use only the primary topic and exception buckets from R07.
 - Keep ungrouped work, undated demand, and people without allocations visible.
   Filtering groups must not hide competing work from a person's capacity total.
-- Verify multi-person tasks, multiple groups, duplicate names, group deletion,
+- Verify legacy multi-person tasks, multiple groups, duplicate names, group deletion,
   child overrides, and a person working across groups. Counts use stable IDs.
 - Evidence: People light/dark screenshots showing multiple groups and an empty
   association state; keyboard selection and filter walkthrough.
@@ -96,14 +96,15 @@ Non-goals: administering Jira priority schemes or requiring Jira connectivity.
 
 ## D01 - Operation Moon Heist demonstration
 
-Target: v0.4. Depends on R03-R10, P01, and P02.
+Target: v0.4. Depends on R03-R10, P01, P02, and S01-S03.
 
 Create the additive example and walkthrough from the
 [scenario specification](moon-heist-example.md). Do not replace Aurora's legacy
 migration fixture. Use the actual schema at implementation time.
 
 Acceptance: deterministic IDs/dates and expected totals; valid dependencies;
-multi-person work; work groups; descriptions; priorities; reservations; an
+single-person leaves with collaborative parent summaries; work groups;
+descriptions; priorities; reservations; an
 absence; save/reopen and a small CSV roundtrip. Keep a coherent initial plan and
 separate documented exercises that introduce missing data or overload.
 Capture real Overview, Plan, People, and Timeline images when available.
@@ -116,7 +117,8 @@ Target: v0.5. Depends on R02, R03, and R08.
 Keep the existing roadmap scope: selected item, immediate predecessors and
 successors, dates, assigned people, findings, and keyboard/text navigation.
 Show at most 30 cards and an explicit omitted-items list. Test cycles, partial
-dates, long titles, multiple allocations, and hidden endpoints. Use Qt directly.
+dates, long titles, legacy multiple allocations, aggregate parent teams, and
+hidden endpoints. Use Qt directly.
 Capture a branching graph in both themes. No full graph editor or CPM required.
 
 ## V05 - Critical-path analysis service
@@ -135,7 +137,7 @@ analysis, not a zero-day successfully planned program. No third-party runtime.
 
 ## V06 - Optional critical-path overlay
 
-Target: v0.5. Depends on V04 and V05.
+Target: v0.5. Depends on V04, V05, and V07's visual conventions.
 
 - Add a clearly labelled toggle, off by default. Highlight critical connectors
   in red with a distinct line treatment and label/legend; outline critical bars.
@@ -149,6 +151,66 @@ Target: v0.5. Depends on V04 and V05.
 
 Non-goals: moving work, leveling resources, a priority-based schedule, automatic
 deadline promises, or claiming the analysis proves capacity feasibility.
+
+## S01 - Define single-person assignment transitions
+
+Target: v0.4 correction before D01. Depends on existing allocation services.
+Pure policy and tests first; do not change the decoder to reject legacy plans.
+Use the [assignment decision](single-person-visual-planning.md).
+
+New leaf work accepts zero or one Allocation, including zero-hour entries.
+Reject a second person through every canonical editing service. Preserve all
+legacy assignments and their computed hours; expose an unresolved finding and
+allow unrelated edits/repair. Containers retain existing effort-resolution rules.
+Test create, reassign, unassign, duplicate IDs, zero hours, legacy multiple people,
+mixed container effort, save/reopen and immutable import snapshots. The serialized
+shape is unchanged; do not preallocate a schema bump. This prerequisite is not
+the complete user workflow until S02/S03 are integrated.
+
+## S02 - Explicitly resolve legacy multiple assignments
+
+Target: v0.4. Depends on S01.
+Preview consolidation to a selected existing Allocation, preserving its ID and
+the exact sum of direct hours. Show deleted allocation IDs and before/after person
+loads; apply atomically only on confirmation. Cancel preserves everything.
+Retain estimates, dates, dependencies and imported history. Document manual
+decomposition into separately assigned leaves as the collaborative alternative.
+Test 60 h + 40 h -> 100 h, zero/unknown estimates, exact decimals, resulting
+overload, legacy parent-effort transfer and cancellation. Show both themes.
+No automatic task-splitting wizard or guessed dependency rewiring.
+
+## S03 - One-person editing and cross-view acceptance
+
+Target: v0.4. Depends on S01/S02.
+Replace the multi-row authoring workflow with one person selector and explicit
+allocated hours for leaves; containers show a read-only aggregate team. Existing
+multi-person items show every assignment and the resolution action. Apply/Cancel,
+reassignment previews and keyboard access remain consistent across all editors.
+Keep estimate/allocation mismatch visible; never silently synchronize hours.
+
+Verify People groups, Overview, workload distribution, findings, hierarchy totals,
+Jira baselines, backup restore, delete-person previews, and agent-guide rules.
+Update user docs/screenshots and D01 assumptions. Audit every assignment entry
+point, not just the Plan inspector. Include native keyboard and light/dark
+evidence. v0.4 acceptance includes legacy resolution and a collaborative parent
+with two singly assigned leaves, each counted once.
+
+## V07 - WorkGroup colors and distinct Gantt work shapes
+
+Target: v0.5. Depends on existing topic resolution and Timeline. Before V06;
+does not require critical-path calculation or new persisted colors.
+
+Implement the visual contract in the assignment decision: resolved primary-group
+bar color, stable UUID palette slots, explicit neutral unknown/ambiguous states,
+and Epic bracket / Task rounded / Subtask slim silhouettes plus type labels.
+Selection, warnings, dependencies and future critical marks use separate layers.
+Provide a named legend; color alone must never identify a group or work type.
+
+Verify palette stability after sorting, filtering, renaming, reopening and adding
+groups; include collisions, primary overrides, group deletion and legacy multiple
+memberships. Test partial dates, one-day bars, resizing, keyboard focus, high-DPI
+rendering and both themes. Do not change dates or drag semantics with bar shape.
+Capture real contrasting-type/group examples, with selection and warning states.
 
 ## A01 - Package the versioned planning guide contract
 

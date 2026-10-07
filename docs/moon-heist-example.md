@@ -21,8 +21,8 @@ person's name or fictional role as a productivity rating.
 
 Use 4 Epics and approximately 12-16 leaf tasks. Include one Task with two
 Subtasks so rollups are visible. Container estimates are derived, not allocated
-again. At least one task has two people sharing its entered estimate; at least
-one person works across WorkGroups. All priorities and descriptions are visible
+again. Each leaf has one person; a collaborative parent has separately assigned
+subtasks. At least one person works across WorkGroups. Priorities and descriptions are visible
 only after their corresponding fields are implemented.
 
 ## Deterministic planning inputs
@@ -34,8 +34,9 @@ stable IDs so screenshots, CSV references, and validation results are repeatable
 - Weekly mission briefing: 2 h/person per full Monday-anchored weekly period.
 - Kevin's front office duty: 4 h/week, separately named and visible.
 - Stuart unavailable on 2027-01-18; store only unavailable capacity, not HR detail.
-- Example shared task: calibrate beam, 24 h split Nefario 16 h / Bob 8 h.
-- Set every baseline leaf estimate equal to the sum of its positive allocations.
+- Example collaborative parent: calibrate beam, 24 h from two subtasks:
+  adjust optics (Nefario, 16 h) and verify beam (Bob, 8 h).
+- Set every baseline leaf estimate equal to its single positive allocation.
   Schedule dependent leaves with predecessor end strictly before successor start.
 - Include independent support work and parallel prerequisites converging on
   launch. Do not encode hierarchy or `related_to` as scheduling edges.
