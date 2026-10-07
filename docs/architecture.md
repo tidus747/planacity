@@ -1,5 +1,10 @@
 # Architecture
 
+The [agent-assisted planning proposal](agent-assisted-planning.md) defines a
+future versioned Help guide and external JSON proposal workflow. It reuses the
+canonical codec and planning services; it is not an embedded agent integration.
+The proposal is not implemented by the architecture documentation change.
+
 The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy

@@ -108,6 +108,14 @@ backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.
 
+## External planning assistants (proposed)
+
+The [versioned guide proposal](agent-assisted-planning.md) uses JSON backups as
+the external editing boundary, never the SQLite file. A matching guide would
+describe the installed writer schema and preserve identities and source data.
+This is future product work: current Restore validates a document and opens an
+unsaved copy; it does not compare it with the original or guarantee feasibility.
+
 ## Imported source snapshots
 
 Each entry in `imports` contains a UUID, source name, original headers, raw rows,

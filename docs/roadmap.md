@@ -273,6 +273,23 @@ After V01-V06, split work into separate issues in this order:
    primary WorkGroups to labels. Preview escaping, unsupported values, and existing
    labels; never silently replace them or assume a Jira API integration.
 
+## Optional external-assistant workflow
+
+The [agent-assisted planning proposal](agent-assisted-planning.md) defines a
+versioned, offline guide reachable from Help and About. External tools prepare a
+JSON proposal; Planacity validates and reviews it before the user saves a copy.
+Application version, writer schema and guide revision travel together. This
+does not introduce an embedded assistant or change the local-first data model.
+
+Target A01/A02 for v0.5 as separate slices: packaged guide contract, then the
+Help/About interface using existing Export/Restore. Keep the current v0.4
+sequence unchanged. A03 is a later, optional proposal-review and planning-kit
+enhancement, scheduled after feedback on the guide; it is not a v0.5 release
+gate. These slices do not block visual planning or new calendar providers.
+Acceptance and dependencies are in the
+[implementation queue](implementation-queue.md). Every release after the feature
+ships must verify guide compatibility, even without a schema bump.
+
 ## Scope and delivery discipline
 
 Preserve local/offline use, one canonical ProgramPlan, and the existing Python/Qt
