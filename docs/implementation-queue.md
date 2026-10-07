@@ -149,3 +149,61 @@ Target: v0.5. Depends on V04 and V05.
 
 Non-goals: moving work, leveling resources, a priority-based schedule, automatic
 deadline promises, or claiming the analysis proves capacity feasibility.
+
+## A01 - Package the versioned planning guide contract
+
+Target: v0.5. Depends on the existing JSON codec/export workflow. No dependency
+on a provider, model, graph view, or future schema field. Implement against the
+actual writer schema at that time, not a hardcoded schema 8 assumption.
+
+Use the [architecture proposal](agent-assisted-planning.md). Bundle an offline
+guide, complete field reference and valid empty/representative examples. Identify
+application version, schema version and guide revision. Include a copyable
+provider-neutral prompt with the actual identifiers and rules for editing a copy,
+preserving IDs and import snapshots, and reporting assumptions separately.
+
+Acceptance: packaged resources work outside a checkout; examples load and
+roundtrip through the canonical codec; documented fields match the writer;
+unsupported versions are explained; release checks detect stale identifiers.
+Review compatibility every release, updating content only when needed.
+No UI, provider SDK, custom exchange format or extra schema library in this PR.
+
+## A02 - Expose the guide through Help and About
+
+Target: v0.5. Depends on A01. This is the smallest user-facing feature.
+
+Add Help -> Planning with an agent and an About button opening the same offline
+guide. Display the three version identifiers, Copy instructions, and Save guide.
+Copying instructions must never copy planning data implicitly. Document existing
+Export JSON -> edit a separate proposal -> Restore JSON -> manually review ->
+Save As. Explain structural validation versus capacity/dependency feasibility
+and the absence of automatic original/proposal comparison in this first slice.
+
+Acceptance: keyboard access, readable light/dark text, clipboard contents,
+export cancellation/write errors, no network dependency, and packaged install
+without source files. Include real screenshots in both themes. No model launch,
+account/API configuration, automatic data transfer, or project modification.
+
+## A03 - Review external proposals and prepare planning kits
+
+Target: later follow-up, after feedback on A02; not a v0.5 release gate.
+Depends on A01/A02 and existing dependency/capacity services. Confirm UI scope
+before scheduling; split review services and UI if one PR would be too large.
+
+Compare an exported original with a candidate using the canonical decoder and
+planning services. Show entity changes, protected baseline/identity changes,
+dependency conflicts and advisory capacity findings. Reject invalid input or
+new/worsened dependencies in this assisted workflow; never rewrite snapshots.
+Detect stale active plans/candidates before acceptance. Accept only as an
+unsaved document, with no partial merge or silent overwrite.
+
+Add explicit planning-kit preparation with a contents preview, including source
+snapshots. Existing files require overwrite confirmation; cancellation or failure
+must not leave a kit advertised as complete. Notes remain outside project JSON.
+No implicit redaction or external upload.
+
+Acceptance: valid proposal, malformed/unknown fields, unsupported schema,
+duplicate IDs, removed allocations, immutable-baseline edits, dependency cycles,
+overload, stale input, cancellation, and unchanged originals on every failure.
+Review valid but infeasible work without silently adjusting hours or dates.
+Capture real review UI with keyboard steps; update guide claims only when shipped.
