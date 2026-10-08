@@ -98,8 +98,9 @@ For an existing plan, the instructions require:
 5. Follow the assignment policy actually shipped with the guide. S01 permits at
    most one new Allocation per executable leaf; represent collaboration with
    separately assigned subtasks. Preserve unresolved legacy assignments until
-   an explicit resolution is requested, and report them in proposal notes.
-   S02-S03 will add consolidation and the final editor. See the
+   an explicit resolution is requested, and report them in proposal notes. S02
+   can consolidate only onto a user-selected existing Allocation after preview;
+   never guess the survivor. S03 will add the final editor. See the
    [assignment revision](single-person-visual-planning.md). Keep Allocation
    separate from work, hierarchy separate from dependencies, and
    stored inputs separate from computed totals. Use supported field names only.

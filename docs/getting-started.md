@@ -337,9 +337,11 @@ descendant allocations. Represent collaborative work as a parent with separately
 assigned leaves.
 
 Legacy multi-person leaves keep every assignment and hour. They show **Multiple
-assignments need resolution** and reject another entry, but still allow editing
-or incremental removal. Legacy direct container effort can be moved to a named
-leaf without changing allocation IDs or hours. Cancel discards all dialog edits.
-Allocation hours are independent of the estimate display unit. Save the project
-to retain assignments after reopening. See the [allocation guide](allocation-model.md)
-for screenshots and calculation limits.
+assignments need resolution** and reject another entry. Choose **Consolidate
+legacy...**, select the existing assignment to keep, and review its preserved ID,
+the removed IDs, exact combined hours, person-load changes, and findings. Confirm
+to update the draft, then Save once; Cancel at either level changes nothing.
+Manual editing and incremental removal remain available. Legacy direct container
+effort can be moved to a named leaf without changing allocation IDs or hours.
+Allocation hours are independent of the estimate display unit. See the
+[allocation guide](allocation-model.md) for screenshots and calculation limits.

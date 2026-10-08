@@ -4,7 +4,7 @@ from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtGui import QStandardItem, QStandardItemModel, QTextCursor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QHBoxLayout,
     QLineEdit,
+    QPlainTextEdit,
     QPushButton,
     QTreeView,
     QVBoxLayout,
@@ -26,6 +27,11 @@ from planacity.planning.allocation_settings import (
     update_allocation,
 )
 from planacity.planning.allocations import summarize_allocations
+from planacity.planning.assignment_policy import assignment_policy_conflicts
+from planacity.planning.assignment_resolution import (
+    AssignmentConsolidationPreview,
+    preview_assignment_consolidation,
+)
 from planacity.planning.findings import findings_for_work, planning_findings
 from planacity.planning.work_items import resolve_container_effort
 from planacity.ui.forms import validated_form
@@ -80,6 +86,115 @@ def allocation_summary_text(plan: ProgramPlan, work_id: UUID) -> str:
     return f"{estimate}\n{reference}\n{allocated}\n{remaining}\n{status}".strip()
 
 
+def _signed_hours(value: Decimal) -> str:
+    return f"+{value}" if value > 0 else str(value)
+
+
+class AssignmentConsolidationDialog(QDialog):
+    """Require an explicit survivor before presenting an atomic candidate."""
+
+    def __init__(self, parent: QWidget, plan: ProgramPlan, work_id: UUID) -> None:
+        super().__init__(parent)
+        self.plan = plan
+        self.work_id = work_id
+        self.preview: AssignmentConsolidationPreview | None = None
+        work = plan.work_item(work_id)
+        self.setWindowTitle("Resolve multiple assignments")
+        self.resize(780, 650)
+        layout = QVBoxLayout(self)
+        layout.addWidget(
+            label(
+                f"{work.title}\nChoose the existing allocation that will keep its person and "
+                "ID. Its hours will become the exact sum of every direct allocation."
+            )
+        )
+        self.survivor = QComboBox()
+        self.survivor.setAccessibleName("Surviving allocation")
+        self.survivor.addItem("Choose the surviving allocation...", None)
+        for allocation in plan.allocations:
+            if allocation.work_item_id != work_id:
+                continue
+            person = plan.person(allocation.person_id)
+            self.survivor.addItem(
+                f"{person.name} - {allocation.hours} h - {allocation.id}", str(allocation.id)
+            )
+        layout.addWidget(self.survivor)
+        self.details = QPlainTextEdit()
+        self.details.setAccessibleName("Assignment consolidation preview")
+        self.details.setReadOnly(True)
+        self.details.setTabChangesFocus(True)
+        layout.addWidget(self.details, 1)
+        layout.addWidget(
+            label(
+                "Consolidation changes only current-plan allocations. Estimates, dates, "
+                "dependencies, hierarchy, and imported baselines stay unchanged. Cancel "
+                "preserves the complete draft."
+            )
+        )
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        self.confirm_button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
+        self.confirm_button.setText("&Consolidate")
+        self.confirm_button.setEnabled(False)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addWidget(self.buttons)
+        self.survivor.currentIndexChanged.connect(self.refresh_preview)
+        self.refresh_preview()
+
+    def refresh_preview(self) -> None:
+        value = self.survivor.currentData()
+        if value is None:
+            self.preview = None
+            self.details.setPlainText(
+                "Select one existing allocation to calculate the exact candidate and its "
+                "person-load effects."
+            )
+            self.confirm_button.setEnabled(False)
+            return
+        self.preview = preview_assignment_consolidation(self.plan, self.work_id, UUID(value))
+        survivor = next(
+            allocation
+            for allocation in self.plan.allocations
+            if allocation.id == self.preview.surviving_allocation_id
+        )
+        lines = [
+            f"Surviving person: {self.plan.person(survivor.person_id).name}",
+            f"Preserved allocation ID: {survivor.id}",
+            f"Consolidated hours: {self.preview.total_hours} h",
+            "",
+            "Removed allocation IDs:",
+            *(f"- {identifier}" for identifier in self.preview.removed_allocation_ids),
+            "",
+            "Whole-plan allocated hours:",
+        ]
+        for change in self.preview.person_loads:
+            person = self.plan.person(change.person_id)
+            lines.append(
+                f"- {person.name}: {change.before_hours} h -> {change.after_hours} h "
+                f"({_signed_hours(change.delta_hours)} h)"
+            )
+        lines.extend(("", "Relevant findings before:"))
+        before_lines = [
+            f"- {finding.title}: {finding.explanation}" for finding in self.preview.before_findings
+        ]
+        lines.extend(before_lines or ("- None",))
+        lines.extend(("", "Relevant findings after:"))
+        after_lines = [
+            f"- {finding.title}: {finding.explanation}" for finding in self.preview.after_findings
+        ]
+        lines.extend(after_lines or ("- None",))
+        self.details.setPlainText("\n".join(lines))
+        self.details.moveCursor(QTextCursor.MoveOperation.Start)
+        self.confirm_button.setEnabled(True)
+
+    def accept(self) -> None:
+        if self.preview is None:
+            return
+        super().accept()
+
+
 class AllocationDialog(QDialog):
     def __init__(self, parent: QWidget, session: Session, work_id: UUID) -> None:
         super().__init__(parent)
@@ -116,15 +231,18 @@ class AllocationDialog(QDialog):
         self.add_button = QPushButton("&Add...")
         self.edit_button = QPushButton("&Edit...")
         self.remove_button = QPushButton("&Remove")
+        self.consolidate_button = QPushButton("&Consolidate legacy...")
         self.resolve_button = QPushButton("&Move direct effort to leaf...")
         self.add_button.clicked.connect(lambda: self.edit(False))
         self.edit_button.clicked.connect(lambda: self.edit(True))
         self.remove_button.clicked.connect(self.remove)
+        self.consolidate_button.clicked.connect(self.consolidate)
         self.resolve_button.clicked.connect(self.resolve)
         for button in (
             self.add_button,
             self.edit_button,
             self.remove_button,
+            self.consolidate_button,
             self.resolve_button,
         ):
             actions.addWidget(button)
@@ -186,6 +304,12 @@ class AllocationDialog(QDialog):
             if item.work_item_id == self.work_id
         )
         self.add_button.setEnabled(bool(self.candidate.people) and not summary.is_container)
+        self.consolidate_button.setEnabled(
+            any(
+                conflict.work_item_id == self.work_id
+                for conflict in assignment_policy_conflicts(self.candidate)
+            )
+        )
         self.resolve_button.setEnabled(summary.has_direct_container_allocations)
         self.error.setText(
             "Add roster members in People first."
@@ -277,6 +401,23 @@ class AllocationDialog(QDialog):
         if updated is not None:
             self.candidate = updated
             self.refresh()
+
+    def consolidate(self) -> None:
+        try:
+            self.current()
+        except ValueError as error:
+            self.error.setText(str(error))
+            return
+        dialog = AssignmentConsolidationDialog(self, self.candidate, self.work_id)
+        if dialog.exec() != QDialog.DialogCode.Accepted or dialog.preview is None:
+            return
+        try:
+            self.current()
+        except ValueError as error:
+            self.error.setText(str(error))
+            return
+        self.candidate = dialog.preview.candidate
+        self.refresh(dialog.preview.surviving_allocation_id)
 
     def save(self) -> None:
         try:

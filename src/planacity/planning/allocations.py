@@ -73,7 +73,8 @@ def validate_allocations(plan: ProgramPlan, allocations: tuple[Allocation, ...])
     )
 
 
-def _sum_hours(values: tuple[Decimal, ...]) -> Decimal:
+def sum_hours_exact(values: tuple[Decimal, ...]) -> Decimal:
+    """Sum stored hours without rounding in the caller's Decimal context."""
     if not values:
         return Decimal(0)
     places = max(0, *(-int(value.as_tuple().exponent) for value in values))
@@ -108,11 +109,11 @@ def summarize_allocations(
         item = plan.work_item(item_id)
         children = tuple(summarize(child.id) for child in plan.children(item_id))
         direct_entries = tuple(by_work[item_id])
-        direct = _sum_hours(tuple(allocation.hours for allocation in direct_entries))
-        descendant = _sum_hours(tuple(child.allocated_hours for child in children))
-        allocated = _sum_hours((direct, descendant))
+        direct = sum_hours_exact(tuple(allocation.hours for allocation in direct_entries))
+        descendant = sum_hours_exact(tuple(child.allocated_hours for child in children))
+        allocated = sum_hours_exact((direct, descendant))
         if children:
-            known = _sum_hours(tuple(child.known_estimate_hours for child in children))
+            known = sum_hours_exact(tuple(child.known_estimate_hours for child in children))
             missing = sum(child.missing_estimate_count for child in children)
             leaves = sum(child.leaf_count for child in children)
         else:
@@ -124,7 +125,7 @@ def summarize_allocations(
             child.direct_allocation_count + child.descendant_allocation_count for child in children
         )
         incomplete = missing > 0 or (bool(children) and direct_count > 0)
-        remaining = None if incomplete else _sum_hours((known, allocated.copy_negate()))
+        remaining = None if incomplete else sum_hours_exact((known, allocated.copy_negate()))
         result = WorkAllocationSummary(
             work_item_id=item.id,
             entered_estimate_hours=item.estimate_hours,
@@ -146,7 +147,7 @@ def summarize_allocations(
     return AllocationSummary(
         work=work,
         people=tuple(
-            PersonAllocationSummary(person.id, _sum_hours(tuple(by_person[person.id])))
+            PersonAllocationSummary(person.id, sum_hours_exact(tuple(by_person[person.id])))
             for person in plan.people
         ),
     )

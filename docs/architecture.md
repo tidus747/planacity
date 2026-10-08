@@ -281,3 +281,10 @@ conflicts but allow an existing conflict to keep its IDs and hours or reduce it
 incrementally. `planning/findings.py` exposes each conflict as advisory work;
 summary and capacity services continue counting every stored allocation once.
 The wire representation and schema 10 remain unchanged.
+
+`planning/assignment_resolution.py` builds a complete immutable consolidation
+candidate from one explicitly selected existing Allocation. It preserves the
+survivor ID/person, sums direct hours under its own Decimal context, and returns
+removed IDs, whole-plan person-load changes, and relevant findings. Qt renders
+that preview and adopts the candidate only after confirmation; the outer
+allocation draft still applies through `Session` once on Save.

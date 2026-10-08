@@ -1,10 +1,10 @@
 # Single-person assignments and visual work identity
 
-Date: 2026-10-07. Status: accepted implementation contract. S01 now enforces the
-transition policy and reports legacy conflicts without changing the wire format.
-S02-S03 and V07 remain planned in the [implementation queue](implementation-queue.md).
-This decision supersedes the earlier multi-person-task target and never silently
-migrates saved work.
+Date: 2026-10-07. Status: accepted implementation contract. S01 enforces the
+transition policy and reports legacy conflicts; S02 adds explicit consolidation.
+Neither changes the wire format. S03 and V07 remain planned in the
+[implementation queue](implementation-queue.md). This decision supersedes the
+earlier multi-person-task target and never silently migrates saved work.
 
 ## One person per executable item
 

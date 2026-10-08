@@ -6,14 +6,15 @@ from decimal import Decimal
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QComboBox, QDialogButtonBox, QLabel, QLineEdit, QMessageBox
+from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QLineEdit, QMessageBox
 from test_allocation_settings import allocated_plan
+from test_assignment_resolution import legacy_plan
 from test_editor_forms import accept, drive_dialog
 
 from planacity.domain import Allocation, WorkCalendar, WorkItemType
 from planacity.domain.estimate_units import EstimateUnit
 from planacity.planning.estimate_units import set_estimate_preferences
-from planacity.ui.allocations import AllocationDialog
+from planacity.ui.allocations import AllocationDialog, AssignmentConsolidationDialog
 from planacity.ui.theme import Theme
 
 
@@ -166,6 +167,83 @@ def test_plan_row_and_draft_preview_share_concurrent_overload_finding(app, windo
     save(dialog)
     assert window.session.document.plan == plan
     assert not dialog.isVisible()
+
+
+def test_consolidation_preview_requires_selection_and_cancel_preserves_plan(app, window):
+    plan = legacy_plan()
+    before = plan
+    dialog = AssignmentConsolidationDialog(window, plan, plan.work_items[0].id)
+    dialog.show()
+    app.processEvents()
+
+    assert not dialog.confirm_button.isEnabled()
+    assert "Select one existing allocation" in dialog.details.toPlainText()
+    dialog.survivor.setCurrentIndex(1)
+    app.processEvents()
+    text = dialog.details.toPlainText()
+    assert dialog.confirm_button.isEnabled()
+    assert str(plan.allocations[0].id) in text
+    assert str(plan.allocations[1].id) in text
+    assert "Alex: 8 h -> 12 h (+4 h)" in text
+    assert "Sam: 4 h -> 0 h (-4 h)" in text
+    assert "Capacity overload" in text
+
+    QTest.keyClick(dialog, Qt.Key.Key_Escape)
+    assert dialog.result() == QDialog.DialogCode.Rejected
+    assert plan is before
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_consolidation_applies_to_draft_then_saves_once(app, window, theme):
+    plan = legacy_plan()
+    window.set_theme(theme, persist=False)
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    dialog = AllocationDialog(window, window.session, plan.work_items[0].id)
+    dialog.show()
+    assert dialog.consolidate_button.isEnabled()
+
+    def consolidate(preview):
+        assert isinstance(preview, AssignmentConsolidationDialog)
+        preview.survivor.setCurrentIndex(1)
+        assert preview.preview is not None
+        preview.confirm_button.setFocus()
+        QTest.keyClick(preview.confirm_button, Qt.Key.Key_Space)
+
+    drive_dialog(app, dialog.consolidate_button.click, consolidate)
+
+    assert window.session.document.plan is plan
+    assert len(dialog.candidate.allocations) == 2
+    survivor = dialog.candidate.allocations[0]
+    assert survivor.id == plan.allocations[0].id
+    assert survivor.hours == 10
+    assert dialog.candidate.allocations[1] == plan.allocations[2]
+    assert "Multiple assignments need resolution" not in dialog.findings.text()
+    assert not dialog.consolidate_button.isEnabled()
+    save(dialog)
+    assert window.session.document.plan == dialog.candidate
+    window.session.document.saved_plan = window.session.document.plan
+
+
+def test_confirmed_consolidation_then_outer_cancel_preserves_document(app, window):
+    plan = legacy_plan()
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    dialog = AllocationDialog(window, window.session, plan.work_items[0].id)
+    dialog.show()
+
+    def consolidate(preview):
+        preview.survivor.setCurrentIndex(2)
+        preview.confirm_button.click()
+
+    drive_dialog(app, dialog.consolidate_button.click, consolidate)
+    assert dialog.candidate != plan
+    assert window.session.document.plan is plan
+    QTest.keyClick(dialog, Qt.Key.Key_Escape)
+    assert window.session.document.plan is plan
+    assert not window.session.document.dirty
 
 
 def test_cancel_discards_add_edit_and_remove_drafts(app, loaded):
