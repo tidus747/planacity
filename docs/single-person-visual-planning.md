@@ -19,6 +19,13 @@ the distinct people assigned to its descendant leaves as a read-only team.
 That summary is not permission to assign several people to one executable item.
 An Epic without children follows the leaf rule until it is decomposed.
 
+Jira-facing ownership is distinct from capacity hours. The S03 target is one
+canonical assignee per work item. On an Epic, that person is the feature owner
+and does not create additional capacity demand; Epic effort remains the exact
+sum of its executable descendants. On a Task or Subtask, the assignee and the
+single Allocation person must agree whenever allocated hours exist. Imported
+assignee text remains source provenance until that workflow is implemented.
+
 For collaboration, split executable work: "Calibrate beam" can contain "Adjust
 optics" assigned to Nefario for 16 h and "Verify beam" assigned to Bob for 8 h.
 The parent shows 24 h and two contributing people without consuming another
@@ -64,6 +71,11 @@ and show before/after person loads. Do not change estimates, dates, work IDs,
 dependencies or historical import records. Excess/partial effort remains visible.
 For example Alex 60 h + Sam 40 h becomes Alex 100 h only after confirmation,
 with Sam's 40 h removed and Alex's overload recalculated.
+
+Use that repair only when Alex should truly own all 100 h. If Alex and Sam both
+contribute, consolidation would misattribute capacity and should be cancelled.
+Create separately assigned Tasks or Subtasks instead; their parent Epic rolls up
+the joint effort without becoming a second capacity allocation.
 
 Splitting work into leaves is the recommended alternative when both people
 really contribute. Initially use explicit normal editing; do not invent an
@@ -124,7 +136,7 @@ Named, hatched absence overlays and reservation lanes remain visually distinct.
 | People WorkGroups | Still derived from positive allocations; one person can work across many groups |
 | Overview topics | Same primary-topic resolver as Gantt, no multi-group double counting |
 | Inspector | One person selector and allocated hours on leaves; team summary on parents |
-| Jira CSV and baselines | Assignee mapping is still provenance, not an implicit allocation; no baseline rewrite |
+| Jira CSV and baselines | Preserve source provenance; S03 adds one canonical assignee, with Epic assignee as feature owner and leaf assignee aligned with its Allocation |
 | Descriptions, labels, priority | Independent metadata; priority does not determine criticality or bar color |
 | Dependency graph | One assignee on a normal leaf card, aggregate names on a container, explicit legacy warnings |
 | Critical path | Dependency/duration calculation unchanged; resource feasibility remains separate |

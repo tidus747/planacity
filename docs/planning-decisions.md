@@ -18,7 +18,9 @@ supersedes multi-person assignment as the target editing model. S01 limits new
 executable leaves to zero or one Allocation while preserving every legacy entry,
 hour, and calculation. S02 explicitly consolidates a legacy conflict onto one
 selected existing Allocation after a before/after preview. S03 will add the final
-one-person editor and aggregate container teams. Existing calculation and
+one-person editor, Jira-aligned assignees, and aggregate container teams. An Epic
+assignee is a feature owner without additional capacity demand; a leaf assignee
+must match its sole Allocation when hours exist. Existing calculation and
 preservation rules below still apply to every stored allocation. V07 adds
 group-colored bars and type-specific shapes independently.
 
