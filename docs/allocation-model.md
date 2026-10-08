@@ -4,7 +4,7 @@ This page describes implemented behavior. The first part of the
 [single-person assignment decision](single-person-visual-planning.md) now limits
 new executable leaf work to zero or one Allocation. Legacy plans keep all of
 their assignments and exact hours until the user resolves them. The dedicated
-consolidation workflow and final one-person editor remain S02 and S03 work.
+consolidation workflow is available; the final one-person editor remains S03 work.
 
 An `Allocation` is an explicit link between one WorkItem and one Person, with
 its own UUID and finite, non-negative Decimal hours. It is separate from work
@@ -55,7 +55,19 @@ loadable, saveable, editable, and fully included in capacity. A calculated
 and allocation IDs. Adding another entry is rejected, while editing an existing
 entry or removing entries for incremental repair remains possible. Moving legacy
 container effort to a leaf preserves every allocation and then shows the same
-finding. S02 will add explicit consolidation with a before/after preview.
+finding.
+
+Choose **Consolidate legacy...** to select one of the leaf's existing Allocations
+as the survivor. The preview keeps that ID and person, sums all direct hours
+exactly, lists every removed Allocation ID, and compares whole-plan person loads
+and relevant findings before and after. The button stays disabled until an
+explicit survivor is selected. **Consolidate** updates only the allocation draft;
+the outer **Save** applies it once. Cancel at either level preserves the original
+plan. Estimates, dates, dependencies, hierarchy, WorkGroups, priorities, and Jira
+baselines are not changed.
+
+![Assignment consolidation preview in light appearance](images/assignment-consolidation-light.png)
+![Assignment consolidation preview in dark appearance](images/assignment-consolidation-dark.png)
 
 The transitional finding with fictional legacy data in both appearances:
 
@@ -74,7 +86,7 @@ Add one roster member and explicit hours, or select the existing row to Edit,
 Reassign, or Remove it. Legacy multiple rows remain visible for repair. Hours
 remain hours even when Plan displays estimates in days or weeks.
 Save applies the complete draft. Cancel or Escape discards it. Use Tab to move
-between controls and Alt+A / Alt+E / Alt+R for allocation actions.
+between controls and Alt+A / Alt+E / Alt+R / Alt+C for allocation actions.
 
 The summary reports effective estimate, entered reference, direct and descendant
 allocation, and remaining effort. Missing estimates, mixed levels, and excess
@@ -111,6 +123,6 @@ WorkItem's complete dates using positive planning capacity after reservations,
 then sums concurrent work and retains negative remaining capacity. Missing dates,
 calendars, or positive-capacity days keep the hours as explicit unplaced demand.
 
-The [roadmap](roadmap.md) continues with S02 to resolve legacy multiple
-assignments explicitly. See the [planning decisions](planning-decisions.md) for
-the dated distribution contract.
+The [roadmap](roadmap.md) continues with S03 for the final one-person editor and
+aggregate container teams. See the [planning decisions](planning-decisions.md)
+for the dated distribution contract.

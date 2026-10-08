@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Explicit consolidation for legacy multi-person leaves. Choose one existing
+  Allocation to keep, preview the exact combined hours, removed IDs, whole-plan
+  person loads, and resulting findings, then confirm atomically. Cancel keeps the
+  complete draft unchanged; estimates, dates, dependencies, hierarchy, imports,
+  and schema 10 remain untouched.
 - Single-person assignment transitions for executable leaf work. New leaves
   accept zero or one explicit Allocation, while legacy multi-person leaves keep
   every ID and exact hour, remain saveable and editable, and receive an
