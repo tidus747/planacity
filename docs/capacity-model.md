@@ -48,7 +48,7 @@ unapplied. Deleting a person asks before clearing their availability entries.
 Imported snapshots remain unchanged. Program events are not yet modeled.
 
 Schemas 1-3 open without availability; schemas 1-4 open without reservations.
-Saving writes schema 10. Keep a backup
+Saving writes schema 11. Keep a backup
 or use Save As if the file must remain readable in an older build.
 
 Screenshots using an explicitly configured example schedule:
@@ -186,7 +186,7 @@ these deductions. Rules persist (#9), and the wizard (#10) previews saved calend
 and entered availability before reservations. Program-event deductions are not yet
 modeled in the desktop; the preview labels that limitation. People then combines
 the saved reservation result with dated allocations for the selected range.
-Calendar and availability data remain unchanged in schema 10, while Jira hour
+Calendar and availability data remain unchanged in schema 11, while Jira hour
 estimates and import baselines are unchanged. See
 [recurring reservations](capacity-wizards.md).
 The distribution and missing-data rules are defined in

@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 10)
+# Project files and JSON backups (schema 11)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 10` is the schema version.
+- `PRAGMA user_version = 11` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,7 +26,7 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`10`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`11`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
@@ -37,6 +37,10 @@ Each work item stores its existing identity, hierarchy, estimate, and dates plus
 plain-text `description`, ordered `labels`, nullable `primary_group_id`, and
 nullable `priority`. Priority is one of `highest`, `high`, `medium`, `low`, or
 `lowest`; null is an explicit Unset state and is not interpreted as Medium.
+Each work item also stores nullable `assignee_id`. It must reference the current
+roster. On an Epic it is a feature owner and creates no capacity demand. On an
+executable Task or Subtask it is the one canonical owner; any single Allocation
+created or reassigned through planning services uses that same person.
 Labels are non-blank canonical strings without leading/trailing whitespace and
 are unique ignoring case. A primary group must exist in the same current plan.
 Imported baseline WorkItems use the same representation, but editing current work
@@ -109,7 +113,10 @@ Schemas 1-8 open with work priority unset. Imported baseline WorkItems follow
 the same migration without inventing a source priority.
 Schemas 1-9 open with `external_priority` empty because earlier files did not
 store a separate copy of that source cell. Raw imported rows remain untouched.
-Saving writes schema 10; older builds cannot open the upgraded file. Keep a
+Schemas 1-10 open with `assignee_id` unset on current and baseline WorkItems.
+Existing Allocations are preserved exactly and may provide a visible legacy
+ownership fallback; no assignee or external identity is guessed during migration.
+Saving writes schema 11; older builds cannot open the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.

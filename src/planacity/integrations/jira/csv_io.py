@@ -204,23 +204,25 @@ def preview_import(
                 else datetime.strptime(cell(row, f), mapping.date_format).date()
                 for f in ("start", "end")
             ]
+            external_person = cell(row, "person")
+            mapped_person = people.get(external_person)
             item = WorkItem(
                 id=ids[key],
                 title=cell(row, "title"),
                 kind=kind,
                 parent_id=ids.get(parent),
+                assignee_id=None if mapped_person is None else mapped_person.id,
                 estimate_hours=estimate,
                 start=dates[0],
                 end=dates[1],
                 priority=priority_values.get(cell(row, "priority")),
             )
-            person = cell(row, "person")
             records.append(
                 ImportedWork(
                     item=item,
                     external_reference=reference,
-                    external_person=person,
-                    person=people.get(person),
+                    external_person=external_person,
+                    person=mapped_person,
                     status=cell(row, "status"),
                     external_priority=cell(row, "priority"),
                 )

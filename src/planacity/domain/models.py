@@ -107,6 +107,7 @@ class WorkItem:
     kind: WorkItemType
     id: UUID = field(default_factory=uuid4)
     parent_id: UUID | None = None
+    assignee_id: UUID | None = None
     estimate_hours: Decimal | None = None
     start: date | None = None
     end: date | None = None
@@ -124,6 +125,8 @@ class WorkItem:
             _require_id(self.parent_id, "Parent ID")
             if self.parent_id == self.id:
                 raise ValueError(f"Work item '{self.title}' cannot be its own parent.")
+        if self.assignee_id is not None:
+            _require_id(self.assignee_id, "Work assignee ID")
         if self.estimate_hours is not None:
             if not isinstance(self.estimate_hours, Decimal):
                 raise ValueError("Estimate must be a Decimal number of hours or None (unknown).")
@@ -344,6 +347,12 @@ class ProgramPlan:
 
 def _validate_groups_and_relationships(plan: ProgramPlan) -> None:
     by_id = {item.id: item for item in plan.work_items}
+    person_ids = {person.id for person in plan.people}
+    for item in plan.work_items:
+        if item.assignee_id is not None and item.assignee_id not in person_ids:
+            raise ValueError(
+                f"Assignee for '{item.title}' must reference an existing roster person."
+            )
     if not isinstance(plan.work_groups, tuple) or any(
         not isinstance(group, WorkGroup) for group in plan.work_groups
     ):

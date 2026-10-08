@@ -21,7 +21,8 @@ connection are used.
    Custom labels remain **Unmapped -> Unset** until you choose a canonical value.
    Blank and unresolved values never silently become Medium.
    Match each nonblank external person to a roster entry or explicitly create
-   one. This records identity mapping, not work allocations or capacity.
+   one. This sets the canonical work assignee in the current plan and preserved
+   baseline. It does not create work allocations or capacity hours.
 4. Review the complete preview and choose **Import**. Errors keep the wizard open;
    Cancel leaves the document unchanged. Imported work is added to the active
    plan, which becomes unsaved until you save it.
@@ -50,7 +51,8 @@ The project stores original cell values, including unmapped fields, together
 with original work items, external references, original status, original priority
 text, and person mapping snapshots. The mapped canonical priority is stored on
 the baseline WorkItem separately from that source text. Editing or removing local
-work does not rewrite either value.
+work does not rewrite either value. The exact external assignee text is also
+retained independently from the roster display name.
 JSON backups retain it too. Keep these files local if the imported data is
 sensitive. Baseline person names remain even if a roster entry is later removed.
 
@@ -66,10 +68,10 @@ restore integral seconds when the difference is only division roundoff.
 ## Changes
 
 **Changes** (Ctrl+5) lists added, modified, and removed work against all imported
-work snapshots. It compares title, type, parent, estimate, dates, and priority. Work with
-no imported snapshot appears as Added once a baseline exists. Roster changes,
-WorkGroups, and relationships are outside this initial comparison. Status and
-external assignees are preserved for export and are not editable in v0.2.
+work snapshots. It compares title, type, parent, estimate, dates, priority, and
+canonical assignee. Work with no imported snapshot appears as Added once a
+baseline exists. Roster changes, WorkGroups, and relationships are outside this
+comparison. Status and exact external assignee text remain preserved provenance.
 
 ## Validation record
 

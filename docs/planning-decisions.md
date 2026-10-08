@@ -5,7 +5,8 @@ Dependency guards, hierarchy effort, dated capacity, reusable findings, People
 breakdowns, persisted work context, compact Overview analysis, and derived People
 WorkGroup associations, canonical work priority, and explicit Jira CSV priority
 mapping are implemented. Work context introduced schema 8, priority schema 9,
-and preserved Jira source-priority text schema 10; the transactional Plan
+preserved Jira source-priority text schema 10, and canonical work ownership
+schema 11; the transactional Plan
 inspector, Overview analysis, and People associations require no further schema
 change.
 Later presentation sections remain future behavior.
@@ -17,8 +18,9 @@ The [single-person and visual planning decision](single-person-visual-planning.m
 supersedes multi-person assignment as the target editing model. S01 limits new
 executable leaves to zero or one Allocation while preserving every legacy entry,
 hour, and calculation. S02 explicitly consolidates a legacy conflict onto one
-selected existing Allocation after a before/after preview. S03 will add the final
-one-person editor, Jira-aligned assignees, and aggregate container teams. An Epic
+selected existing Allocation after a before/after preview. S03a adds canonical
+Jira-aligned assignees and safe CSV roundtrip; S03b will add the final compact
+one-person editor and aggregate container teams. An Epic
 assignee is a feature owner without additional capacity demand; a leaf assignee
 must match its sole Allocation when hours exist. Existing calculation and
 preservation rules below still apply to every stored allocation. V07 adds

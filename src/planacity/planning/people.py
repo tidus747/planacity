@@ -24,8 +24,9 @@ def remove_person(
     remove_availability: bool = False,
     remove_reservations: bool = False,
     remove_allocations: bool = False,
+    clear_assignees: bool = False,
 ) -> ProgramPlan:
-    """Remove a person; availability, reservations and allocations need consent.
+    """Remove a person; references and planning records need explicit consent.
 
     Shared reservations keep their IDs and other people. Rules with no remaining
     people are removed rather than retained as invalid, empty rules.
@@ -33,6 +34,11 @@ def remove_person(
     plan.person(person_id)
     if type(remove_allocations) is not bool:
         raise ValueError("Confirming allocation removal requires an explicit boolean.")
+    if type(clear_assignees) is not bool:
+        raise ValueError("Confirming assignee clearing requires an explicit boolean.")
+    assigned = tuple(item for item in plan.work_items if item.assignee_id == person_id)
+    if assigned and not clear_assignees:
+        raise ValueError("Confirm clearing this person's work assignee references first.")
     if not remove_allocations and any(a.person_id == person_id for a in plan.allocations):
         raise ValueError("Confirm removing this person's work allocations first.")
     if not remove_availability and any(e.person_id == person_id for e in plan.availability_events):
@@ -42,6 +48,10 @@ def remove_person(
     return replace(
         plan,
         people=tuple(person for person in plan.people if person.id != person_id),
+        work_items=tuple(
+            replace(item, assignee_id=None) if item.assignee_id == person_id else item
+            for item in plan.work_items
+        ),
         allocations=tuple(a for a in plan.allocations if a.person_id != person_id),
         person_calendars=tuple(
             value for value in plan.person_calendars if value.person_id != person_id

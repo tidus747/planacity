@@ -15,7 +15,7 @@ estimates, which remain exact Decimal hours. See [estimate units](estimate-units
 | --- | --- | --- |
 | `PlanningHorizon` | `start`, `end` | Inclusive dates; end cannot precede start |
 | `ProgramPlan` | `id`, `name`, `description`, `horizon`, `work_items`, `people`, `work_groups`, `relationships` | Valid immutable collections and references |
-| `WorkItem` | `id`, `title`, `kind`, `parent_id`, `estimate_hours`, `start`, `end`, `description`, `labels`, `primary_group_id`, `priority` | Valid hierarchy, estimates, dates, context, and optional priority |
+| `WorkItem` | `id`, `title`, `kind`, `parent_id`, `assignee_id`, `estimate_hours`, `start`, `end`, `description`, `labels`, `primary_group_id`, `priority` | Valid hierarchy, optional roster assignee, estimates, dates, context, and priority |
 | `Person` | `id`, `name` | Non-blank name; unique ID within the roster |
 | `WorkGroup` | `id`, `name`, `epic_ids` | Named group of existing Epics |
 | `Relationship` | `id`, `source_id`, `target_id`, `kind` | Existing distinct endpoints; no duplicate links |
@@ -48,8 +48,10 @@ children, allowing a future loader to resolve a complete snapshot before validat
 `plan.work_item(item_id)` retrieves an item or raises an actionable `ValueError`.
 
 WorkGroups and relationships are separate concepts, not extra hierarchy levels.
-Assignment uses separate Allocations; no single owner field is introduced. New
-executable leaves accept zero or one Allocation. Legacy multi-person leaves keep
+Canonical ownership is the optional `WorkItem.assignee_id`; capacity demand stays
+in separate Allocations. An Epic assignee is a feature owner and does not add
+capacity demand. New executable leaves accept zero or one Allocation, whose person
+is aligned with the assignee by planning services. Legacy multi-person leaves keep
 every allocation and receive a calculated resolution finding.
 
 ## Work context and reporting topics
@@ -122,8 +124,10 @@ including references to descendants, and preserves surviving work and groups.
 
 `planning/people.py` provides `add_person`, `rename_person`, and `remove_person`.
 Names may repeat; IDs identify people. Renaming preserves identity and roster
-order. Removing a person requires explicit consent for affected availability,
-reservation rules, and allocations. Surviving references retain their IDs.
+order. Removing a person requires explicit consent for affected assignees,
+availability, reservation rules, and allocations. Confirmed removal clears
+current assignee references without changing imported baselines. Surviving
+records retain their IDs.
 
 `estimate_hours` is `decimal.Decimal | None`. `None` means unknown; `Decimal(0)`
 means an explicit zero-hour estimate. Fractional precision is preserved, with no
@@ -251,8 +255,9 @@ WorkItems, external references, status, source priority text, and person identit
 snapshots. Schema 10 stores source priority separately from the canonical mapped
 `WorkItem.priority`, so an unresolved custom Jira label can remain Unset without
 being lost or silently interpreted as Medium.
-The imported person mapping does not make `WorkItem.owner` part of the model and
-does not represent an Allocation. Explicit allocation editing is separate.
+The imported person mapping sets the current and baseline `WorkItem.assignee_id`
+to the matched roster person. It does not create an Allocation or invent capacity
+hours. The exact external person text and Person snapshot remain provenance.
 
 Baseline references need not exist in current work or the current roster after
 local deletion. The baseline validates its own original hierarchy independently.

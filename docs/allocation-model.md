@@ -104,11 +104,12 @@ Findings are advisory: Save keeps an infeasible or incomplete draft visible for
 later correction instead of silently changing or rejecting its hours.
 
 Deletion of a person or work item previews affected allocations and requires
-confirmation. Deleting a parent includes hidden descendants. Surviving allocation
-IDs remain stable. Jira assignees never create allocations automatically, and
-allocation edits do not change imported baselines or Jira CSV effort units.
+confirmation. Person deletion also identifies canonical assignee references.
+Deleting a parent includes hidden descendants. Surviving allocation IDs remain
+stable. Jira imports never create allocations automatically, and allocation edits
+do not change imported baselines or Jira CSV effort units.
 
-ProgramPlan stores allocations, introduced in schema 7, in current schema 10
+ProgramPlan stores allocations, introduced in schema 7, in current schema 11
 SQLite projects and JSON backups.
 Schemas 1-6 load with an empty collection. Keep an original backup or use Save As
 if an older build must still open the project.
@@ -130,6 +131,7 @@ WorkItem's complete dates using positive planning capacity after reservations,
 then sums concurrent work and retains negative remaining capacity. Missing dates,
 calendars, or positive-capacity days keep the hours as explicit unplaced demand.
 
-The [roadmap](roadmap.md) continues with S03 for the final one-person editor,
-Jira-aligned ownership, and aggregate container teams. See the
+The [roadmap](roadmap.md) continues with S03b for the final compact one-person
+editor and aggregate container teams. Canonical Jira-aligned ownership is the
+S03a foundation. See the
 [planning decisions](planning-decisions.md) for the dated distribution contract.

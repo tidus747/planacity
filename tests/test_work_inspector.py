@@ -206,6 +206,33 @@ def test_container_effort_and_filter_context_are_read_only(app, window):
     window.session.document.saved_plan = window.session.document.plan
 
 
+def test_inspector_distinguishes_epic_feature_owner_from_leaf_assignee(app, window):
+    plan = inspector_plan()
+    epic, task, other = plan.work_items
+    plan = replace(
+        plan,
+        work_items=(
+            replace(epic, assignee_id=plan.people[0].id),
+            replace(task, assignee_id=plan.people[1].id),
+            other,
+        ),
+    )
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    page = window.plan_page
+
+    page.table.setCurrentIndex(page.model.index_for_id(epic.id))
+    app.processEvents()
+    assert page.inspector.ownership.text().startswith(f"Feature owner: {plan.people[0].name} [")
+
+    page.table.setCurrentIndex(page.model.index_for_id(task.id))
+    app.processEvents()
+    assert page.inspector.ownership.text().startswith(f"Assignee: {plan.people[1].name} [")
+    window.session.document.saved_plan = window.session.document.plan
+
+
 def test_page_navigation_prompts_for_inspector_draft(app, loaded, monkeypatch):
     window, page, _ = loaded
     page.inspector.description.setPlainText("Stay on Plan")

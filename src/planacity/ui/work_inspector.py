@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from planacity.domain import ProgramPlan, WorkItem, WorkPriority
 from planacity.planning.allocations import summarize_allocations
+from planacity.planning.assignees import effective_assignee_id
 from planacity.planning.estimate_units import estimate_text, parse_estimate
 from planacity.planning.work_context import resolve_topic, update_work_details
 from planacity.ui.allocations import allocation_summary_text
@@ -130,13 +131,15 @@ class WorkInspector(QWidget):
         actions.addWidget(self.cancel_button)
         layout.addLayout(actions)
 
+        self.ownership = label("")
+        self.ownership.setAccessibleName("Work assignee")
         self.allocations = label("")
         self.allocations.setAccessibleName("Allocated people")
         self.dependencies = label("")
         self.dependencies.setAccessibleName("Work dependencies")
         self.imported = label("")
         self.imported.setAccessibleName("Imported work reference")
-        for widget in (self.allocations, self.dependencies, self.imported):
+        for widget in (self.ownership, self.allocations, self.dependencies, self.imported):
             widget.setTextInteractionFlags(
                 Qt.TextInteractionFlag.TextSelectableByMouse
                 | Qt.TextInteractionFlag.TextSelectableByKeyboard
@@ -207,6 +210,7 @@ class WorkInspector(QWidget):
         self.start.clear()
         self.end.clear()
         self.topic.clear()
+        self.ownership.clear()
         self.allocations.clear()
         self.dependencies.clear()
         self.imported.clear()
@@ -274,6 +278,7 @@ class WorkInspector(QWidget):
             f"{item.kind.value.title()} [{str(item.id)[:8]}]\n"
             + allocation_summary_text(plan, item_id)
         )
+        self.ownership.setText(self._assignee_text(plan, item_id))
         self.allocations.setText(self._allocation_text(plan, item_id))
         self.dependencies.setText(self._dependency_text(plan, item_id))
         self.imported.setText(self._imported_text(plan, item_id))
@@ -397,6 +402,17 @@ class WorkInspector(QWidget):
         return "\n".join(lines)
 
     @staticmethod
+    def _assignee_text(plan: ProgramPlan, item_id: UUID) -> str:
+        item = plan.work_item(item_id)
+        identifier = effective_assignee_id(plan, item_id)
+        role = "Feature owner" if item.kind.value == "epic" else "Assignee"
+        if identifier is None:
+            return f"{role}: none."
+        person = plan.person(identifier)
+        source = "" if item.assignee_id is not None else " (legacy Allocation)"
+        return f"{role}{source}: {person.name} [{str(person.id)[:8]}]."
+
+    @staticmethod
     def _dependency_text(plan: ProgramPlan, item_id: UUID) -> str:
         links = tuple(
             link for link in plan.relationships if item_id in (link.source_id, link.target_id)
@@ -429,6 +445,7 @@ class WorkInspector(QWidget):
         return (
             "Imported reference (read-only):\n"
             f"- {record.external_reference}; status: {record.status or 'Not set'}\n"
+            f"- Source assignee: {record.external_person or 'Not set'}\n"
             f"- Title: {baseline.title}\n"
             f"- Estimate: {estimate}; dates: {_date_text(baseline.start)} to "
             f"{_date_text(baseline.end)}"

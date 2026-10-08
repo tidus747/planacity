@@ -3,7 +3,7 @@
 
 def strip_work_context(data: dict) -> None:
     """Remove work fields added after schema 7 from current and baseline work."""
-    fields = ("description", "labels", "primary_group_id", "priority")
+    fields = ("description", "labels", "primary_group_id", "priority", "assignee_id")
     for item in data["plan"]["work_items"]:
         for field in fields:
             item.pop(field)
@@ -28,3 +28,12 @@ def strip_external_priority(data: dict) -> None:
     for source in data["plan"].get("imports", ()):
         for record in source["records"]:
             record.pop("external_priority", None)
+
+
+def strip_work_assignee(data: dict) -> None:
+    """Remove the canonical ownership field introduced by schema 11."""
+    for item in data["plan"]["work_items"]:
+        item.pop("assignee_id")
+    for source in data["plan"].get("imports", ()):
+        for record in source["records"]:
+            record["item"].pop("assignee_id")

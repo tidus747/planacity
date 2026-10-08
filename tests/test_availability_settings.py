@@ -134,7 +134,7 @@ def test_old_schemas_open_unchanged_and_save_as_four(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     connection = sqlite3.connect(path)
-    assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
+    assert connection.execute("PRAGMA user_version").fetchone()[0] == 11
     connection.close()
 
 

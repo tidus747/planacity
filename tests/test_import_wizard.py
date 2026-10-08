@@ -1,5 +1,6 @@
 """Validate, correct, preview, cancel, and apply imports through real Qt widgets."""
 
+from dataclasses import replace
 from datetime import date
 
 from PySide6.QtCore import Qt
@@ -189,9 +190,9 @@ def test_export_priority_preview_profiles_and_label_conflicts(app, tmp_path, mon
     dialog = ExportDialog(plan, ",")
 
     assert dialog.options is not None
-    assert dialog.preview_model.item(0, 3).text() == "Urgent"
-    assert dialog.preview_model.item(0, 4).text() == "Unresolved source preserved"
-    assert "1 unresolved source value" in dialog.notice.text()
+    assert dialog.preview_model.item(0, 6).text() == "Urgent"
+    assert dialog.preview_model.item(0, 7).text() == "Unresolved source preserved"
+    assert "1 unresolved priority source value" in dialog.notice.text()
 
     dialog.priority_labels[WorkPriority.HIGH].setText("Highest")
     assert dialog.options is None
@@ -208,6 +209,40 @@ def test_export_priority_preview_profiles_and_label_conflicts(app, tmp_path, mon
     dialog.load_profile()
     assert dialog.priority_labels[WorkPriority.HIGH].text() == "Customer high"
     assert dialog.delimiters.currentData() == ";"
+    dialog.deleteLater()
+
+
+def test_export_dialog_requires_identity_for_changed_ownership(app):
+    from PySide6.QtWidgets import QDialogButtonBox
+
+    from planacity.domain import Person
+
+    table = read_csv("Issue key,Summary,Issue Type,Assignee\nTEST-1,Custom,Task,alice.id\n")
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("person", 3)))
+    alice = Person(name="Alice")
+    imported = preview_import(empty_plan(), table, mapping, {"alice.id": alice}, "ownership.csv")
+    sam = Person(name="Sam")
+    changed = replace(
+        imported,
+        people=(*imported.people, sam),
+        work_items=(replace(imported.work_items[0], assignee_id=sam.id),),
+    )
+
+    dialog = ExportDialog(changed, ",")
+    ok = dialog.buttons.button(QDialogButtonBox.StandardButton.Ok)
+
+    assert dialog.options is None
+    assert not ok.isEnabled()
+    assert dialog.preview_model.item(0, 2).text() == "Sam"
+    assert dialog.preview_model.item(0, 4).text() == "External identity required"
+    assert "1 assignee identity mapping" in dialog.notice.text()
+
+    dialog.person_labels[sam.id].setText("sam.id")
+
+    assert dialog.options is not None
+    assert ok.isEnabled()
+    assert dialog.preview_model.item(0, 3).text() == "sam.id"
+    assert dialog.person_mappings == ((sam.id, "sam.id"),)
     dialog.deleteLater()
 
 

@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Canonical optional assignees for every work item. Epic assignees are feature
+  owners without capacity demand; executable Tasks and Subtasks align their sole
+  Allocation person when allocation ownership is edited. Jira import preserves
+  mapped ownership without inventing hours, Changes reports assignee edits, and
+  export preserves unchanged source identities while requiring explicit Jira
+  identities for changed or new ownership. Display names are never guessed.
 - Explicit consolidation for legacy multi-person leaves. Choose one existing
   Allocation to keep, preview the exact combined hours, removed IDs, whole-plan
   person loads, and resulting findings, then confirm atomically. Cancel keeps the
@@ -104,12 +110,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   Timeline date edits reject only new or worsened conflicts, with affected work
   and permitted boundaries; legacy conflicts and incomplete edges remain visible
   and repairable without automatic rescheduling.
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 10
-  to retain original imported priority text alongside canonical work priority,
-  context, calendars, availability, reservations, preferences, and allocations.
-  Schemas 1-9 open with empty source-priority text; schemas 1-8 open with priority
-  unset; schemas 1-7 open with empty work context; schemas 1-6 open without
-  inferred allocations.
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 11
+  to retain canonical work assignees alongside original imported identity and
+  priority text, work context, calendars, availability, reservations, preferences,
+  and allocations. Schemas 1-10 open with assignees unset; schemas 1-9 open with
+  empty source-priority text; schemas 1-8 open with priority unset; schemas 1-7
+  open with empty work context; schemas 1-6 open without inferred allocations.
   Schemas 1-5 open with estimates displayed in hours; keep a backup or use Save As
   for older builds.
 - Removing a person now identifies affected reservation rules before confirmation.
