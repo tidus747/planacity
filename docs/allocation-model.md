@@ -66,6 +66,13 @@ the outer **Save** applies it once. Cancel at either level preserves the origina
 plan. Estimates, dates, dependencies, hierarchy, WorkGroups, priorities, and Jira
 baselines are not changed.
 
+Consolidation is a repair for cases where one person should own all of the combined
+hours. It is not the recommended representation of real collaboration: moving
+Sam's hours onto Alex would attribute all capacity demand to Alex. If several
+people contribute, cancel and split or duplicate the work into separately assigned
+Tasks or Subtasks. That keeps each executable item's capacity and single Jira
+assignee accurate while the parent Epic shows their combined effort.
+
 ![Assignment consolidation preview in light appearance](images/assignment-consolidation-light.png)
 ![Assignment consolidation preview in dark appearance](images/assignment-consolidation-dark.png)
 
@@ -123,6 +130,6 @@ WorkItem's complete dates using positive planning capacity after reservations,
 then sums concurrent work and retains negative remaining capacity. Missing dates,
 calendars, or positive-capacity days keep the hours as explicit unplaced demand.
 
-The [roadmap](roadmap.md) continues with S03 for the final one-person editor and
-aggregate container teams. See the [planning decisions](planning-decisions.md)
-for the dated distribution contract.
+The [roadmap](roadmap.md) continues with S03 for the final one-person editor,
+Jira-aligned ownership, and aggregate container teams. See the
+[planning decisions](planning-decisions.md) for the dated distribution contract.
