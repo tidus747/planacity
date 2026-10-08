@@ -1,8 +1,8 @@
 # Export Jira CSV
 
 Choose **Import -> Export Jira CSV...**. Review the output column labels,
-estimate units, date format, explicit priority target labels, and per-row priority
-preview, then select a `.csv` destination. The delimiter
+estimate units, date format, explicit Jira identities and priority target labels,
+and the per-row assignee/priority preview, then select a `.csv` destination. The delimiter
 comes from the Import page. Existing-file replacement uses the file dialog's
 confirmation. The active project cannot be replaced with a CSV export.
 
@@ -12,13 +12,22 @@ Export includes:
 - Unique sequential row IDs, with parents before children and Parent referring
   to those row IDs.
 - Canonical Epic, Task, and Sub-task types, title, estimate, and planned dates.
-- Original external assignees and statuses for imported work.
+- Canonical assignees under an explicit identity-preservation rule, plus original
+  statuses for imported work.
 - Priority output chosen by a visible preservation rule.
 
-The current exporter does not derive Jira Assignee from capacity Allocations.
-It preserves the original external assignee text for imported work and leaves it
-blank for new work. Until S03 adds an explicit Jira-aligned ownership workflow,
-review that column before import and do not assume consolidation changes it.
+The exporter uses canonical `WorkItem.assignee_id`, never a roster display name or
+a guessed value from capacity totals. If imported ownership is unchanged, it
+preserves the original external assignee text exactly. Changed or new ownership
+requires a Jira identity entered for that roster person in this export dialog;
+missing identities disable export. A cleared assignee exports blank. These
+identity entries are deliberately not stored in reusable export profiles.
+
+Jira import sets canonical ownership without inventing allocated hours. An Epic
+assignee is its feature owner and creates no capacity demand. A Task/Subtask's
+single Allocation remains the capacity record and planning services keep its
+person aligned with the canonical assignee. Legacy multi-person allocations stay
+visible until explicitly resolved; export never chooses one of them automatically.
 
 When imported work keeps its baseline canonical priority, export preserves its
 nonblank source priority text exactly. This includes unresolved custom values
@@ -28,7 +37,8 @@ the same explicit labels. Unset work without preserved source text exports blank
 Target labels must be nonblank and unique ignoring case; conflicts disable export
 and remain visible in the dialog. The preview explains each row before writing.
 Use **Save profile...** to retain output headers, units, date format, delimiter,
-and all five target labels in a local JSON file. **Load profile...** validates the
+and all five target labels in a local JSON file. Jira identities stay out of that
+file. **Load profile...** validates the
 complete profile before changing the dialog. Export profiles contain no work rows,
 people, or source data and cannot replace the active project.
 
@@ -36,6 +46,11 @@ Actual priority export preview in both appearances:
 
 ![Priority export preview in light mode](images/jira-priority-export-light.png)
 ![Priority export preview in dark mode](images/jira-priority-export-dark.png)
+
+Canonical ownership and explicit Jira identity mapping in both appearances:
+
+![Assignee export preview in light mode](images/jira-assignee-export-light.png)
+![Assignee export preview in dark mode](images/jira-assignee-export-dark.png)
 
 Hours are exported as seconds by default. The column labels can be changed to
 match your Jira configuration. Jira's importer requires its own field mapping,

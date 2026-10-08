@@ -153,11 +153,15 @@ level. The review page shows source and Planacity values side by side, including
 the unresolved state. Save a version 2 mapping profile to reuse those choices.
 
 During export, set one explicit target label for each canonical level and review
-the per-row result. Unchanged imported work keeps its exact original label. Edited
-or new priorities use the target label. Unresolved source values remain visible
-and preserved, while a genuine Unset value exports blank. Duplicate target labels
+the per-row priority and assignee result. Unchanged imported work keeps its exact
+original priority and external assignee text. Edited or new priorities use the
+target label. Changed or new assignees require an explicit Jira identity for the
+selected roster person; Planacity never exports a display name by assumption.
+Unresolved priority source values remain visible and preserved, while a genuine
+Unset value exports blank. Duplicate target labels or missing required identities
 disable export instead of creating an ambiguous CSV. Save or load an export
-profile to reuse headers, units, delimiter, date format, and target labels.
+profile to reuse headers, units, delimiter, date format, and target labels;
+person identities are not stored in that profile.
 
 Actual Jira priority mapping in both appearances:
 

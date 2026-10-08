@@ -22,7 +22,7 @@ personal configuration, credentials, or repository automation instructions.
 
 ## Existing foundations and limits
 
-The current format is schema 10. The canonical format is defined by
+The current format is schema 11. The canonical format is defined by
 `persistence/codec.py` and described in [project files](project-file-format.md).
 `.planacity` is a SQLite container, not a text file for an assistant to rewrite.
 JSON backups are the interchange boundary. The strict decoder rejects unknown
@@ -58,9 +58,9 @@ share a schema while having different findings or editing behavior.
 Review guide compatibility on every release, including patches. Update field
 tables, examples and restrictions when the codec or domain behavior changes.
 Do not advertise fields from the roadmap until the installed build supports them.
-In particular, schema 10 has work descriptions, labels, primary groups, optional
-canonical priority, and preserved Jira source-priority text, but it does not yet
-have first-class deliveries.
+In particular, schema 11 has work descriptions, labels, primary groups, optional
+canonical priority and assignee, and preserved Jira source identity/priority text,
+but it does not yet have first-class deliveries.
 
 ## Planning kit and task instructions
 
@@ -101,8 +101,9 @@ For an existing plan, the instructions require:
    an explicit resolution is requested, and report them in proposal notes. S02
    can consolidate only onto a user-selected existing Allocation after preview;
    never guess the survivor or use consolidation for genuine collaboration.
-   Split that work into separately assigned leaves. S03 will add the final editor
-   and Jira-aligned ownership, including feature ownership on Epics. See the
+   Split that work into separately assigned leaves. Schema 11 includes canonical
+   Jira-aligned ownership, including feature ownership on Epics; S03b adds the
+   final compact editor. See the
    [assignment revision](single-person-visual-planning.md). Keep Allocation
    separate from work, hierarchy separate from dependencies, and
    stored inputs separate from computed totals. Use supported field names only.

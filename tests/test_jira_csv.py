@@ -4,9 +4,10 @@ import json
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
-from persistence_helpers import strip_external_priority, strip_work_context
+from persistence_helpers import strip_external_priority, strip_work_assignee, strip_work_context
 
 from planacity.domain import (
     Person,
@@ -24,6 +25,7 @@ from planacity.integrations.jira.csv_io import (
 )
 from planacity.integrations.jira.export import (
     ExportOptions,
+    assignee_export_preview,
     export_csv,
     priority_export_preview,
 )
@@ -90,6 +92,98 @@ def test_roundtrip_preserves_baseline_and_unmapped_cells(plan, tmp_path):
     assert output.rows[1][3] == "Agreed"
     assert output.rows[1][4] == "Blocker"
     assert reopened.imports == baseline
+
+
+def test_import_sets_canonical_assignee_on_current_and_immutable_baseline(plan):
+    result = imported(plan)
+    person = result.people[0]
+
+    assert result.allocations == ()
+    assert all(item.assignee_id == person.id for item in result.work_items)
+    assert all(
+        record.item.assignee_id == person.id
+        for source in result.imports
+        for record in source.records
+    )
+
+
+def test_unchanged_assignee_exports_the_exact_original_identity_without_guessing(plan):
+    source = CSV.replace("Alice,Open", "alice.account,Open")
+    person = Person(name="Alice Display Name")
+    result = preview_import(
+        plan,
+        read_csv(source),
+        MAPPING,
+        {"alice.account": person},
+        "test.csv",
+    )
+
+    preview = assignee_export_preview(result)
+    output = read_csv(export_csv(result))
+
+    assert {row.csv_assignee for row in preview} == {"alice.account"}
+    assert {row.result for row in preview} == {"Original source preserved"}
+    assert {row[9] for row in output.rows} == {"alice.account"}
+
+
+def test_legacy_baseline_reuses_original_identity_when_the_same_person_becomes_explicit(plan):
+    result = imported(plan)
+    source = result.imports[0]
+    records = tuple(
+        replace(record, item=replace(record.item, assignee_id=None)) for record in source.records
+    )
+    legacy = replace(result, imports=(replace(source, records=records),))
+
+    preview = assignee_export_preview(legacy)
+
+    assert {row.csv_assignee for row in preview} == {"Alice"}
+    assert {row.result for row in preview} == {"Original source preserved"}
+
+
+def test_changed_or_new_assignee_requires_an_explicit_external_identity(plan):
+    result = imported(plan)
+    sam = Person(name="Sam")
+    task = result.work_items[0]
+    changed = replace(
+        result,
+        people=(*result.people, sam),
+        work_items=(replace(task, assignee_id=sam.id), result.work_items[1]),
+    )
+
+    row = next(value for value in assignee_export_preview(changed) if value.person_id == sam.id)
+    assert row.csv_assignee == ""
+    assert row.result == "External identity required"
+    with pytest.raises(ValueError, match="explicit Jira identity for 'Sam'"):
+        export_csv(changed)
+
+    output = read_csv(export_csv(changed, person_mappings=((sam.id, "sam.account"),)))
+    assert next(value for value in output.rows if value[0] == "A-2")[9] == "sam.account"
+    assert work_changes(changed)[0].fields == ("assignee_id",)
+
+
+def test_clearing_imported_assignee_exports_a_blank_value(plan):
+    result = imported(plan)
+    changed = replace(
+        result,
+        work_items=(replace(result.work_items[0], assignee_id=None), result.work_items[1]),
+    )
+
+    row = next(value for value in assignee_export_preview(changed) if value.reference == "A-2")
+    output = read_csv(export_csv(changed))
+
+    assert row.result == "Unassigned - blank output"
+    assert next(value for value in output.rows if value[0] == "A-2")[9] == ""
+
+
+def test_export_rejects_duplicate_or_unknown_identity_mappings(plan):
+    result = imported(plan)
+    person = result.people[0]
+    duplicate = ((person.id, "alice"), (person.id, "other"))
+
+    with pytest.raises(ValueError, match="at most one Jira identity"):
+        export_csv(result, person_mappings=duplicate)
+    with pytest.raises(ValueError, match="reference roster people"):
+        export_csv(result, person_mappings=((uuid4(), "unknown"),))
 
 
 @pytest.mark.parametrize(
@@ -362,7 +456,7 @@ def test_real_v1_project_upgrade_preserves_data(plan, tmp_path):
     save_project(updated, path)
     assert load_project(path) == updated
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 11
     connection.close()
 
 
@@ -370,6 +464,7 @@ def test_schema_nine_imports_load_without_external_priority(plan):
     data = json.loads(dumps(imported(plan)))
     data["schema_version"] = 9
     strip_external_priority(data)
+    strip_work_assignee(data)
 
     loaded = loads(json.dumps(data))
 

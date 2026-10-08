@@ -58,7 +58,14 @@ def _direct_allocations(plan: ProgramPlan, item_id: UUID) -> tuple[Allocation, .
 def _transfer_effort_to_child(plan: ProgramPlan, parent: WorkItem, child: WorkItem) -> ProgramPlan:
     if child.estimate_hours is not None:
         raise ValueError("The resolution leaf must not already have an estimate.")
-    moved_child = replace(child, estimate_hours=parent.estimate_hours)
+    direct = _direct_allocations(plan, parent.id)
+    people = {allocation.person_id for allocation in direct}
+    assignee_id = next(iter(people)) if len(people) == 1 else child.assignee_id
+    moved_child = replace(
+        child,
+        assignee_id=assignee_id,
+        estimate_hours=parent.estimate_hours,
+    )
     cleared_parent = replace(parent, estimate_hours=None)
     work_items = tuple(
         cleared_parent if current.id == parent.id else current for current in plan.work_items

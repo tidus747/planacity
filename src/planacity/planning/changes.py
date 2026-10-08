@@ -38,6 +38,7 @@ def work_changes(plan: ProgramPlan) -> tuple[WorkChange, ...]:
                 "start",
                 "end",
                 "priority",
+                "assignee_id",
             )
             if getattr(item, field) != getattr(record.item, field)
         )

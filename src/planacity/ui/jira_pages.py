@@ -1,6 +1,7 @@
 """CSV import/export entry points and computed changes from the source baseline."""
 
 from pathlib import Path
+from uuid import UUID
 
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
@@ -26,6 +27,7 @@ from planacity.integrations.jira.export import (
     DEFAULT_PRIORITY_LABELS,
     EXPORT_FIELDS,
     ExportOptions,
+    assignee_export_preview,
     export_csv,
     priority_export_preview,
 )
@@ -38,7 +40,7 @@ from planacity.ui.session import Session
 
 
 class ExportDialog(QDialog):
-    """Review explicit CSV labels and their per-row priority result before export."""
+    """Review explicit Jira identities and priority labels before CSV export."""
 
     def __init__(
         self,
@@ -51,13 +53,15 @@ class ExportDialog(QDialog):
         self.plan = plan
         self.project_path = project_path
         self.options: ExportOptions | None = None
+        self.person_mappings: tuple[tuple[UUID, str], ...] = ()
         self.setWindowTitle("Export Jira CSV")
         self.resize(980, 760)
         layout = QVBoxLayout(self)
         layout.addWidget(
             label(
-                "Choose output columns and explicit Jira priority labels. The preview "
-                "shows when original source text is preserved or a target label is used."
+                "Choose output columns, Jira identities, and explicit priority labels. "
+                "The preview shows when original source text is preserved or a mapping "
+                "is required. Display names are never exported as identities automatically."
             )
         )
         layout.addWidget(label("CSV column labels", "heading"))
@@ -92,6 +96,21 @@ class ExportDialog(QDialog):
             priority_row.addWidget(label(priority.value.title()))
             priority_row.addWidget(edit)
         form.addRow("Priority target labels", priority_row)
+        required_ids = tuple(
+            dict.fromkeys(
+                row.person_id
+                for row in assignee_export_preview(plan)
+                if row.result == "External identity required" and row.person_id is not None
+            )
+        )
+        self.person_labels: dict[UUID, QLineEdit] = {}
+        for person_id in required_ids:
+            person = plan.person(person_id)
+            edit = QLineEdit()
+            edit.setAccessibleName(f"{person.name} Jira identity")
+            edit.setPlaceholderText("Required before export")
+            self.person_labels[person.id] = edit
+            form.addRow(f"Jira identity - {person.name}", edit)
         profiles = QHBoxLayout()
         for text, callback in (
             ("Load profile...", self.load_profile),
@@ -103,14 +122,24 @@ class ExportDialog(QDialog):
         form.addRow(profiles)
         layout.addLayout(form)
         self.notice = label("")
-        self.notice.setAccessibleName("Export priority preview status")
+        self.notice.setAccessibleName("Export assignee and priority preview status")
         layout.addWidget(self.notice)
         self.preview_model = QStandardItemModel(self)
         self.preview_model.setHorizontalHeaderLabels(
-            ["Reference", "Work item", "Planacity priority", "CSV priority", "Result"]
+            [
+                "Reference",
+                "Work item",
+                "Planacity assignee",
+                "CSV assignee",
+                "Assignee result",
+                "Planacity priority",
+                "CSV priority",
+                "Priority result",
+            ]
         )
         self.preview = QTreeView()
         self.preview.setRootIsDecorated(False)
+        self.preview.setMinimumHeight(150)
         self.preview.setModel(self.preview_model)
         layout.addWidget(self.preview, 1)
         self.buttons = QDialogButtonBox(
@@ -119,7 +148,7 @@ class ExportDialog(QDialog):
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
-        for edit in (*self.headers, *self.priority_labels.values()):
+        for edit in (*self.headers, *self.priority_labels.values(), *self.person_labels.values()):
             edit.textChanged.connect(self.refresh_preview)
         self.units.currentTextChanged.connect(self.refresh_preview)
         self.dates.currentTextChanged.connect(self.refresh_preview)
@@ -139,31 +168,45 @@ class ExportDialog(QDialog):
         self.preview_model.removeRows(0, self.preview_model.rowCount())
         try:
             options = self._current_options()
-            rows = priority_export_preview(self.plan, options)
+            mappings = tuple(
+                (person_id, edit.text()) for person_id, edit in self.person_labels.items()
+            )
+            priority_rows = priority_export_preview(self.plan, options)
+            assignee_rows = assignee_export_preview(self.plan, mappings)
             unresolved = 0
-            for entry in rows:
+            missing_identities = 0
+            for assignee, priority in zip(assignee_rows, priority_rows, strict=True):
                 values = (
-                    entry.reference,
-                    entry.title,
-                    entry.planacity_priority,
-                    entry.csv_priority or "Blank",
-                    entry.result,
+                    priority.reference,
+                    priority.title,
+                    assignee.planacity_assignee,
+                    assignee.csv_assignee or "Blank",
+                    assignee.result,
+                    priority.planacity_priority,
+                    priority.csv_priority or "Blank",
+                    priority.result,
                 )
                 row = [QStandardItem(value) for value in values]
                 for cell in row:
                     cell.setEditable(False)
                 self.preview_model.appendRow(row)
-                unresolved += entry.result == "Unresolved source preserved"
+                unresolved += priority.result == "Unresolved source preserved"
+                missing_identities += assignee.result == "External identity required"
             self.notice.setText(
-                f"{len(rows)} rows ready. {unresolved} unresolved source value(s) will be "
-                "preserved unchanged; Unset edits export as blank."
+                f"{len(priority_rows)} rows reviewed. {missing_identities} assignee identity "
+                f"mapping(s) required; {unresolved} unresolved priority source value(s) "
+                "will be preserved unchanged."
             )
-            self.options = options
-            self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
-            for column in range(5):
+            self.person_mappings = mappings
+            self.options = options if not missing_identities else None
+            self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(
+                not missing_identities
+            )
+            for column in range(8):
                 self.preview.resizeColumnToContents(column)
         except ValueError as error:
             self.options = None
+            self.person_mappings = ()
             self.notice.setText(f"Cannot export: {error}")
             self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
@@ -292,6 +335,7 @@ class ImportPage(WorkspacePage):
             dialog.deleteLater()
             return
         options = dialog.options
+        person_mappings = dialog.person_mappings
         dialog.deleteLater()
         filename, _ = QFileDialog.getSaveFileName(
             self, "Export Jira CSV", "plan.csv", "CSV (*.csv)"
@@ -308,7 +352,7 @@ class ImportPage(WorkspacePage):
                 raise ValueError("Choose a different path; CSV cannot replace the active project.")
             if target.suffix.lower() != ".csv":
                 raise ValueError("Choose a filename ending in .csv.")
-            export_text(export_csv(plan, options), target)
+            export_text(export_csv(plan, options, person_mappings), target)
         except (OSError, ValueError) as error:
             QMessageBox.warning(self, "Cannot export CSV", str(error))
 

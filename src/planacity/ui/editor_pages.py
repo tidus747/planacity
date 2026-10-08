@@ -1175,6 +1175,7 @@ class PeoplePage(WorkspacePage):
         person = plan.person(UUID(selected)) if selected else None
         if operation == "remove" and person:
             entries = sum(e.person_id == person.id for e in plan.availability_events)
+            owned = sum(item.assignee_id == person.id for item in plan.work_items)
             rules = [rule.name for rule in plan.reservation_rules if person.id in rule.person_ids]
             reservation_notice = (
                 "\nAlso remove them from these reservation rules: "
@@ -1190,7 +1191,8 @@ class PeoplePage(WorkspacePage):
                     f"Remove '{person.name}' from the roster and clear their calendar assignment "
                     f"and {entries} availability entries?\n"
                     f"This removes {sum(a.person_id == person.id for a in plan.allocations)} "
-                    "work allocation(s)." + reservation_notice,
+                    f"work allocation(s) and clears {owned} work assignee reference(s)."
+                    + reservation_notice,
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.No,
                 )
@@ -1204,6 +1206,7 @@ class PeoplePage(WorkspacePage):
                             remove_availability=True,
                             remove_reservations=True,
                             remove_allocations=True,
+                            clear_assignees=True,
                         )
                     )
             return

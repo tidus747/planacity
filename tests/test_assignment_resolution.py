@@ -95,7 +95,8 @@ def test_preview_preserves_survivor_sums_hours_and_reports_whole_plan_loads() ->
     }
     assert FindingRule.OVERLOAD in {finding.rule_key for finding in preview.after_findings}
     assert dumps(plan) == before
-    assert preview.candidate.work_items is plan.work_items
+    assert preview.candidate.work_item(survivor.work_item_id).assignee_id == survivor.person_id
+    assert preview.candidate.work_items[1:] == plan.work_items[1:]
     assert preview.candidate.imports is plan.imports
 
 
@@ -162,5 +163,6 @@ def test_transferred_legacy_parent_effort_can_be_previewed_without_losing_ids() 
     assert preview.removed_allocation_ids == (entries[0].id,)
     assert preview.candidate.allocations[0].id == entries[1].id
     assert preview.candidate.allocations[0].hours == 10
+    assert preview.candidate.work_item(leaf.id).assignee_id == entries[1].person_id
     assert assignment_policy_conflicts(preview.candidate) == ()
     assert loads(dumps(preview.candidate)) == preview.candidate

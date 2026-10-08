@@ -46,8 +46,8 @@ default.
   relationships, estimates, optional dates, and optional work priorities.
 - Enter estimates in hours, days, or weeks while preserving exact stored hours.
 - Import Jira CSV files through reusable field, type, person, and priority
-  mappings; keep a baseline, review changes, and export explicit target priority
-  labels with the agreed structure.
+  mappings; keep a baseline, review assignee and priority changes, and export
+  explicit Jira identities and target priority labels with the agreed structure.
 - Explore work on a Timeline with day, week, and month scales, grouping, filters,
   dependency arrows, and direct date editing.
 - Define personal work calendars and availability, reserve recurring capacity,
@@ -69,7 +69,7 @@ and load the fictional `examples/aurora.planacity.json` plan to explore the app.
 | --- | --- |
 | Source version | `0.4.0.dev0` |
 | Active milestone | v0.4 - Team & Capacity |
-| Project file schema | 10 |
+| Project file schema | 11 |
 | Distribution | Source preview - no stable installer yet |
 
 The v0.1 planning foundation and v0.2 Jira roundtrip are implemented. The v0.3
@@ -88,11 +88,12 @@ input. The [implementation roadmap](docs/roadmap.md) and
 [implementation queue](docs/implementation-queue.md) describe the ordered work;
 GitHub Issues and Milestones are the live status.
 
-Project files from schemas 1-9 remain supported. Schemas 1-5 open in hours,
+Project files from schemas 1-10 remain supported. Schemas 1-5 open in hours,
 schemas 1-6 open without inferred allocations, schemas 1-7 open with empty work
 context, schemas 1-8 open with priority Unset, and schemas 1-9 open without an
-explicit source-priority copy. Keep a backup or use Save As when opening a project
-with an older build.
+explicit source-priority copy. Schemas 1-10 open with canonical work assignees
+unset; existing allocations and imported identity provenance remain intact. Keep
+a backup or use Save As when opening a project with an older build.
 
 ## Run from source
 

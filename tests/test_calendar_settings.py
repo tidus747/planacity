@@ -141,7 +141,7 @@ def test_legacy_schema_migrates_without_inventing_calendars(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 11
     connection.close()
 
 

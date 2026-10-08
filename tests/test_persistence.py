@@ -8,7 +8,12 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from persistence_helpers import strip_external_priority, strip_work_context, strip_work_priority
+from persistence_helpers import (
+    strip_external_priority,
+    strip_work_assignee,
+    strip_work_context,
+    strip_work_priority,
+)
 
 from planacity.document import Document
 from planacity.domain import WorkGroup, WorkPriority
@@ -38,7 +43,7 @@ def test_complete_example_sqlite_and_backup_round_trip(plan, tmp_path):
     assert restore_backup(backup) == plan
 
 
-def test_schema_ten_preserves_context_priority_and_imported_source_priority(plan, tmp_path):
+def test_schema_eleven_preserves_context_priority_assignee_and_imported_source(plan, tmp_path):
     group = WorkGroup(name="Reporting")
     current = replace(
         plan.work_items[0],
@@ -74,7 +79,7 @@ def test_schema_ten_preserves_context_priority_and_imported_source_priority(plan
     )
     data = json.loads(dumps(contextual))
 
-    assert data["schema_version"] == 10
+    assert data["schema_version"] == 11
     assert data["plan"]["work_items"][0]["description"] == current.description
     assert data["plan"]["work_items"][0]["labels"] == list(current.labels)
     assert data["plan"]["work_items"][0]["primary_group_id"] == str(group.id)
@@ -89,6 +94,19 @@ def test_schema_ten_preserves_context_priority_and_imported_source_priority(plan
     path = tmp_path / "context.planacity"
     save_project(contextual, path)
     assert load_project(path) == contextual
+
+
+def test_schema_ten_loads_work_assignees_as_unset(plan):
+    data = json.loads(dumps(plan))
+    data["schema_version"] = 10
+    strip_work_assignee(data)
+
+    loaded = loads(json.dumps(data))
+
+    assert all(item.assignee_id is None for item in loaded.work_items)
+    assert all(
+        record.item.assignee_id is None for source in loaded.imports for record in source.records
+    )
 
 
 @pytest.mark.parametrize("priority", [None, *WorkPriority])
@@ -115,6 +133,7 @@ def test_schemas_one_to_eight_load_priority_as_unset(plan, version):
         strip_work_context(data)
     else:
         strip_work_priority(data)
+        strip_work_assignee(data)
     strip_external_priority(data)
     for key, introduced in (
         ("imports", 2),
@@ -141,6 +160,7 @@ def test_schema_nine_loads_imported_source_priority_as_empty(plan):
     data = json.loads(dumps(plan))
     data["schema_version"] = 9
     strip_external_priority(data)
+    strip_work_assignee(data)
 
     loaded = loads(json.dumps(data))
 

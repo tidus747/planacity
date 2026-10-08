@@ -61,7 +61,7 @@ def test_lifecycle_preserves_ids_order_and_unrelated_data():
     first, second = plan.allocations
     changed = update_allocation(plan, replace(first, hours=Decimal("70.125")))
     assert changed.allocations == (replace(first, hours=Decimal("70.125")), second)
-    assert changed.work_items is plan.work_items
+    assert changed.work_item(plan.work_items[1].id).assignee_id is None
     third = Allocation(
         work_item_id=plan.work_items[2].id,
         person_id=plan.people[0].id,
@@ -85,7 +85,7 @@ def test_new_allocations_are_leaf_only_but_legacy_container_entries_can_be_edite
     plan = allocated_plan()
     container = plan.work_items[0]
     entry = Allocation(work_item_id=container.id, person_id=plan.people[0].id, hours=Decimal("8"))
-    with pytest.raises(ValueError, match="leaf work"):
+    with pytest.raises(ValueError, match="feature owners"):
         add_allocation(plan, entry)
     legacy = replace(plan, allocations=(entry, *plan.allocations))
     changed = update_allocation(legacy, replace(entry, hours=Decimal("9")))
@@ -112,6 +112,7 @@ def test_adding_child_to_allocated_leaf_requires_and_applies_explicit_transfer()
     assert resolved.work_item(child.id).estimate_hours == 12
     moved = next(allocation for allocation in resolved.allocations if allocation.id == entry.id)
     assert moved.work_item_id == child.id and moved.hours == 7
+    assert resolved.work_item(child.id).assignee_id == entry.person_id
     assert resolved.imports is plan.imports
 
 
@@ -249,7 +250,7 @@ def test_older_schemas_open_without_inferred_allocations(version, tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 11
     connection.close()
 
 
@@ -289,7 +290,12 @@ def test_jira_import_allocations_export_and_deletions_preserve_baselines():
         )
     assert loads(dumps(assigned)) == assigned
     assert assigned.imports is imported.imports
-    removed_person = remove_person(assigned, plan.people[0].id, remove_allocations=True)
+    removed_person = remove_person(
+        assigned,
+        plan.people[0].id,
+        remove_allocations=True,
+        clear_assignees=True,
+    )
     removed_work = remove_work_item(assigned, work.id, remove_allocations=True)
     assert removed_person.imports is assigned.imports
     assert removed_work.imports is assigned.imports

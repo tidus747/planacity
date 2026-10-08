@@ -78,8 +78,12 @@ def preview_assignment_consolidation(
     removed = tuple(
         sorted((allocation.id for allocation in direct if allocation.id != survivor.id), key=str)
     )
+    assigned_item = replace(item, assignee_id=survivor.person_id)
     candidate = replace(
         plan,
+        work_items=tuple(
+            assigned_item if current.id == item.id else current for current in plan.work_items
+        ),
         allocations=tuple(
             replace(allocation, hours=total) if allocation.id == survivor.id else allocation
             for allocation in plan.allocations

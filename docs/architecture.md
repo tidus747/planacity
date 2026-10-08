@@ -8,8 +8,8 @@ The proposal is not implemented by the architecture documentation change.
 The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
-effort, dated capacity, work-context, priority, and Jira mapping services operate
-over schema 10 inputs.
+effort, dated capacity, work-context, priority, ownership, and Jira mapping
+services operate over schema 11 inputs.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
 people, estimates, dates, groups, and relationships. See
@@ -53,9 +53,10 @@ same invariants available to the future UI and file loaders without Qt imports.
   database service, HTTP API, or cloud component is needed.
 - Use canonical IDs and Python dates. A planning horizon is any valid date range.
   Parent/child hierarchy, WorkGroups, and relationships are distinct concepts.
-- Work assignment uses a separate Allocation entity and never a
-  `WorkItem.owner` shortcut. The transition policy permits zero or one Allocation
-  per executable leaf while preserving historical multi-person data.
+- Work ownership uses `WorkItem.assignee_id`; capacity uses a separate Allocation
+  entity. The transition policy permits zero or one Allocation per executable
+  leaf, aligns its person with canonical ownership, and preserves historical
+  multi-person data.
 - Do not pre-create adapters, scenarios, calendar, reports, or milestone models.
   Add them when their roadmap release needs them.
 - Astro is a static product site independent of the desktop. Node is needed only
@@ -92,6 +93,9 @@ filtering and stable sibling ordering. The inspector and inline combo both call
 the same planning service. Schema 10 adds original source-priority text to
 `ImportedWork`. The Jira adapter maps visible source labels explicitly while
 keeping blank or unresolved values Unset and preserving every baseline snapshot.
+Schema 11 adds canonical WorkItem assignees. Import maps external people to that
+field without creating capacity hours. Export reuses exact unchanged source
+identity, but changed or new ownership requires an explicit Jira identity mapping.
 
 `planning/overview_analysis.py` is a pure, read-only projection over the same
 canonical plan and dated capacity result used by findings and People. It derives
@@ -111,7 +115,7 @@ may change or be deleted without invalidating their original snapshots.
 
 `planning/changes.py` computes differences, including canonical priority; it
 never writes a baseline. CSV export serializes the current hierarchy and carries
-original references, status, external people, and priority output. Project schema
+original references, status, assignee, and priority output. Project schema
 2 stores imports; schema 1 loads with none. Schema 10 retains the exact priority
 source cell separately from its mapped canonical value.
 
@@ -123,7 +127,7 @@ nonblank source label while canonical priority is unchanged; an edit uses one
 explicit target label per canonical level. The pure export preview reports
 preserved, unresolved, edited, canonical, and blank outcomes before writing.
 Separate export profiles retain output headers, units, dates, delimiter, and
-target labels without storing plan rows or identities.
+target labels without storing plan rows or Jira identities.
 
 ## Visual planning
 
@@ -280,7 +284,8 @@ structural decoding. Allocation lifecycle services reject new or worsened
 conflicts but allow an existing conflict to keep its IDs and hours or reduce it
 incrementally. `planning/findings.py` exposes each conflict as advisory work;
 summary and capacity services continue counting every stored allocation once.
-The wire representation and schema 10 remain unchanged.
+S01/S02 leave the wire representation unchanged. Schema 11 adds canonical
+WorkItem ownership without rewriting any legacy Allocation.
 
 `planning/assignment_resolution.py` builds a complete immutable consolidation
 candidate from one explicitly selected existing Allocation. It preserves the

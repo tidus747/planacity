@@ -182,22 +182,28 @@ No automatic task-splitting wizard or guessed dependency rewiring.
 ## S03 - One-person editing and cross-view acceptance
 
 Target: v0.4. Depends on S01/S02.
+
+### S03a - Canonical ownership and safe Jira roundtrip
+
+Tracked in [#114](https://github.com/tidus747/planacity/issues/114).
+Add one canonical Jira-facing assignee per WorkItem in schema 11. An Epic
+assignee is its feature owner and creates no capacity demand. A Task or Subtask
+with allocated hours uses the same person for assignee and its sole Allocation.
+Import preserves the mapped assignee without inventing allocated hours. Export
+preserves unchanged external identity and requires an explicit per-person Jira
+identity for edited/new ownership. Never export a display name by assumption.
+Include assignee changes in Changes and clear current ownership only with explicit
+consent when deleting a roster person. Preserve all legacy Allocations.
+
+### S03b - Compact editing and final cross-view acceptance
+
 Replace the multi-row authoring workflow with one person selector and explicit
 allocated hours for leaves; containers show a read-only aggregate team. Existing
 multi-person items show every assignment and the resolution action. Apply/Cancel,
 reassignment previews and keyboard access remain consistent across all editors.
 Keep estimate/allocation mismatch visible; never silently synchronize hours.
-
-Add one canonical Jira-facing assignee per WorkItem. An Epic assignee is its
-feature owner and creates no capacity demand; its displayed effort/team still
-rolls up executable descendants. A Task or Subtask with allocated hours uses the
-same person for assignee and its sole Allocation. Import preserves the mapped
-assignee without inventing allocated hours. Export preserves unchanged external
-identity and explicitly previews the local assignee used for edited/new work.
 When several people contribute, use separately assigned Tasks/Subtasks rather
-than consolidating their hours onto one person. Define migration and external
-person mapping explicitly before implementation; never export a display name as
-a Jira account identifier by assumption.
+than consolidating their hours onto one person.
 
 Verify People groups, Overview, workload distribution, findings, hierarchy totals,
 Jira baselines, backup restore, delete-person previews, and agent-guide rules.

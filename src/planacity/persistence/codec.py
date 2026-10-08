@@ -27,7 +27,7 @@ from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 SUPPORTED_SCHEMA_VERSIONS = tuple(range(1, SCHEMA_VERSION + 1))
 
 
@@ -254,12 +254,17 @@ def _work(value: object, schema_version: int) -> WorkItem:
         fields += " description labels primary_group_id"
     if schema_version >= 9:
         fields += " priority"
+    if schema_version >= 11:
+        fields += " assignee_id"
     row = _object(value, fields)
     return WorkItem(
         id=_id(row["id"]),
         title=_text(row["title"]),
         kind=WorkItemType(_text(row["kind"])),
         parent_id=None if row["parent_id"] is None else _id(row["parent_id"]),
+        assignee_id=(
+            None if schema_version < 11 or row["assignee_id"] is None else _id(row["assignee_id"])
+        ),
         estimate_hours=None
         if row["estimate_hours"] is None
         else Decimal(_text(row["estimate_hours"])),

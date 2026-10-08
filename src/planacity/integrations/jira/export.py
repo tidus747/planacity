@@ -4,6 +4,7 @@ import csv
 import io
 from dataclasses import dataclass
 from decimal import Decimal
+from uuid import UUID
 
 from planacity.domain import ProgramPlan, WorkItem, WorkPriority
 from planacity.domain.models import ImportedWork
@@ -75,6 +76,16 @@ class PriorityExportPreview:
     result: str
 
 
+@dataclass(frozen=True)
+class AssigneeExportPreview:
+    reference: str
+    title: str
+    person_id: UUID | None
+    planacity_assignee: str
+    csv_assignee: str
+    result: str
+
+
 def _ordered_work(plan: ProgramPlan) -> tuple[WorkItem, ...]:
     ordered: list[WorkItem] = []
 
@@ -126,9 +137,78 @@ def priority_export_preview(
     return tuple(rows)
 
 
-def export_csv(plan: ProgramPlan, options: ExportOptions | None = None) -> str:
+def _export_assignee(
+    item: WorkItem,
+    record: ImportedWork | None,
+    mappings: dict[UUID, str],
+) -> tuple[str, str]:
+    if item.assignee_id is None:
+        if (
+            record is not None
+            and record.item.assignee_id is None
+            and record.person is not None
+            and record.external_person
+        ):
+            return record.external_person, "Legacy source preserved"
+        return "", "Unassigned - blank output"
+    if (
+        record is not None
+        and record.external_person
+        and (
+            item.assignee_id == record.item.assignee_id
+            or (
+                record.item.assignee_id is None
+                and record.person is not None
+                and item.assignee_id == record.person.id
+            )
+        )
+    ):
+        return record.external_person, "Original source preserved"
+    value = mappings.get(item.assignee_id, "").strip()
+    if not value:
+        return "", "External identity required"
+    return value, "Explicit identity mapping"
+
+
+def assignee_export_preview(
+    plan: ProgramPlan,
+    person_mappings: tuple[tuple[UUID, str], ...] = (),
+) -> tuple[AssigneeExportPreview, ...]:
+    """Explain the Jira Assignee value without guessing from display names."""
+    mappings = dict(person_mappings)
+    if len(mappings) != len(person_mappings):
+        raise ValueError("Provide at most one Jira identity for each roster person.")
+    unknown = set(mappings) - {person.id for person in plan.people}
+    if unknown:
+        raise ValueError("Jira identity mappings must reference roster people.")
+    records = {record.item.id: record for source in plan.imports for record in source.records}
+    rows = []
+    for item in _ordered_work(plan):
+        record = records.get(item.id)
+        value, result = _export_assignee(item, record, mappings)
+        person = plan.person(item.assignee_id) if item.assignee_id is not None else None
+        rows.append(
+            AssigneeExportPreview(
+                reference=record.external_reference if record else "",
+                title=item.title,
+                person_id=item.assignee_id,
+                planacity_assignee="Unassigned" if person is None else person.name,
+                csv_assignee=value,
+                result=result,
+            )
+        )
+    return tuple(rows)
+
+
+def export_csv(
+    plan: ProgramPlan,
+    options: ExportOptions | None = None,
+    person_mappings: tuple[tuple[UUID, str], ...] = (),
+) -> str:
     options = options or ExportOptions()
     ordered = _ordered_work(plan)
+    assignee_rows = assignee_export_preview(plan, person_mappings)
+    assignees = {item.id: row for item, row in zip(ordered, assignee_rows, strict=True)}
     ids = {item.id: str(index) for index, item in enumerate(ordered, 1)}
     records = {r.item.id: r for source in plan.imports for r in source.records}
     priority_labels = dict(options.priority_labels)
@@ -138,6 +218,16 @@ def export_csv(plan: ProgramPlan, options: ExportOptions | None = None) -> str:
     for item in ordered:
         record = records.get(item.id)
         priority, _ = _export_priority(item, record, priority_labels)
+        assignee_row = assignees[item.id]
+        assignee, assignee_result = assignee_row.csv_assignee, assignee_row.result
+        if assignee_result == "External identity required":
+            if item.assignee_id is None:
+                raise AssertionError("Missing assignee cannot require an external identity.")
+            person = plan.person(item.assignee_id)
+            raise ValueError(
+                f"Provide an explicit Jira identity for '{person.name}' before exporting "
+                f"'{item.title}'."
+            )
         estimate = item.estimate_hours
         if estimate is not None and options.estimate_unit == "seconds":
             estimate *= Decimal(3600)
@@ -157,7 +247,7 @@ def export_csv(plan: ProgramPlan, options: ExportOptions | None = None) -> str:
                 "" if estimate is None else format(estimate, "f"),
                 "" if item.start is None else item.start.strftime(options.date_format),
                 "" if item.end is None else item.end.strftime(options.date_format),
-                record.external_person if record else "",
+                assignee,
                 record.status if record else "",
             )
         )

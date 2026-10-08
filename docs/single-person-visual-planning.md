@@ -2,7 +2,8 @@
 
 Date: 2026-10-07. Status: accepted implementation contract. S01 enforces the
 transition policy and reports legacy conflicts; S02 adds explicit consolidation.
-Neither changes the wire format. S03 and V07 remain planned in the
+Neither changes the wire format. S03a adds schema 11 canonical ownership and safe
+Jira CSV roundtrip; S03b and V07 remain planned in the
 [implementation queue](implementation-queue.md). This decision supersedes the
 earlier multi-person-task target and never silently migrates saved work.
 
@@ -11,20 +12,22 @@ earlier multi-person-task target and never silently migrates saved work.
 Allow zero or one Allocation per leaf WorkItem, including zero-hour allocations.
 Zero is necessary while drafting unassigned work. One person may have many tasks.
 Keep Allocation as a separate entity with its stable ID, person, work and hours;
-do not introduce a parallel `owner` field or derive assignments from names.
+`WorkItem.assignee_id` records ownership, not effort, and is never derived from a
+display name.
 Enforce the new policy in planning services, not only by hiding a UI button.
 
-Containers have no new direct assignment. An Epic or Task with children shows
-the distinct people assigned to its descendant leaves as a read-only team.
-That summary is not permission to assign several people to one executable item.
-An Epic without children follows the leaf rule until it is decomposed.
+Containers have no direct capacity Allocation. An Epic or Task with children
+shows the distinct people assigned to its descendant leaves as a read-only team,
+separate from its canonical assignee. An Epic assignee is always a feature owner,
+including before decomposition, and never consumes capacity. That summary is not
+permission to assign several people to one executable item.
 
-Jira-facing ownership is distinct from capacity hours. The S03 target is one
+Jira-facing ownership is distinct from capacity hours. Schema 11 stores one
 canonical assignee per work item. On an Epic, that person is the feature owner
 and does not create additional capacity demand; Epic effort remains the exact
 sum of its executable descendants. On a Task or Subtask, the assignee and the
 single Allocation person must agree whenever allocated hours exist. Imported
-assignee text remains source provenance until that workflow is implemented.
+assignee text remains separate source provenance for exact unchanged export.
 
 For collaboration, split executable work: "Calibrate beam" can contain "Adjust
 optics" assigned to Nefario for 16 h and "Verify beam" assigned to Bob for 8 h.
@@ -47,8 +50,9 @@ dates or people change. Zero-hour assignment does not imply positive workload.
 
 Reassigning changes person_id on the existing Allocation, preserving ID and hours.
 Preview the new person's calendar/capacity findings, then apply atomically.
-Unassigning explicitly removes that Allocation while preserving the estimate.
-No automatic selection of a person, calendar, or eight-hour day.
+Clearing a canonical assignee never silently removes an Allocation. Remove the
+Allocation explicitly first, preserving the estimate. No automatic selection of
+a person, calendar, or eight-hour day.
 
 ## Compatibility and resolution
 
@@ -83,8 +87,9 @@ automatic split wizard that must guess dates, estimates or dependency semantics.
 Legacy parent-effort transfer must preserve every allocation and show the same
 unresolved state if its new leaf still has several people.
 
-Keep the existing wire representation. This policy alone does not require a
-schema bump or rewriting backups; application/guide revisions must describe it.
+S01/S02 keep the existing wire representation. S03a introduces schema 11 for
+`assignee_id`; schemas 1-10 load it as unset without rewriting the source file or
+discarding Allocations. Application/guide revisions must describe it.
 If implementation needs new persisted input, decide its migration separately.
 The external-agent review validates transitions against the original; being
 accepted by the legacy-compatible decoder is not proof of meeting this policy.
@@ -136,7 +141,7 @@ Named, hatched absence overlays and reservation lanes remain visually distinct.
 | People WorkGroups | Still derived from positive allocations; one person can work across many groups |
 | Overview topics | Same primary-topic resolver as Gantt, no multi-group double counting |
 | Inspector | One person selector and allocated hours on leaves; team summary on parents |
-| Jira CSV and baselines | Preserve source provenance; S03 adds one canonical assignee, with Epic assignee as feature owner and leaf assignee aligned with its Allocation |
+| Jira CSV and baselines | Preserve source provenance; S03a adds one canonical assignee, with Epic assignee as feature owner and leaf assignee aligned with its Allocation |
 | Descriptions, labels, priority | Independent metadata; priority does not determine criticality or bar color |
 | Dependency graph | One assignee on a normal leaf card, aggregate names on a container, explicit legacy warnings |
 | Critical path | Dependency/duration calculation unchanged; resource feasibility remains separate |
