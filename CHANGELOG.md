@@ -10,7 +10,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   Allocation to keep, preview the exact combined hours, removed IDs, whole-plan
   person loads, and resulting findings, then confirm atomically. Cancel keeps the
   complete draft unchanged; estimates, dates, dependencies, hierarchy, imports,
-  and schema 10 remain untouched.
+  and schema 10 remain untouched. The preview warns that genuine collaboration
+  should be split into separately assigned work so capacity and Jira ownership
+  are not misattributed.
 - Single-person assignment transitions for executable leaf work. New leaves
   accept zero or one explicit Allocation, while legacy multi-person leaves keep
   every ID and exact hour, remain saveable and editable, and receive an

@@ -15,6 +15,11 @@ Export includes:
 - Original external assignees and statuses for imported work.
 - Priority output chosen by a visible preservation rule.
 
+The current exporter does not derive Jira Assignee from capacity Allocations.
+It preserves the original external assignee text for imported work and leaves it
+blank for new work. Until S03 adds an explicit Jira-aligned ownership workflow,
+review that column before import and do not assume consolidation changes it.
+
 When imported work keeps its baseline canonical priority, export preserves its
 nonblank source priority text exactly. This includes unresolved custom values
 whose Planacity priority remains Unset. When priority changes, export uses the

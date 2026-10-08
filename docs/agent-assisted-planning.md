@@ -100,7 +100,9 @@ For an existing plan, the instructions require:
    separately assigned subtasks. Preserve unresolved legacy assignments until
    an explicit resolution is requested, and report them in proposal notes. S02
    can consolidate only onto a user-selected existing Allocation after preview;
-   never guess the survivor. S03 will add the final editor. See the
+   never guess the survivor or use consolidation for genuine collaboration.
+   Split that work into separately assigned leaves. S03 will add the final editor
+   and Jira-aligned ownership, including feature ownership on Epics. See the
    [assignment revision](single-person-visual-planning.md). Keep Allocation
    separate from work, hierarchy separate from dependencies, and
    stored inputs separate from computed totals. Use supported field names only.

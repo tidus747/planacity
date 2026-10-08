@@ -131,6 +131,14 @@ class AssignmentConsolidationDialog(QDialog):
                 "preserves the complete draft."
             )
         )
+        layout.addWidget(
+            label(
+                "Use consolidation only when the selected person should own every combined "
+                "hour. If several people really contribute, cancel and split or duplicate "
+                "the work into separately assigned Tasks or Subtasks so capacity and the "
+                "single Jira assignee stay accurate."
+            )
+        )
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )

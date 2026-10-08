@@ -187,6 +187,10 @@ def test_consolidation_preview_requires_selection_and_cancel_preserves_plan(app,
     assert "Alex: 8 h -> 12 h (+4 h)" in text
     assert "Sam: 4 h -> 0 h (-4 h)" in text
     assert "Capacity overload" in text
+    assert any(
+        "single Jira assignee stay accurate" in child.text()
+        for child in dialog.findChildren(QLabel)
+    )
 
     QTest.keyClick(dialog, Qt.Key.Key_Escape)
     assert dialog.result() == QDialog.DialogCode.Rejected
