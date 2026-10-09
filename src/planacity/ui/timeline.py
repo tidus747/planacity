@@ -270,7 +270,7 @@ class _LegendSwatch(QWidget):
         super().__init__()
         self.identity = identity
         self.shape = shape
-        self.setFixedSize(26, 22)
+        self.setFixedSize(22, 18)
         name = (
             identity.label
             if identity is not None
@@ -283,7 +283,7 @@ class _LegendSwatch(QWidget):
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = QRectF(3, 3, self.width() - 6, self.height() - 6)
+        rect = QRectF(2, 2, self.width() - 4, self.height() - 4)
         theme = _active_theme(self)
         if self.identity is not None:
             color = QColor(self.identity.color(theme))
@@ -318,8 +318,8 @@ class TimelineLegend(QFrame):
         self.setProperty("role", "panel")
         self.setAccessibleName("Timeline legend")
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 6, 12, 6)
-        layout.setSpacing(10)
+        layout.setContentsMargins(10, 0, 10, 0)
+        layout.setSpacing(8)
         heading = QLabel("Legend")
         heading.setProperty("role", "heading")
         layout.addWidget(heading)
@@ -332,7 +332,7 @@ class TimelineLegend(QFrame):
         scroll.setWidgetResizable(True)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll.setFixedHeight(48)
+        scroll.setFixedHeight(34)
         scroll.setWidget(self.items)
         layout.addWidget(scroll, 1)
         self.set_projection(None)
@@ -576,9 +576,13 @@ class TimelinePage(WorkspacePage):
         self._resized_columns: set[int] = set()
         self.summary = label("Open a project to see its schedule.", "badge")
         self.summary.setAccessibleName("Timeline summary")
-        self.content.addWidget(self.summary)
         self.legend = TimelineLegend()
-        self.content.addWidget(self.legend)
+        status = QHBoxLayout()
+        status.setContentsMargins(0, 0, 0, 0)
+        status.setSpacing(8)
+        status.addWidget(self.summary)
+        status.addWidget(self.legend, 1)
+        self.content.addLayout(status)
         self.grouping_box = QComboBox()
         for grouping_choice in TimelineGrouping:
             self.grouping_box.addItem(grouping_choice.value.title(), grouping_choice.value)
