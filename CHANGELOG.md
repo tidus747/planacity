@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Compact one-person assignment editing in the Plan inspector and Work allocations
+  dialog. A leaf can have an owner with optional explicit capacity hours;
+  reassignment preserves the sole Allocation ID, while blank hours explicitly
+  removes capacity demand without clearing ownership. Epics expose a feature owner
+  without hours, containers show their derived contributor team, and legacy
+  multi-person leaves retain every row plus their explicit consolidation workflow.
 - Canonical optional assignees for every work item. Epic assignees are feature
   owners without capacity demand; executable Tasks and Subtasks align their sole
   Allocation person when allocation ownership is edited. Jira import preserves
@@ -77,10 +83,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   moves direct effort to a new leaf without changing allocation IDs or hours.
 - Product website with real application captures, a getting-started guide,
   responsive light/dark appearance, and the current implementation roadmap.
-- Work allocations in Plan: split explicit hours between people, edit or remove
-  assignments, and review allocated/remaining effort and missing estimates. Save
-  applies the draft; Cancel discards it. Work/person deletion previews affected
-  allocations, including hidden descendants. Imported baselines remain unchanged.
+- Work allocations in Plan: store explicit hours separately from estimates and
+  review allocated/remaining effort and missing estimates. Save applies the draft;
+  Cancel discards it. Work/person deletion previews affected allocations, including
+  hidden descendants. Imported baselines remain unchanged.
 - Plan estimate entry/display in hours, days, or weeks from Planning -> Estimate
   units. Choose an explicit reference work calendar; stored hours and Jira units
   remain unchanged. Repeating display conversions are marked and edit as exact hours.

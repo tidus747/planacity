@@ -1,7 +1,7 @@
 """Transactional, keyboard-friendly editing for one selected WorkItem."""
 
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
 from PySide6.QtCore import Qt, Signal
@@ -16,9 +16,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from planacity.domain import ProgramPlan, WorkItem, WorkPriority
+from planacity.domain import ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.planning.allocations import summarize_allocations
-from planacity.planning.assignees import effective_assignee_id
+from planacity.planning.assignees import (
+    effective_assignee_id,
+    set_work_assignment,
+    work_contributors,
+)
+from planacity.planning.assignment_policy import assignment_policy_conflicts
 from planacity.planning.estimate_units import estimate_text, parse_estimate
 from planacity.planning.work_context import resolve_topic, update_work_details
 from planacity.ui.allocations import allocation_summary_text
@@ -60,6 +65,8 @@ class WorkInspector(QWidget):
         self.dirty = False
         self._loading = False
         self._loaded_values: tuple[str, ...] = ()
+        self._loaded_assignment_values: tuple[str, str] = ("", "")
+        self._assignment_editable = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -97,6 +104,15 @@ class WorkInspector(QWidget):
         self.estimate = QLineEdit()
         self.estimate.setObjectName("workInspectorEstimate")
         self.estimate.setAccessibleName("Work estimate")
+        self.assignee = QComboBox()
+        self.assignee.setObjectName("workInspectorAssignee")
+        self.assignee.setAccessibleName("Work assignee")
+        self.assignment_hours = QLineEdit()
+        self.assignment_hours.setObjectName("workInspectorAllocationHours")
+        self.assignment_hours.setAccessibleName("Allocated hours")
+        self.assignment_hours.setPlaceholderText("Optional explicit hours")
+        self.assignment_note = label("")
+        self.assignment_note.setAccessibleName("Assignment guidance")
         self.start = CalendarLineEdit()
         self.start.setObjectName("workInspectorStart")
         self.start.setAccessibleName("Work start date")
@@ -113,6 +129,9 @@ class WorkInspector(QWidget):
             ("&Priority", self.priority),
             ("Topic status", self.topic),
             ("&Estimate", self.estimate),
+            ("&Assignee", self.assignee),
+            ("Allocated &hours", self.assignment_hours),
+            ("Assignment status", self.assignment_note),
             ("&Start", self.start),
             ("&End", self.end),
         ):
@@ -132,7 +151,7 @@ class WorkInspector(QWidget):
         layout.addLayout(actions)
 
         self.ownership = label("")
-        self.ownership.setAccessibleName("Work assignee")
+        self.ownership.setAccessibleName("Work ownership summary")
         self.allocations = label("")
         self.allocations.setAccessibleName("Allocated people")
         self.dependencies = label("")
@@ -146,12 +165,19 @@ class WorkInspector(QWidget):
             )
             layout.addWidget(widget)
 
-        for line_editor in (self.title, self.estimate, self.start, self.end):
+        for line_editor in (
+            self.title,
+            self.estimate,
+            self.assignment_hours,
+            self.start,
+            self.end,
+        ):
             line_editor.textChanged.connect(self._update_dirty)
         for text_editor in (self.description, self.labels):
             text_editor.textChanged.connect(self._update_dirty)
         self.primary_group.currentIndexChanged.connect(self._update_dirty)
         self.priority.currentIndexChanged.connect(self._update_dirty)
+        self.assignee.currentIndexChanged.connect(self._update_dirty)
         self.apply_button.clicked.connect(self.apply)
         self.cancel_button.clicked.connect(self.discard)
         self.clear()
@@ -164,6 +190,8 @@ class WorkInspector(QWidget):
             self.primary_group,
             self.priority,
             self.estimate,
+            self.assignee,
+            self.assignment_hours,
             self.start,
             self.end,
         )
@@ -178,9 +206,14 @@ class WorkInspector(QWidget):
             "" if selected is None else str(selected),
             "" if priority is None else str(priority),
             self.estimate.text(),
+            *self._assignment_values(),
             self.start.text(),
             self.end.text(),
         )
+
+    def _assignment_values(self) -> tuple[str, str]:
+        selected = self.assignee.currentData()
+        return ("" if selected is None else str(selected), self.assignment_hours.text())
 
     def _set_dirty(self, dirty: bool) -> None:
         if dirty != self.dirty:
@@ -207,6 +240,9 @@ class WorkInspector(QWidget):
         self.primary_group.clear()
         self.priority.setCurrentIndex(0)
         self.estimate.clear()
+        self.assignee.clear()
+        self.assignment_hours.clear()
+        self.assignment_note.clear()
         self.start.clear()
         self.end.clear()
         self.topic.clear()
@@ -216,6 +252,8 @@ class WorkInspector(QWidget):
         self.imported.clear()
         self.error.clear()
         self.summary.setText("Create or open a plan from the File menu.")
+        self._assignment_editable = False
+        self._loaded_assignment_values = self._assignment_values()
         self._loaded_values = self._values()
         self._loading = False
         self._set_dirty(False)
@@ -272,6 +310,45 @@ class WorkInspector(QWidget):
             self.estimate.setText(f"{derived} derived{missing}.{entered}")
         else:
             self.estimate.setText(estimate_text(plan, item.estimate_hours, editing=True))
+        direct = tuple(
+            allocation for allocation in plan.allocations if allocation.work_item_id == item_id
+        )
+        conflict = any(value.work_item_id == item_id for value in assignment_policy_conflicts(plan))
+        is_container = bool(plan.children(item_id))
+        self.assignee.clear()
+        self.assignee.addItem("Unassigned", None)
+        for person in plan.people:
+            self.assignee.addItem(person.name, str(person.id))
+        assignee_id = effective_assignee_id(plan, item_id)
+        selected_assignee = self.assignee.findData(
+            str(assignee_id) if assignee_id is not None else None
+        )
+        self.assignee.setCurrentIndex(max(0, selected_assignee))
+        self.assignment_hours.setText(
+            str(direct[0].hours)
+            if item.kind != WorkItemType.EPIC and not is_container and len(direct) == 1
+            else ""
+        )
+        if conflict:
+            self.assignment_note.setText(
+                "Legacy multiple assignments: use Work allocations to review and consolidate "
+                "them before editing here."
+            )
+        elif item.kind == WorkItemType.EPIC:
+            self.assignment_note.setText(
+                "Feature ownership only. Epic owners create no capacity demand."
+            )
+        elif is_container:
+            contributors = work_contributors(plan, item_id)
+            self.assignment_note.setText(
+                f"Read-only aggregate team: {len(contributors)} contributor(s). "
+                "Assign each leaf separately."
+            )
+        else:
+            self.assignment_note.setText(
+                "Hours are optional and stay separate from the estimate. Clearing hours "
+                "removes capacity demand; clearing the person also unassigns the work."
+            )
         self.start.setText(_date_text(item.start))
         self.end.setText(_date_text(item.end))
         self.summary.setText(
@@ -289,6 +366,13 @@ class WorkInspector(QWidget):
         self.primary_group.setEnabled(editable)
         self.priority.setEnabled(editable)
         self.estimate.setReadOnly(context_only or effort.is_container)
+        self._assignment_editable = (
+            editable and not conflict and (item.kind == WorkItemType.EPIC or not is_container)
+        )
+        self.assignee.setEnabled(self._assignment_editable)
+        self.assignment_hours.setEnabled(
+            self._assignment_editable and item.kind != WorkItemType.EPIC
+        )
         self.start.setReadOnly(context_only)
         self.end.setReadOnly(context_only)
         for control in (
@@ -305,6 +389,7 @@ class WorkInspector(QWidget):
             if context_only
             else ""
         )
+        self._loaded_assignment_values = self._assignment_values()
         self._loaded_values = self._values()
         self._loading = False
         self._set_dirty(False)
@@ -331,7 +416,7 @@ class WorkInspector(QWidget):
             if plan.children(item.id)
             else parse_estimate(plan, self.estimate.text())
         )
-        return update_work_details(
+        candidate = update_work_details(
             plan,
             item.id,
             title=self.title.text(),
@@ -343,6 +428,24 @@ class WorkInspector(QWidget):
             start=_parse_date(self.start.text()),
             end=_parse_date(self.end.text()),
         )
+        if self._assignment_editable and (
+            self._assignment_values() != self._loaded_assignment_values
+        ):
+            assignee = self.assignee.currentData()
+            hours_text = self.assignment_hours.text().strip()
+            try:
+                hours = Decimal(hours_text) if hours_text else None
+            except InvalidOperation as error:
+                raise ValueError(
+                    "Enter allocated hours as a non-negative number, such as 12.5."
+                ) from error
+            candidate = set_work_assignment(
+                candidate,
+                item.id,
+                UUID(assignee) if assignee else None,
+                hours,
+            )
+        return candidate
 
     def apply(self) -> bool:
         if not self.dirty:
@@ -374,31 +477,14 @@ class WorkInspector(QWidget):
             return
         self.load(plan, self.item_id, editable=self.editable)
 
-    @staticmethod
-    def _descendant_ids(plan: ProgramPlan, item_id: UUID) -> set[UUID]:
-        result = {item_id}
-        pending = [item_id]
-        while pending:
-            current = pending.pop()
-            children = plan.children(current)
-            result.update(child.id for child in children)
-            pending.extend(child.id for child in children)
-        return result
-
     def _allocation_text(self, plan: ProgramPlan, item_id: UUID) -> str:
-        work_ids = self._descendant_ids(plan, item_id)
-        totals: dict[UUID, Decimal] = {}
-        for allocation in plan.allocations:
-            if allocation.work_item_id in work_ids:
-                totals[allocation.person_id] = (
-                    totals.get(allocation.person_id, Decimal(0)) + allocation.hours
-                )
-        if not totals:
+        contributors = work_contributors(plan, item_id)
+        if not contributors:
             return "Allocated people: none."
         lines = ["Allocated people:"]
-        for person in plan.people:
-            if person.id in totals:
-                lines.append(f"- {person.name} [{str(person.id)[:8]}]: {totals[person.id]} h")
+        for contributor in contributors:
+            person = plan.person(contributor.person_id)
+            lines.append(f"- {person.name} [{str(person.id)[:8]}]: {contributor.hours} h")
         return "\n".join(lines)
 
     @staticmethod
