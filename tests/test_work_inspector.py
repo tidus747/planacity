@@ -10,8 +10,8 @@ from PySide6.QtTest import QSignalSpy, QTest
 from PySide6.QtWidgets import QMessageBox
 from test_allocation_settings import allocated_plan
 
-from planacity.domain import Relationship, RelationshipType, WorkGroup
-from planacity.domain.models import ImportedWork, ImportSnapshot
+from planacity.domain import Allocation, Relationship, RelationshipType, WorkGroup, WorkItem
+from planacity.domain.models import ImportedWork, ImportSnapshot, WorkItemType
 from planacity.ui.theme import Theme
 
 
@@ -247,3 +247,97 @@ def test_page_navigation_prompts_for_inspector_draft(app, loaded, monkeypatch):
 
     assert window.pages.currentIndex() == 1
     assert page.inspector.dirty
+
+
+def test_inspector_applies_compact_leaf_assignment_with_work_changes_once(app, window):
+    plan = inspector_plan()
+    leaf = plan.work_items[2]
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    page = window.plan_page
+    page.table.setCurrentIndex(page.model.index_for_id(leaf.id))
+    app.processEvents()
+    inspector = page.inspector
+    changed = QSignalSpy(window.session.changed)
+
+    inspector.title.setText("Assigned follow-up")
+    inspector.assignee.setCurrentIndex(inspector.assignee.findData(str(plan.people[2].id)))
+    inspector.assignment_hours.setText("12.25")
+    assert inspector.apply()
+
+    updated = window.session.document.plan
+    assignment = next(entry for entry in updated.allocations if entry.work_item_id == leaf.id)
+    assert changed.count() == 1
+    assert updated.work_item(leaf.id).title == "Assigned follow-up"
+    assert updated.work_item(leaf.id).assignee_id == plan.people[2].id
+    assert assignment.person_id == plan.people[2].id
+    assert assignment.hours == Decimal("12.25")
+    assert updated.imports == plan.imports
+    window.session.document.saved_plan = updated
+
+
+def test_inspector_reassignment_preserves_id_and_blank_hours_keeps_owner(app, window):
+    plan = inspector_plan()
+    leaf = plan.work_items[2]
+    entry = Allocation(work_item_id=leaf.id, person_id=plan.people[0].id, hours=Decimal(5))
+    plan = replace(
+        plan,
+        work_items=(*plan.work_items[:2], replace(leaf, assignee_id=plan.people[0].id)),
+        allocations=(*plan.allocations, entry),
+    )
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    page = window.plan_page
+    page.table.setCurrentIndex(page.model.index_for_id(leaf.id))
+    app.processEvents()
+    inspector = page.inspector
+
+    inspector.assignee.setCurrentIndex(inspector.assignee.findData(str(plan.people[1].id)))
+    assert inspector.apply()
+    reassigned = window.session.document.plan
+    changed_entry = next(value for value in reassigned.allocations if value.work_item_id == leaf.id)
+    assert changed_entry.id == entry.id
+    assert changed_entry.person_id == plan.people[1].id
+    assert changed_entry.hours == 5
+
+    inspector.assignment_hours.clear()
+    assert inspector.apply()
+    owner_only = window.session.document.plan
+    assert owner_only.work_item(leaf.id).assignee_id == plan.people[1].id
+    assert all(value.work_item_id != leaf.id for value in owner_only.allocations)
+    window.session.document.saved_plan = owner_only
+
+
+def test_non_epic_container_shows_read_only_aggregate_team(app, window):
+    plan = inspector_plan()
+    epic, task, other = plan.work_items
+    first = WorkItem(title="Optics", kind=WorkItemType.SUBTASK, parent_id=task.id)
+    second = WorkItem(title="Beam", kind=WorkItemType.SUBTASK, parent_id=task.id)
+    plan = replace(
+        plan,
+        work_items=(epic, task, first, second, other),
+        allocations=(
+            Allocation(work_item_id=first.id, person_id=plan.people[0].id, hours=Decimal(16)),
+            Allocation(work_item_id=second.id, person_id=plan.people[1].id, hours=Decimal(8)),
+        ),
+    )
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    page = window.plan_page
+    page.table.setCurrentIndex(page.model.index_for_id(task.id))
+    app.processEvents()
+
+    assert not page.inspector.assignee.isEnabled()
+    assert not page.inspector.assignment_hours.isEnabled()
+    assert "Read-only aggregate team: 2 contributor(s)" in page.inspector.assignment_note.text()
+    assert f"{plan.people[0].name} [" in page.inspector.allocations.text()
+    assert "16 h" in page.inspector.allocations.text()
+    assert f"{plan.people[1].name} [" in page.inspector.allocations.text()
+    assert "8 h" in page.inspector.allocations.text()
+    window.session.document.saved_plan = plan

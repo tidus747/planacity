@@ -15,7 +15,12 @@ from planacity.domain import (
     WorkItem,
     WorkItemType,
 )
-from planacity.planning.assignees import effective_assignee_id, set_work_assignee
+from planacity.planning.assignees import (
+    effective_assignee_id,
+    set_work_assignee,
+    set_work_assignment,
+    work_contributors,
+)
 from planacity.planning.people import remove_person
 
 
@@ -137,3 +142,103 @@ def test_program_plan_rejects_a_dangling_assignee_reference() -> None:
 
     with pytest.raises(ValueError, match="must reference an existing roster person"):
         replace(plan, work_items=(plan.work_items[0], dangling))
+
+
+def test_compact_assignment_supports_owner_only_and_explicit_zero_hours() -> None:
+    plan = assignee_plan()
+    task = plan.work_items[1]
+    alex = plan.people[0]
+
+    owner_only = set_work_assignment(plan, task.id, alex.id, None)
+    assert owner_only.work_item(task.id).assignee_id == alex.id
+    assert owner_only.allocations == ()
+
+    allocated = set_work_assignment(owner_only, task.id, alex.id, Decimal(0))
+    assert allocated.work_item(task.id).assignee_id == alex.id
+    assert allocated.allocations[0].hours == 0
+
+
+def test_compact_reassignment_preserves_allocation_id_hours_and_order() -> None:
+    plan = assignee_plan()
+    task = plan.work_items[1]
+    alex, sam = plan.people
+    allocation = Allocation(work_item_id=task.id, person_id=alex.id, hours=Decimal("7.25"))
+    plan = replace(
+        plan,
+        work_items=(plan.work_items[0], replace(task, assignee_id=alex.id)),
+        allocations=(allocation,),
+    )
+
+    changed = set_work_assignment(plan, task.id, sam.id, Decimal("7.25"))
+
+    assert changed.work_item(task.id).assignee_id == sam.id
+    assert changed.allocations == (replace(allocation, person_id=sam.id),)
+    assert changed.allocations[0].id == allocation.id
+
+
+def test_compact_blank_hours_and_unassignment_are_explicit_atomic_states() -> None:
+    plan = assignee_plan()
+    task = plan.work_items[1]
+    alex = plan.people[0]
+    allocation = Allocation(work_item_id=task.id, person_id=alex.id, hours=Decimal(8))
+    plan = replace(
+        plan,
+        work_items=(plan.work_items[0], replace(task, assignee_id=alex.id)),
+        allocations=(allocation,),
+    )
+
+    owner_only = set_work_assignment(plan, task.id, alex.id, None)
+    assert owner_only.work_item(task.id).assignee_id == alex.id
+    assert owner_only.allocations == ()
+
+    unassigned = set_work_assignment(plan, task.id, None, None)
+    assert unassigned.work_item(task.id).assignee_id is None
+    assert unassigned.allocations == ()
+    assert plan.allocations == (allocation,)
+
+
+def test_compact_assignment_rejects_hours_without_person_containers_and_legacy_conflicts() -> None:
+    plan = assignee_plan()
+    epic, task = plan.work_items
+    with pytest.raises(ValueError, match="Choose an assignee"):
+        set_work_assignment(plan, task.id, None, Decimal(2))
+    with pytest.raises(ValueError, match="feature owners"):
+        set_work_assignment(plan, epic.id, plan.people[0].id, Decimal(2))
+
+    child = WorkItem(title="Child", kind=WorkItemType.SUBTASK, parent_id=task.id)
+    container = replace(plan, work_items=(*plan.work_items, child))
+    with pytest.raises(ValueError, match="derived from their leaves"):
+        set_work_assignment(container, task.id, plan.people[0].id, None)
+
+    legacy = replace(
+        plan,
+        allocations=tuple(
+            Allocation(work_item_id=task.id, person_id=person.id, hours=Decimal(4))
+            for person in plan.people
+        ),
+    )
+    with pytest.raises(ValueError, match="Resolve the multiple assignments"):
+        set_work_assignment(legacy, task.id, plan.people[0].id, Decimal(8))
+
+
+def test_epic_feature_owner_and_container_contributors_keep_capacity_separate() -> None:
+    plan = assignee_plan()
+    epic, task = plan.work_items
+    alex, sam = plan.people
+    first = Allocation(work_item_id=task.id, person_id=alex.id, hours=Decimal("0.1"))
+    child = WorkItem(title="Test", kind=WorkItemType.SUBTASK, parent_id=task.id)
+    second = Allocation(work_item_id=child.id, person_id=alex.id, hours=Decimal("0.2"))
+    third = Allocation(work_item_id=child.id, person_id=sam.id, hours=Decimal("3"))
+    plan = replace(
+        plan,
+        work_items=(epic, task, child),
+        allocations=(first, second, third),
+    )
+
+    owned = set_work_assignment(plan, epic.id, sam.id, None)
+    assert owned.allocations == plan.allocations
+    contributors = work_contributors(owned, epic.id)
+    assert [(entry.person_id, entry.hours) for entry in contributors] == [
+        (alex.id, Decimal("0.3")),
+        (sam.id, Decimal("3")),
+    ]

@@ -21,8 +21,10 @@ person's name or fictional role as a productivity rating.
 
 Use 4 Epics and approximately 12-16 leaf tasks. Include one Task with two
 Subtasks so rollups are visible. Container estimates are derived, not allocated
-again. Each leaf has one person; a collaborative parent has separately assigned
-subtasks. At least one person works across WorkGroups. Priorities and descriptions are visible
+again. Create each leaf through the compact one-person assignment fields; a
+collaborative parent has separately assigned subtasks and shows their contributor
+team as a read-only aggregate. Epic feature owners add no capacity demand. At
+least one person works across WorkGroups. Priorities and descriptions are visible
 only after their corresponding fields are implemented.
 
 ## Deterministic planning inputs

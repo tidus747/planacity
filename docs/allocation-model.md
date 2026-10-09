@@ -4,7 +4,7 @@ This page describes implemented behavior. The first part of the
 [single-person assignment decision](single-person-visual-planning.md) now limits
 new executable leaf work to zero or one Allocation. Legacy plans keep all of
 their assignments and exact hours until the user resolves them. The dedicated
-consolidation workflow is available; the final one-person editor remains S03 work.
+consolidation workflow and compact one-person editor are both available.
 
 An `Allocation` is an explicit link between one WorkItem and one Person, with
 its own UUID and finite, non-negative Decimal hours. It is separate from work
@@ -89,11 +89,24 @@ No date distribution, capacity comparison, or productivity measure is implied.
 ## Edit allocations in Plan
 
 Select a work item, then choose **Work allocations...** in Selected work.
-Add one roster member and explicit hours, or select the existing row to Edit,
-Reassign, or Remove it. Legacy multiple rows remain visible for repair. Hours
-remain hours even when Plan displays estimates in days or weeks.
-Save applies the complete draft. Cancel or Escape discards it. Use Tab to move
-between controls and Alt+A / Alt+E / Alt+R / Alt+C for allocation actions.
+For a Task or Subtask leaf, choose one assignee and optionally enter explicit
+allocated hours. Blank hours means owner only and creates no capacity demand.
+Choosing **Unassigned** also removes that leaf's sole Allocation as an explicit
+part of the draft. Reassigning a leaf preserves its Allocation ID and hours unless
+the hours field is edited. Hours remain hours even when Plan displays estimates
+in days or weeks; they are never copied from or synchronized with the estimate.
+
+An Epic exposes one feature owner and no hours because Epic ownership does not
+create capacity demand. A non-Epic container shows the distinct contributor team
+and exact rolled-up hours as read-only context; edit its leaves separately.
+Legacy multiple assignments keep every row and the Edit, Remove, and
+**Consolidate legacy...** repair actions until the conflict is resolved.
+
+The same compact fields are part of the transactional Selected work inspector.
+**Apply** commits assignment and work-detail edits together once. **Cancel** restores
+the complete draft. In **Work allocations...**, **Save** applies the preview once;
+Cancel or Escape discards it. Use Tab/Shift+Tab, arrow keys in the person selector,
+and the visible mnemonics without requiring a mouse.
 
 The summary reports effective estimate, entered reference, direct and descendant
 allocation, and remaining effort. Missing estimates, mixed levels, and excess
@@ -117,6 +130,11 @@ if an older build must still open the project.
 ![Work allocations in light appearance](images/work-allocations-light.png)
 ![Work allocations in dark appearance](images/work-allocations-dark.png)
 
+The same assignment in the complete Plan inspector draft:
+
+![Compact assignment in the light Plan inspector](images/compact-assignment-inspector-light.png)
+![Compact assignment in the dark Plan inspector](images/compact-assignment-inspector-dark.png)
+
 The same overload finding from all concurrent work remains readable in the
 allocation draft in both appearances: [light](images/planning-findings-light.png)
 and [dark](images/planning-findings-dark.png).
@@ -131,7 +149,7 @@ WorkItem's complete dates using positive planning capacity after reservations,
 then sums concurrent work and retains negative remaining capacity. Missing dates,
 calendars, or positive-capacity days keep the hours as explicit unplaced demand.
 
-The [roadmap](roadmap.md) continues with S03b for the final compact one-person
-editor and aggregate container teams. Canonical Jira-aligned ownership is the
-S03a foundation. See the
+Canonical Jira-aligned ownership and compact editing now complete the S03
+foundation. The [roadmap](roadmap.md) continues with the demonstration dataset and
+v0.5 visual planning. See the
 [planning decisions](planning-decisions.md) for the dated distribution contract.

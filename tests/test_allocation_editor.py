@@ -57,7 +57,7 @@ def test_filtered_plan_edits_exact_hours_validates_and_saves_once(app, loaded, t
 
     def interact(dialog):
         assert isinstance(dialog, AllocationDialog)
-        assert "one roster member" in dialog.findChildren(QLabel)[0].text()
+        assert "Review every legacy assignment" in dialog.guidance.text()
         assert "Allocated: 100 h" in dialog.summary.text()
         assert "Multiple assignments need resolution" in dialog.findings.text()
         assert "Estimate and allocation differ" not in dialog.findings.text()
@@ -78,18 +78,6 @@ def test_filtered_plan_edits_exact_hours_validates_and_saves_once(app, loaded, t
         assert "exceed the estimate" in dialog.summary.text()
         assert "Estimate and allocation differ" in dialog.findings.text()
         assert window.session.document.plan is original
-
-        def reject_second(form):
-            form.findChild(QComboBox).setCurrentIndex(2)
-            form.findChild(QLineEdit).setText("2.5")
-            accept(form)
-            assert form.isVisible()
-            assert any(
-                "at most one allocation" in label.text() for label in form.findChildren(QLabel)
-            )
-            QTest.keyClick(form, Qt.Key.Key_Escape)
-
-        drive_dialog(app, dialog.add_button.click, reject_second)
         assert len(dialog.candidate.allocations) == 2
         assert window.session.document.plan is original
         save(dialog)
@@ -250,45 +238,40 @@ def test_confirmed_consolidation_then_outer_cancel_preserves_document(app, windo
     assert not window.session.document.dirty
 
 
-def test_cancel_discards_add_edit_and_remove_drafts(app, loaded):
+def test_cancel_discards_compact_assignment_draft(app, loaded):
     window = loaded
     original = window.session.document.plan
     dialog = AllocationDialog(window, window.session, original.work_items[2].id)
     dialog.show()
-    drive_dialog(app, dialog.add_button.click, hours_form("5", 2))
-    dialog.table.setCurrentIndex(dialog.model.index(0, 0))
-    drive_dialog(app, dialog.edit_button.click, hours_form("75"))
-    dialog.remove_button.click()
+    dialog.person.setCurrentIndex(3)
+    dialog.hours.setText("75")
+    dialog.hours.editingFinished.emit()
+    assert dialog.candidate.work_items[2].assignee_id == original.people[2].id
+    assert dialog.candidate.allocations[-1].hours == 75
     QTest.keyClick(dialog, Qt.Key.Key_Escape)
     assert not dialog.isVisible()
     assert window.session.document.plan is original
     assert not window.session.document.dirty
 
 
-def test_missing_estimate_zero_duplicate_and_second_person_are_explicit(app, loaded):
+def test_missing_estimate_zero_and_reassignment_are_explicit(app, loaded):
     window = loaded
     plan = window.session.document.plan
     dialog = AllocationDialog(window, window.session, plan.work_items[2].id)
     dialog.show()
     assert "Missing estimate" in dialog.summary.text()
     assert "Remaining: unknown" in dialog.summary.text()
-    drive_dialog(app, dialog.add_button.click, hours_form("0", 0))
+    dialog.person.setCurrentIndex(1)
+    dialog.hours.setText("0")
+    dialog.hours.editingFinished.emit()
     assert "No positive allocation" in dialog.summary.text()
-
-    def duplicate(form):
-        form.findChild(QLineEdit).setText("2")
-        accept(form)
-        assert form.isVisible()
-        assert any("same work/person pair" in label.text() for label in form.findChildren(QLabel))
-        form.findChild(QComboBox).setCurrentIndex(1)
-        accept(form)
-        assert form.isVisible()
-        assert any("at most one allocation" in label.text() for label in form.findChildren(QLabel))
-        QTest.keyClick(form, Qt.Key.Key_Escape)
-
-    drive_dialog(app, dialog.add_button.click, duplicate)
+    allocation_id = dialog.candidate.allocations[-1].id
+    dialog.person.setCurrentIndex(2)
+    assert dialog.candidate.allocations[-1].id == allocation_id
+    assert dialog.candidate.allocations[-1].hours == 0
     save(dialog)
     assert len(window.session.document.plan.allocations) == 3
+    assert window.session.document.plan.allocations[-1].person_id == plan.people[1].id
     assert window.session.document.plan.work_items[2].estimate_hours is None
 
 
@@ -318,7 +301,8 @@ def test_empty_roster_and_stale_document_have_actionable_guidance(app, loaded):
     window.session.apply(plan)
     dialog = AllocationDialog(window, window.session, plan.work_items[1].id)
     dialog.show()
-    assert not dialog.add_button.isEnabled()
+    assert dialog.person.count() == 1
+    assert dialog.person.currentData() is None
     assert "Add roster members" in dialog.error.text()
     newer = replace(plan, name="Changed elsewhere")
     window.session.apply(newer)
@@ -405,7 +389,9 @@ def test_container_summary_and_resolution_move_direct_effort_to_named_leaf(app, 
     assert "Entered reference: 150 h" in dialog.summary.text()
     assert "10 h direct; 100 h in descendants" in dialog.summary.text()
     assert "Mixed-level effort" in dialog.summary.text()
-    assert not dialog.add_button.isEnabled()
+    assert "Alex: 60 h" in dialog.team.text()
+    assert "Sam: 40 h" in dialog.team.text()
+    assert "Robin: 10 h" in dialog.team.text()
     assert dialog.resolve_button.isEnabled()
 
     def resolve(form):

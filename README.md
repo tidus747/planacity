@@ -51,11 +51,12 @@ default.
 - Explore work on a Timeline with day, week, and month scales, grouping, filters,
   dependency arrows, and direct date editing.
 - Define personal work calendars and availability, reserve recurring capacity,
-  and assign leaf work through explicit allocations.
+  and assign each leaf to one person with optional explicit capacity hours.
 - Filter People by derived WorkGroup associations and trace each reporting topic
   to its allocated work without duplicating team membership or capacity.
-- Edit complete work-item drafts in the Plan inspector while reviewing allocated
-  people, dependencies, findings, derived effort, and imported reference values.
+- Edit complete work-item drafts in the Plan inspector, including compact ownership
+  and capacity fields, while reviewing dependencies, findings, derived effort, and
+  imported reference values.
 - Review plan-horizon capacity by person, planned work by reporting topic, and
   the complete capacity breakdown from the Overview analysis.
 - Use light or dark appearance and keyboard navigation across the main views.
