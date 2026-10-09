@@ -9,12 +9,13 @@ from PySide6.QtGui import QColor
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType
+from planacity.domain import PlanningHorizon, ProgramPlan, WorkGroup, WorkItem, WorkItemType
 from planacity.planning.timeline_axis import TimelineScale
 from planacity.ui.main_window import MainWindow
 from planacity.ui.session import Session
-from planacity.ui.theme import COLORS, Theme
+from planacity.ui.theme import Theme
 from planacity.ui.timeline import TimelinePage
+from planacity.ui.timeline_identity import bar_identity
 
 
 def _sample_plan() -> ProgramPlan:
@@ -44,6 +45,37 @@ def _sample_plan() -> ProgramPlan:
     )
 
 
+def _shape_plan() -> ProgramPlan:
+    group = WorkGroup(name="Launch Systems")
+    epic = WorkItem(
+        title="Launch sequence",
+        kind=WorkItemType.EPIC,
+        primary_group_id=group.id,
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 2),
+    )
+    task = WorkItem(
+        title="Fuel vehicle",
+        kind=WorkItemType.TASK,
+        parent_id=epic.id,
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 2),
+    )
+    subtask = WorkItem(
+        title="Verify pressure",
+        kind=WorkItemType.SUBTASK,
+        parent_id=task.id,
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 2),
+    )
+    return ProgramPlan(
+        name="Shapes",
+        horizon=PlanningHorizon(date(2026, 1, 1), date(2026, 1, 7)),
+        work_items=(epic, task, subtask),
+        work_groups=(group,),
+    )
+
+
 def test_timeline_models_expose_projection_states_and_accessibility(app: QApplication) -> None:
     session = Session()
     page = TimelinePage(session)
@@ -65,6 +97,13 @@ def test_timeline_models_expose_projection_states_and_accessibility(app: QApplic
         assert "1 scheduled | 2 partial | 1 unscheduled" in page.summary.text()
         assert page.labels.accessibleName() == "Timeline work items and schedule states"
         assert page.schedule.accessibleName() == "Timeline schedule by day"
+        assert "Neutral exceptions: Ungrouped" in page.legend.accessibleDescription()
+        assert "WorkGroup: Ungrouped" in page.label_model.index(0, 0).data(
+            Qt.ItemDataRole.AccessibleTextRole
+        )
+        assert "WorkGroup: Ungrouped" in page.schedule_model.index(0, 0).data(
+            Qt.ItemDataRole.ToolTipRole
+        )
         assert not page.label_model.flags(page.label_model.index(0, 0)) & Qt.ItemFlag.ItemIsEditable
         assert (
             not page.schedule_model.flags(page.schedule_model.index(0, 0))
@@ -179,8 +218,63 @@ def test_timeline_bar_renders_with_active_appearance(
         image = page.schedule.viewport().grab().toImage()
         assert not image.isNull()
         x = bar_rect.left() + int((3.5 - period.start_day) / period.days * bar_rect.width())
+        identity = bar_identity(page.schedule_model.projection.rows[0], page.projection.groups)
         assert (
-            image.pixelColor(x, bar_rect.center().y()).name() == QColor(COLORS[theme].accent).name()
+            image.pixelColor(x, bar_rect.center().y()).name()
+            == QColor(identity.color(theme)).name()
+        )
+    finally:
+        window.session.document.saved_plan = window.session.document.plan
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_timeline_renders_work_shapes_and_named_legend(
+    app: QApplication, window: MainWindow, theme: Theme
+) -> None:
+    try:
+        window.session.apply(_shape_plan())
+        window.show_page(2)
+        window.set_theme(theme, persist=False)
+        window.resize(1100, 700)
+        window.show()
+        app.processEvents()
+
+        page = window.timeline_page
+        page.schedule.clearSelection()
+        page.labels.clearSelection()
+        app.processEvents()
+        description = page.legend.accessibleDescription()
+        assert "Launch Systems" in description
+        assert "Epic bracket" in description
+        assert "Task rounded bar" in description
+        assert "Subtask slim bar" in description
+        assert "WorkGroup: Launch Systems" in page.label_model.index(2, 0).data(
+            Qt.ItemDataRole.AccessibleTextRole
+        )
+
+        image = page.schedule.viewport().grab().toImage()
+        assert not image.isNull()
+        assert image.devicePixelRatio() >= 1
+        projection = page.schedule_model.projection
+        assert projection is not None
+        expected = QColor(bar_identity(projection.rows[0], projection.groups).color(theme)).name()
+        column = page.schedule_model.axis.column_for_day(1)
+        rects = [
+            page.schedule.visualRect(page.schedule_model.index(row, column)) for row in range(3)
+        ]
+        assert all(rect.isValid() for rect in rects)
+        for rect in rects:
+            assert image.pixelColor(rect.center()).name() == expected
+
+        epic_rect, task_rect, subtask_rect = rects
+        assert image.pixelColor(epic_rect.left() + 1, epic_rect.center().y() - 8).name() == expected
+        assert image.pixelColor(task_rect.left() + 1, task_rect.center().y() - 8).name() != expected
+        assert (
+            image.pixelColor(task_rect.center().x(), task_rect.center().y() - 6).name() == expected
+        )
+        assert (
+            image.pixelColor(subtask_rect.center().x(), subtask_rect.center().y() - 6).name()
+            != expected
         )
     finally:
         window.session.document.saved_plan = window.session.document.plan

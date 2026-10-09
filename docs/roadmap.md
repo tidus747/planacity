@@ -272,6 +272,7 @@ on hierarchy, People, topics, Jira snapshots, agent guidance, and Timeline.
 | V04 | Selected-work dependency graph | R02, R03, R08 | Immediate predecessors -> selected work -> immediate successors. Cards show title, dates, assigned people and warnings; click to select/recenter. Graph cycles and hidden endpoints remain explicit; text details stay available. |
 | V05 | Critical-path calculation | R02, R03 | Pure elapsed-day CPM service with explicit assumptions, float, all tied critical paths, and incomplete/unsupported results. See the decision record. |
 | V06 | Critical-path Timeline overlay | V04, V05 | Optional red critical connectors and labelled task outlines, readable in both themes. Filters do not recalculate criticality. Keyboard details expose float and coverage. |
+| V07 | WorkGroup colors and work shapes | Existing topic resolution and Timeline | Stable primary-WorkGroup colors, named neutral exception styles, and distinct Epic/Task/Subtask silhouettes. Tracked by issue #120. |
 
 Use existing Qt graphics for V04. Start with immediate neighbours and a bounded
 view, not a full-program layout engine. Show when nodes are omitted and allow
@@ -279,9 +280,9 @@ navigation to their list. No Graphviz executable, browser, Mermaid runtime, or
 network service is required. Parent/child hierarchy is not a dependency edge.
 
 V07 adds primary-WorkGroup bar colors and distinct Epic/Task/Subtask shapes.
-It depends on existing topic resolution and Timeline painting, not on V05/V06.
-Implement it before the critical overlay so group identity, selection, warnings
-and criticality have independent visual channels. See the implementation queue.
+It is implemented independently from V05/V06 so group identity, selection,
+warnings and future criticality have separate visual channels. See the
+implementation queue for its review contract.
 
 ### Complete the v0.5 Program Calendar goal
 

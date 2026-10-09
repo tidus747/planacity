@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Stable Timeline visual identity. Scheduled bars use deterministic WorkGroup
+  colors in coordinated light/dark palettes, with named neutral styles for
+  Ungrouped and Ambiguous group work. Epic brackets, rounded Task bars, and slim
+  Subtask bars distinguish work types without relying on color, while the named
+  accessible legend and item details remain authoritative when colors collide.
 - Complete Operation Moon Heist v0.4 demonstration with deterministic IDs and
   dates, five fictional people, four WorkGroups, single-person leaf assignments,
   calendars, availability, reservations, priorities, descriptions, fork/join

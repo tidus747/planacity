@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from planacity.domain import PlanningHorizon, ProgramPlan, WorkGroup, WorkItem, WorkItemType
 from planacity.planning.timeline import TimelineDateState, project_timeline
+from planacity.planning.work_context import TopicState
 
 
 def test_projection_preserves_hierarchy_order_identity_and_effective_groups() -> None:
@@ -40,6 +41,10 @@ def test_projection_preserves_hierarchy_order_identity_and_effective_groups() ->
     )
     assert projection.rows[0].group_ids == ()
     assert all(row.group_ids == (primary.id, secondary.id) for row in projection.rows[1:])
+    assert projection.rows[0].topic_state == TopicState.UNGROUPED
+    assert projection.rows[0].primary_group_id is None
+    assert all(row.topic_state == TopicState.AMBIGUOUS for row in projection.rows[1:])
+    assert all(row.primary_group_id is None for row in projection.rows[1:])
     assert [(group.id, group.name) for group in projection.groups] == [
         (primary.id, "Primary"),
         (secondary.id, "Secondary"),

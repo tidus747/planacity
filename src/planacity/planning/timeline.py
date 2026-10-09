@@ -6,7 +6,7 @@ from enum import StrEnum
 from uuid import UUID
 
 from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
-from planacity.planning.work_context import effective_group_ids
+from planacity.planning.work_context import TopicState, effective_group_ids, resolve_topic
 
 
 class TimelineDateState(StrEnum):
@@ -43,6 +43,8 @@ class TimelineRow:
     duration_days: int | None
     date_state: TimelineDateState
     outside_horizon: bool
+    topic_state: TopicState
+    primary_group_id: UUID | None
     group_ids: tuple[UUID, ...]
     section: str = ""
     section_id: UUID | None = None
@@ -87,6 +89,7 @@ def project_timeline(plan: ProgramPlan) -> TimelineProjection:
         depth: int,
     ) -> None:
         for item in items:
+            topic = resolve_topic(plan, item.id)
             group_ids = effective_group_ids(plan, item.id)
             start_day = None if item.start is None else (item.start - plan.horizon.start).days
             end_day = None if item.end is None else (item.end - plan.horizon.start).days
@@ -111,6 +114,8 @@ def project_timeline(plan: ProgramPlan) -> TimelineProjection:
                         value < plan.horizon.start or value > plan.horizon.end
                         for value in known_dates
                     ),
+                    topic_state=topic.state,
+                    primary_group_id=topic.group_id,
                     group_ids=group_ids,
                 )
             )
