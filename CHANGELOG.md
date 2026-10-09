@@ -6,6 +6,13 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Complete Operation Moon Heist v0.4 demonstration with deterministic IDs and
+  dates, five fictional people, four WorkGroups, single-person leaf assignments,
+  calendars, availability, reservations, priorities, descriptions, fork/join
+  dependencies, and a preserved Jira CSV baseline. The tested clean plan includes
+  236 h of feasible work, exact capacity totals, a guided walkthrough, and real
+  Overview, Plan, People, and Timeline captures in both appearances. The legacy
+  Aurora migration example remains unchanged.
 - Compact one-person assignment editing in the Plan inspector and Work allocations
   dialog. A leaf can have an owner with optional explicit capacity hours;
   reassignment preserves the sole Allocation ID, while blank hours explicitly
