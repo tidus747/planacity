@@ -3,8 +3,10 @@
 from pathlib import Path
 from uuid import UUID
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -29,6 +31,7 @@ from planacity.integrations.jira.export import (
     ExportOptions,
     assignee_export_preview,
     export_csv,
+    identity_export_preview,
     priority_export_preview,
 )
 from planacity.integrations.jira.profiles import dump_export_profile, load_export_profile
@@ -54,12 +57,14 @@ class ExportDialog(QDialog):
         self.project_path = project_path
         self.options: ExportOptions | None = None
         self.person_mappings: tuple[tuple[UUID, str], ...] = ()
+        self.included_item_ids = {item.id for item in plan.work_items}
+        self._refreshing_preview = False
         self.setWindowTitle("Export Jira CSV")
-        self.resize(980, 760)
+        self.resize(1280, 820)
         layout = QVBoxLayout(self)
         layout.addWidget(
             label(
-                "Choose output columns, Jira identities, and explicit priority labels. "
+                "Choose a Jira import workflow, included work, identities, and priority labels. "
                 "The preview shows when original source text is preserved or a mapping "
                 "is required. Display names are never exported as identities automatically."
             )
@@ -67,6 +72,7 @@ class ExportDialog(QDialog):
         layout.addWidget(label("CSV column labels", "heading"))
         header_grid = QGridLayout()
         self.headers = [QLineEdit(header) for header in DEFAULT_HEADERS]
+        self.header_edits = dict(zip(EXPORT_FIELDS, self.headers, strict=True))
         for index, (field, edit) in enumerate(zip(EXPORT_FIELDS, self.headers, strict=True)):
             edit.setAccessibleName(f"{field.title()} CSV header")
             row, group = divmod(index, 2)
@@ -76,6 +82,14 @@ class ExportDialog(QDialog):
         header_grid.setColumnStretch(3, 1)
         layout.addLayout(header_grid)
         form = QFormLayout()
+        self.workflow = QComboBox()
+        self.workflow.addItem("Jira external-system import - preserve hierarchy", True)
+        self.workflow.addItem("Flat CSV import - omit hierarchy", False)
+        self.include_issue_key = QCheckBox("Include genuine Jira issue key when available")
+        self.include_issue_key.setChecked(True)
+        self.include_issue_key.setAccessibleName("Include Jira issue key column")
+        form.addRow("Import workflow", self.workflow)
+        form.addRow("Identity mapping", self.include_issue_key)
         self.units, self.dates = QComboBox(), QComboBox()
         self.delimiters = QComboBox()
         self.units.addItems(["seconds", "hours"])
@@ -122,12 +136,17 @@ class ExportDialog(QDialog):
         form.addRow(profiles)
         layout.addLayout(form)
         self.notice = label("")
-        self.notice.setAccessibleName("Export assignee and priority preview status")
+        self.notice.setAccessibleName("Jira CSV export validation status")
         layout.addWidget(self.notice)
         self.preview_model = QStandardItemModel(self)
         self.preview_model.setHorizontalHeaderLabels(
             [
-                "Reference",
+                "Include",
+                "Jira issue key",
+                "CSV Work item ID",
+                "Parent reference",
+                "Importer",
+                "Identity result",
                 "Work item",
                 "Planacity assignee",
                 "CSV assignee",
@@ -139,8 +158,20 @@ class ExportDialog(QDialog):
         )
         self.preview = QTreeView()
         self.preview.setRootIsDecorated(False)
+        self.preview.setAccessibleName("Jira CSV work selection and identity preview")
         self.preview.setMinimumHeight(150)
         self.preview.setModel(self.preview_model)
+        selection_buttons = QHBoxLayout()
+        for text, accessible_name, callback in (
+            ("Select all", "Include all work in CSV export", self.select_all),
+            ("Clear all", "Exclude all work from CSV export", self.clear_all),
+        ):
+            button = QPushButton(text)
+            button.setAccessibleName(accessible_name)
+            button.clicked.connect(callback)
+            selection_buttons.addWidget(button)
+        selection_buttons.addStretch()
+        layout.addLayout(selection_buttons)
         layout.addWidget(self.preview, 1)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -153,62 +184,139 @@ class ExportDialog(QDialog):
         self.units.currentTextChanged.connect(self.refresh_preview)
         self.dates.currentTextChanged.connect(self.refresh_preview)
         self.delimiters.currentIndexChanged.connect(self.refresh_preview)
+        self.workflow.currentIndexChanged.connect(self.refresh_preview)
+        self.include_issue_key.toggled.connect(self.refresh_preview)
+        self.preview_model.itemChanged.connect(self._selection_changed)
         self.refresh_preview()
 
     def _current_options(self) -> ExportOptions:
+        fields = list(EXPORT_FIELDS)
+        if not self.include_issue_key.isChecked():
+            fields.remove("reference")
+        if not self.workflow.currentData():
+            fields.remove("row_id")
+            fields.remove("parent")
         return ExportOptions(
-            tuple(edit.text() for edit in self.headers),
-            self.units.currentText(),
-            self.dates.currentText(),
-            self.delimiters.currentData(),
-            tuple((priority, edit.text()) for priority, edit in self.priority_labels.items()),
+            headers=tuple(edit.text() for edit in self.headers),
+            fields=tuple(fields),
+            estimate_unit=self.units.currentText(),
+            date_format=self.dates.currentText(),
+            delimiter=self.delimiters.currentData(),
+            priority_labels=tuple(
+                (priority, edit.text()) for priority, edit in self.priority_labels.items()
+            ),
         )
 
+    @property
+    def selected_item_ids(self) -> tuple[UUID, ...]:
+        return tuple(item.id for item in self.plan.work_items if item.id in self.included_item_ids)
+
+    def select_all(self) -> None:
+        self.included_item_ids = {item.id for item in self.plan.work_items}
+        self.refresh_preview()
+
+    def clear_all(self) -> None:
+        self.included_item_ids.clear()
+        self.refresh_preview()
+
+    def _selection_changed(self, item: QStandardItem) -> None:
+        if self._refreshing_preview or item.column() != 0:
+            return
+        item_id = item.data(Qt.ItemDataRole.UserRole)
+        if not isinstance(item_id, UUID):
+            return
+        if item.checkState() == Qt.CheckState.Checked:
+            self.included_item_ids.add(item_id)
+        else:
+            self.included_item_ids.discard(item_id)
+        self.refresh_preview()
+
     def refresh_preview(self) -> None:
+        self.header_edits["reference"].setEnabled(self.include_issue_key.isChecked())
+        hierarchy = bool(self.workflow.currentData())
+        self.header_edits["row_id"].setEnabled(hierarchy)
+        self.header_edits["parent"].setEnabled(hierarchy)
+        self._refreshing_preview = True
         self.preview_model.removeRows(0, self.preview_model.rowCount())
         try:
             options = self._current_options()
+            selected = self.selected_item_ids
             mappings = tuple(
                 (person_id, edit.text()) for person_id, edit in self.person_labels.items()
             )
-            priority_rows = priority_export_preview(self.plan, options)
-            assignee_rows = assignee_export_preview(self.plan, mappings)
+            identity_rows = identity_export_preview(self.plan, options, selected)
+            priority_rows = iter(priority_export_preview(self.plan, options, selected))
+            assignee_rows = iter(assignee_export_preview(self.plan, mappings, selected))
+            titles = {item.id: item.title for item in self.plan.work_items}
             unresolved = 0
             missing_identities = 0
-            for assignee, priority in zip(assignee_rows, priority_rows, strict=True):
-                values = (
-                    priority.reference,
-                    priority.title,
-                    assignee.planacity_assignee,
-                    assignee.csv_assignee or "Blank",
-                    assignee.result,
-                    priority.planacity_priority,
-                    priority.csv_priority or "Blank",
-                    priority.result,
+            blocked = 0
+            for identity in identity_rows:
+                include = QStandardItem()
+                include.setCheckable(True)
+                include.setEditable(False)
+                include.setText("Included" if identity.included else "Excluded")
+                include.setCheckState(
+                    Qt.CheckState.Checked if identity.included else Qt.CheckState.Unchecked
                 )
-                row = [QStandardItem(value) for value in values]
+                include.setData(identity.item_id, Qt.ItemDataRole.UserRole)
+                assignee = next(assignee_rows) if identity.included else None
+                priority = next(priority_rows) if identity.included else None
+                values = (
+                    identity.jira_key or "Blank",
+                    identity.csv_id or "Blank",
+                    identity.parent_reference or "Blank",
+                    identity.importer,
+                    identity.result,
+                    titles[identity.item_id],
+                    "" if assignee is None else assignee.planacity_assignee,
+                    "" if assignee is None else assignee.csv_assignee or "Blank",
+                    "" if assignee is None else assignee.result,
+                    "" if priority is None else priority.planacity_priority,
+                    "" if priority is None else priority.csv_priority or "Blank",
+                    "" if priority is None else priority.result,
+                )
+                row = [include, *(QStandardItem(value) for value in values)]
                 for cell in row:
                     cell.setEditable(False)
                 self.preview_model.appendRow(row)
-                unresolved += priority.result == "Unresolved source preserved"
-                missing_identities += assignee.result == "External identity required"
+                if priority is not None:
+                    unresolved += priority.result == "Unresolved source preserved"
+                if assignee is not None:
+                    missing_identities += assignee.result == "External identity required"
+                blocked += identity.included and identity.result.startswith("Blocked")
+            included_count = len(selected)
+            workflow_notice = (
+                "Use Jira's External System Import for this hierarchy."
+                if hierarchy
+                else "Hierarchy columns are omitted; selected children export as flat work."
+            )
             self.notice.setText(
-                f"{len(priority_rows)} rows reviewed. {missing_identities} assignee identity "
+                f"{included_count} of {len(identity_rows)} rows included. {missing_identities} "
+                "assignee identity "
                 f"mapping(s) required; {unresolved} unresolved priority source value(s) "
-                "will be preserved unchanged."
+                f"will be preserved unchanged. {workflow_notice}"
             )
             self.person_mappings = mappings
-            self.options = options if not missing_identities else None
-            self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(
-                not missing_identities
-            )
-            for column in range(8):
+            valid = bool(included_count) and not missing_identities and not blocked
+            self.options = options if valid else None
+            self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(valid)
+            if blocked:
+                self.notice.setText(
+                    "Cannot export: an included child has an excluded or missing parent. "
+                    "Include the parent, exclude the child, or choose flat CSV export."
+                )
+            elif not included_count:
+                self.notice.setText("Cannot export: select at least one work item.")
+            for column in range(self.preview_model.columnCount()):
                 self.preview.resizeColumnToContents(column)
         except ValueError as error:
             self.options = None
             self.person_mappings = ()
             self.notice.setText(f"Cannot export: {error}")
             self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
+        finally:
+            self._refreshing_preview = False
 
     def accept(self) -> None:
         self.refresh_preview()
@@ -249,6 +357,8 @@ class ExportDialog(QDialog):
             self.units.setCurrentText(options.estimate_unit)
             self.dates.setCurrentText(options.date_format)
             self.delimiters.setCurrentIndex(self.delimiters.findData(options.delimiter))
+            self.include_issue_key.setChecked("reference" in options.fields)
+            self.workflow.setCurrentIndex(self.workflow.findData("row_id" in options.fields))
             for priority, value in options.priority_labels:
                 self.priority_labels[priority].setText(value)
             self.refresh_preview()
@@ -336,6 +446,7 @@ class ImportPage(WorkspacePage):
             return
         options = dialog.options
         person_mappings = dialog.person_mappings
+        included_item_ids = dialog.selected_item_ids
         dialog.deleteLater()
         filename, _ = QFileDialog.getSaveFileName(
             self, "Export Jira CSV", "plan.csv", "CSV (*.csv)"
@@ -352,7 +463,7 @@ class ImportPage(WorkspacePage):
                 raise ValueError("Choose a different path; CSV cannot replace the active project.")
             if target.suffix.lower() != ".csv":
                 raise ValueError("Choose a filename ending in .csv.")
-            export_text(export_csv(plan, options, person_mappings), target)
+            export_text(export_csv(plan, options, person_mappings, included_item_ids), target)
         except (OSError, ValueError) as error:
             QMessageBox.warning(self, "Cannot export CSV", str(error))
 

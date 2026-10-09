@@ -6,8 +6,9 @@ from datetime import date
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkPriority
+from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.integrations.jira.csv_io import Mapping, preview_import, read_csv
+from planacity.persistence.codec import dumps
 from planacity.persistence.project import load_project
 from planacity.ui.import_wizard import ImportWizard
 from planacity.ui.jira_pages import ChangesPage, ExportDialog
@@ -190,8 +191,8 @@ def test_export_priority_preview_profiles_and_label_conflicts(app, tmp_path, mon
     dialog = ExportDialog(plan, ",")
 
     assert dialog.options is not None
-    assert dialog.preview_model.item(0, 6).text() == "Urgent"
-    assert dialog.preview_model.item(0, 7).text() == "Unresolved source preserved"
+    assert dialog.preview_model.item(0, 11).text() == "Urgent"
+    assert dialog.preview_model.item(0, 12).text() == "Unresolved source preserved"
     assert "1 unresolved priority source value" in dialog.notice.text()
 
     dialog.priority_labels[WorkPriority.HIGH].setText("Highest")
@@ -203,12 +204,17 @@ def test_export_priority_preview_profiles_and_label_conflicts(app, tmp_path, mon
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a: (str(profile), ""))
     monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a: (str(profile), ""))
     dialog.delimiters.setCurrentIndex(dialog.delimiters.findData(";"))
+    dialog.workflow.setCurrentIndex(dialog.workflow.findData(False))
+    dialog.include_issue_key.setChecked(False)
     dialog.save_profile()
     dialog.priority_labels[WorkPriority.HIGH].setText("Temporary")
     dialog.delimiters.setCurrentIndex(dialog.delimiters.findData(","))
     dialog.load_profile()
     assert dialog.priority_labels[WorkPriority.HIGH].text() == "Customer high"
     assert dialog.delimiters.currentData() == ";"
+    assert dialog.workflow.currentData() is False
+    assert not dialog.include_issue_key.isChecked()
+    assert '"version": 2' in profile.read_text(encoding="utf-8")
     dialog.deleteLater()
 
 
@@ -233,16 +239,49 @@ def test_export_dialog_requires_identity_for_changed_ownership(app):
 
     assert dialog.options is None
     assert not ok.isEnabled()
-    assert dialog.preview_model.item(0, 2).text() == "Sam"
-    assert dialog.preview_model.item(0, 4).text() == "External identity required"
+    assert dialog.preview_model.item(0, 7).text() == "Sam"
+    assert dialog.preview_model.item(0, 9).text() == "External identity required"
     assert "1 assignee identity mapping" in dialog.notice.text()
 
     dialog.person_labels[sam.id].setText("sam.id")
 
     assert dialog.options is not None
     assert ok.isEnabled()
-    assert dialog.preview_model.item(0, 3).text() == "sam.id"
+    assert dialog.preview_model.item(0, 8).text() == "sam.id"
     assert dialog.person_mappings == ((sam.id, "sam.id"),)
+    dialog.deleteLater()
+
+
+def test_export_dialog_selection_validates_hierarchy_and_supports_flat_mode(app):
+    from PySide6.QtWidgets import QDialogButtonBox
+
+    epic = WorkItem(title="Epic", kind=WorkItemType.EPIC)
+    task = WorkItem(title="Task", kind=WorkItemType.TASK, parent_id=epic.id)
+    plan = replace(empty_plan(), work_items=(task, epic))
+    before = dumps(plan)
+    dialog = ExportDialog(plan, ",")
+    ok = dialog.buttons.button(QDialogButtonBox.StandardButton.Ok)
+
+    assert dialog.preview_model.item(0, 6).text() == "Epic"
+    assert dialog.preview_model.item(1, 3).text() == "1"
+    dialog.preview_model.item(0, 0).setCheckState(Qt.CheckState.Unchecked)
+    assert dialog.options is None
+    assert not ok.isEnabled()
+    assert "included child" in dialog.notice.text()
+
+    dialog.workflow.setCurrentIndex(dialog.workflow.findData(False))
+    assert dialog.options is not None
+    assert ok.isEnabled()
+    assert "Hierarchy columns are omitted" in dialog.notice.text()
+    assert "row_id" not in dialog.options.fields
+    assert dialog.selected_item_ids == (task.id,)
+
+    dialog.clear_all()
+    assert dialog.options is None
+    assert "select at least one" in dialog.notice.text()
+    dialog.select_all()
+    assert dialog.options is not None
+    assert dumps(plan) == before
     dialog.deleteLater()
 
 

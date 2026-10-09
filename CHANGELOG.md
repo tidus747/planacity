@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Selective Jira CSV export with explicit flat and external-system hierarchy
+  workflows. Genuine Jira keys remain separate from deterministic export-local
+  Work item IDs, new work keeps a blank Jira key, and parent-first hierarchy
+  export blocks excluded or missing parents instead of emitting dangling links.
+  Per-row selection affects only the generated CSV, while versioned profiles
+  retain the workflow and optional identity columns without storing work data.
 - Stable Timeline visual identity. Scheduled bars use deterministic WorkGroup
   colors in coordinated light/dark palettes, with named neutral styles for
   Ungrouped and Ambiguous group work. Epic brackets, rounded Task bars, and slim
