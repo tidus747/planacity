@@ -217,6 +217,7 @@ with two singly assigned leaves, each counted once.
 
 Target: v0.5. Depends on existing topic resolution and Timeline. Before V06;
 does not require critical-path calculation or new persisted colors.
+Status: implemented by issue #120 with its reviewable feature PR.
 
 Implement the visual contract in the assignment decision: resolved primary-group
 bar color, stable UUID palette slots, explicit neutral unknown/ambiguous states,

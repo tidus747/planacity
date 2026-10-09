@@ -271,6 +271,24 @@ within shared sections; links across sections use the first occurrences.
 Toggle arrows off to reduce visual clutter. Grouping, filtering, and arrow display
 do not change dates, estimates, relationships, or imported baselines.
 
+### Read Timeline colors and shapes
+
+Scheduled bars use the resolved primary WorkGroup as their color. The same group
+keeps its palette position after sorting, filtering, renaming, reopening, or
+adding another group. Use the named legend and WorkGroup text in item details as
+the authority because two groups can share a palette color. Ungrouped work has a
+neutral color; unresolved legacy membership appears as the patterned Ambiguous
+group style instead of silently selecting one group.
+
+Shape identifies the work type independently from color: Epics use a bracket
+with end caps, Tasks use a rounded bar, and Subtasks use a slim bar. Selection,
+dependency arrows, warnings, partial-date markers, and resize handles remain
+separate cues. The legend and item tooltips expose equivalent text for keyboard
+and assistive-technology use.
+
+![Timeline work identity in light appearance](images/timeline-identity-light.png)
+![Timeline work identity in dark appearance](images/timeline-identity-dark.png)
+
 New cycles cannot be added. Cycles and conflicts already present in imported or
 older plans remain visible for repair. With inclusive dates, a predecessor must
 end at least one calendar day before its successor starts; a same-day boundary is

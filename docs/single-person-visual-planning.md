@@ -3,9 +3,9 @@
 Date: 2026-10-07. Status: accepted implementation contract. S01 enforces the
 transition policy and reports legacy conflicts; S02 adds explicit consolidation.
 Neither changes the wire format. S03a adds schema 11 canonical ownership and safe
-Jira CSV roundtrip; S03b and V07 remain planned in the
-[implementation queue](implementation-queue.md). This decision supersedes the
-earlier multi-person-task target and never silently migrates saved work.
+Jira CSV roundtrip; S03b and V07 are now implemented from the accepted contracts
+in the [implementation queue](implementation-queue.md). This decision supersedes
+the earlier multi-person-task target and never silently migrates saved work.
 
 ## One person per executable item
 

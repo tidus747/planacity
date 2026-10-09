@@ -15,17 +15,27 @@ from PySide6.QtCore import (
     QSettings,
     Qt,
 )
-from PySide6.QtGui import QColor, QPainter, QPolygonF
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QPainter,
+    QPainterPath,
+    QPaintEvent,
+    QPen,
+    QPolygonF,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QSplitter,
     QStyle,
     QStyledItemDelegate,
@@ -49,9 +59,17 @@ from planacity.planning.timeline_axis import (
 )
 from planacity.planning.timeline_dependencies import timeline_dependencies
 from planacity.planning.timeline_view import TimelineFilters, TimelineGrouping, arrange_timeline
+from planacity.planning.work_context import TopicState
 from planacity.ui.pages import WorkspacePage, label
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Colors, Theme
+from planacity.ui.timeline_identity import (
+    TimelineBarIdentity,
+    TimelineBarShape,
+    bar_identity,
+    group_identity,
+    work_shape,
+)
 from planacity.ui.timeline_resize import ResizeScheduleView, edit_timeline_dates
 
 Index = QModelIndex | QPersistentModelIndex
@@ -80,6 +98,10 @@ def _schedule_text(row: TimelineRow) -> str:
     if row.outside_horizon:
         text += "; outside horizon"
     return text
+
+
+def _topic_text(row: TimelineRow, projection: TimelineProjection) -> str:
+    return bar_identity(row, projection.groups).label
 
 
 class TimelineLabelsModel(QAbstractTableModel):
@@ -115,12 +137,18 @@ class TimelineLabelsModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.ToolTipRole:
             if index.column() == 2:
                 return row.section
-            return f"{row.kind.value.title()}: {row.title}\n{_schedule_text(row)}"
+            return (
+                f"{row.kind.value.title()}: {row.title}\n"
+                f"WorkGroup: {_topic_text(row, self.projection)}\n{_schedule_text(row)}"
+            )
         if role == Qt.ItemDataRole.AccessibleTextRole:
             if index.column() == 2:
                 return row.section
             if index.column() == 0:
-                return f"{row.kind.value.title()}: {row.title}"
+                return (
+                    f"{row.kind.value.title()}: {row.title}. "
+                    f"WorkGroup: {_topic_text(row, self.projection)}"
+                )
             return _schedule_text(row)
         if role == Qt.ItemDataRole.UserRole:
             return str(row.item_id)
@@ -183,9 +211,17 @@ class TimelineScheduleModel(QAbstractTableModel):
         if role == DATE_ROLE:
             return day
         if role == Qt.ItemDataRole.ToolTipRole:
-            return f"{row.title}\n{dates}\n{_schedule_text(row)}"
+            return (
+                f"{row.kind.value.title()}: {row.title}\n"
+                f"WorkGroup: {_topic_text(row, self.projection)}\n"
+                f"{dates}\n{_schedule_text(row)}"
+            )
         if role == Qt.ItemDataRole.AccessibleTextRole:
-            return f"{row.title}, {dates}, {_schedule_text(row)}"
+            return (
+                f"{row.kind.value.title()}: {row.title}, "
+                f"WorkGroup: {_topic_text(row, self.projection)}, "
+                f"{dates}, {_schedule_text(row)}"
+            )
         return None
 
     def headerData(
@@ -211,13 +247,210 @@ class TimelineScheduleModel(QAbstractTableModel):
 
 
 def _theme_colors(widget: QWidget | None) -> Colors:
+    return COLORS[_active_theme(widget)]
+
+
+def _active_theme(widget: QWidget | None) -> Theme:
     if widget is not None:
         theme = getattr(widget.window(), "theme", None)
         if isinstance(theme, Theme):
-            return COLORS[theme]
+            return theme
         if widget.palette().window().color().lightness() < 128:
-            return COLORS[Theme.DARK]
-    return COLORS[Theme.LIGHT]
+            return Theme.DARK
+    return Theme.LIGHT
+
+
+class _LegendSwatch(QWidget):
+    def __init__(
+        self,
+        *,
+        identity: TimelineBarIdentity | None = None,
+        shape: TimelineBarShape | None = None,
+    ) -> None:
+        super().__init__()
+        self.identity = identity
+        self.shape = shape
+        self.setFixedSize(26, 22)
+        name = (
+            identity.label
+            if identity is not None
+            else shape.value.replace("_", " ").title()
+            if shape is not None
+            else "Timeline legend swatch"
+        )
+        self.setAccessibleName(name)
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(3, 3, self.width() - 6, self.height() - 6)
+        theme = _active_theme(self)
+        if self.identity is not None:
+            color = QColor(self.identity.color(theme))
+            brush = QBrush(
+                color,
+                Qt.BrushStyle.Dense4Pattern
+                if self.identity.patterned
+                else Qt.BrushStyle.SolidPattern,
+            )
+            painter.setPen(QPen(color, 1))
+            painter.setBrush(brush)
+            painter.drawRoundedRect(rect, 3, 3)
+        elif self.shape is not None:
+            _paint_bar_shape(
+                painter,
+                rect,
+                self.shape,
+                QBrush(QColor(COLORS[theme].accent)),
+                True,
+                True,
+                False,
+                QColor(COLORS[theme].text),
+            )
+        painter.end()
+
+
+class TimelineLegend(QFrame):
+    """Named, scrollable color and shape key with a complete text equivalent."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setProperty("role", "panel")
+        self.setAccessibleName("Timeline legend")
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 6, 12, 6)
+        layout.setSpacing(10)
+        heading = QLabel("Legend")
+        heading.setProperty("role", "heading")
+        layout.addWidget(heading)
+        self.items = QWidget()
+        self.items_layout = QHBoxLayout(self.items)
+        self.items_layout.setContentsMargins(0, 0, 0, 0)
+        self.items_layout.setSpacing(12)
+        scroll = QScrollArea()
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidgetResizable(True)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setFixedHeight(48)
+        scroll.setWidget(self.items)
+        layout.addWidget(scroll, 1)
+        self.set_projection(None)
+
+    def _clear(self) -> None:
+        while self.items_layout.count():
+            child = self.items_layout.takeAt(0)
+            if child is None:
+                break
+            widget = child.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def _entry(
+        self,
+        text: str,
+        *,
+        identity: TimelineBarIdentity | None = None,
+        shape: TimelineBarShape | None = None,
+    ) -> None:
+        item = QWidget()
+        layout = QHBoxLayout(item)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(_LegendSwatch(identity=identity, shape=shape))
+        layout.addWidget(QLabel(text))
+        item.setAccessibleName(text)
+        self.items_layout.addWidget(item)
+
+    def set_projection(self, projection: TimelineProjection | None) -> None:
+        self._clear()
+        if projection is None:
+            self._entry("Open a plan to see group colors")
+            self.setAccessibleDescription("Open a plan to see Timeline visual identities.")
+            self.items_layout.addStretch()
+            return
+        for group in projection.groups:
+            self._entry(group.name, identity=group_identity(group))
+        states = {row.topic_state for row in projection.rows}
+        exception_labels: list[str] = []
+        for row in projection.rows:
+            identity = bar_identity(row, projection.groups)
+            if identity.state != TopicState.RESOLVED and identity.state in states:
+                self._entry(identity.label, identity=identity)
+                exception_labels.append(identity.label)
+                states.remove(identity.state)
+        for kind, text in (
+            (WorkItemType.EPIC, "Epic bracket"),
+            (WorkItemType.TASK, "Task rounded bar"),
+            (WorkItemType.SUBTASK, "Subtask slim bar"),
+        ):
+            self._entry(text, shape=work_shape(kind))
+        self.items_layout.addStretch()
+        groups = ", ".join(group.name for group in projection.groups) or "none"
+        exceptions = ", ".join(exception_labels) or "none"
+        self.setAccessibleDescription(
+            f"WorkGroup colors: {groups}. Neutral exceptions: {exceptions}. "
+            "Work shapes: Epic bracket, "
+            "Task rounded bar, Subtask slim bar."
+        )
+
+
+def _rounded_path(rect: QRectF, round_left: bool, round_right: bool) -> QPainterPath:
+    radius = min(5.0, rect.height() / 2)
+    path = QPainterPath()
+    path.moveTo(rect.left() + (radius if round_left else 0), rect.top())
+    path.lineTo(rect.right() - (radius if round_right else 0), rect.top())
+    if round_right:
+        path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + radius)
+        path.lineTo(rect.right(), rect.bottom() - radius)
+        path.quadTo(rect.right(), rect.bottom(), rect.right() - radius, rect.bottom())
+    else:
+        path.lineTo(rect.right(), rect.bottom())
+    path.lineTo(rect.left() + (radius if round_left else 0), rect.bottom())
+    if round_left:
+        path.quadTo(rect.left(), rect.bottom(), rect.left(), rect.bottom() - radius)
+        path.lineTo(rect.left(), rect.top() + radius)
+        path.quadTo(rect.left(), rect.top(), rect.left() + radius, rect.top())
+    else:
+        path.lineTo(rect.left(), rect.top())
+    path.closeSubpath()
+    return path
+
+
+def _paint_bar_shape(
+    painter: QPainter,
+    bounds: QRectF,
+    shape: TimelineBarShape,
+    brush: QBrush,
+    at_start: bool,
+    at_end: bool,
+    selected: bool,
+    outline: QColor,
+) -> None:
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(brush)
+    if shape == TimelineBarShape.EPIC:
+        center = bounds.center().y()
+        horizontal = QRectF(bounds.left(), center - 3, bounds.width(), 6)
+        painter.drawRect(horizontal)
+        if at_start:
+            painter.drawRect(QRectF(bounds.left(), bounds.top(), 3, bounds.height()))
+        if at_end:
+            painter.drawRect(QRectF(bounds.right() - 3, bounds.top(), 3, bounds.height()))
+        selection_path = QPainterPath()
+        selection_path.addRect(bounds)
+    elif shape == TimelineBarShape.TASK:
+        selection_path = _rounded_path(bounds, at_start, at_end)
+        painter.drawPath(selection_path)
+    else:
+        slim = QRectF(bounds.left(), bounds.center().y() - 4, bounds.width(), 8)
+        painter.drawRect(slim)
+        selection_path = QPainterPath()
+        selection_path.addRect(slim)
+    if selected:
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.setPen(QPen(outline, 2))
+        painter.drawPath(selection_path)
 
 
 class TimelineBarDelegate(QStyledItemDelegate):
@@ -243,6 +476,13 @@ class TimelineBarDelegate(QStyledItemDelegate):
         rect = option.rect
         state = option.state
         colors = _theme_colors(widget)
+        parent = self.parent()
+        model = parent.model() if isinstance(parent, QTableView) else None
+        projection = getattr(model, "projection", None)
+        if not isinstance(projection, TimelineProjection):
+            return
+        identity = bar_identity(row, projection.groups)
+        theme = _active_theme(widget)
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         if (
@@ -252,7 +492,11 @@ class TimelineBarDelegate(QStyledItemDelegate):
         ):
             painter.fillRect(rect, QColor(colors.sidebar))
 
-        accent = QColor(colors.accent)
+        accent = QColor(identity.color(theme))
+        brush = QBrush(
+            accent,
+            Qt.BrushStyle.Dense4Pattern if identity.patterned else Qt.BrushStyle.SolidPattern,
+        )
         center = QPointF(rect.center())
         if (
             row.date_state == TimelineDateState.SCHEDULED
@@ -264,11 +508,20 @@ class TimelineBarDelegate(QStyledItemDelegate):
                 left, right = span
                 bar = QRectF(
                     rect.left() + left * rect.width(),
-                    rect.top() + 11,
+                    rect.top() + 9,
                     (right - left) * rect.width(),
-                    rect.height() - 22,
+                    rect.height() - 18,
                 )
-                painter.fillRect(bar, accent)
+                _paint_bar_shape(
+                    painter,
+                    bar,
+                    work_shape(row.kind),
+                    brush,
+                    period.start_day <= row.start_day <= period.end_day,
+                    period.start_day <= row.end_day <= period.end_day,
+                    bool(state & QStyle.StateFlag.State_Selected),
+                    QColor(colors.text),
+                )
         elif (
             row.date_state == TimelineDateState.START_ONLY
             and row.start_day is not None
@@ -324,6 +577,8 @@ class TimelinePage(WorkspacePage):
         self.summary = label("Open a project to see its schedule.", "badge")
         self.summary.setAccessibleName("Timeline summary")
         self.content.addWidget(self.summary)
+        self.legend = TimelineLegend()
+        self.content.addWidget(self.legend)
         self.grouping_box = QComboBox()
         for grouping_choice in TimelineGrouping:
             self.grouping_box.addItem(grouping_choice.value.title(), grouping_choice.value)
@@ -572,6 +827,7 @@ class TimelinePage(WorkspacePage):
         selected_column = max(0, self.schedule.currentIndex().column())
         plan = self.session.document.plan
         projection = project_timeline(plan) if plan is not None else None
+        self.legend.set_projection(projection)
         current_group = self.group_filter.currentData()
         self.group_filter.blockSignals(True)
         self.group_filter.clear()
