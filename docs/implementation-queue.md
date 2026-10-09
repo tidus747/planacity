@@ -97,6 +97,7 @@ Non-goals: administering Jira priority schemes or requiring Jira connectivity.
 ## D01 - Operation Moon Heist demonstration
 
 Target: v0.4. Depends on R03-R10, P01, P02, and S01-S03.
+Status: implemented by issue #118 with its reviewable feature PR.
 
 Create the additive example and walkthrough from the
 [scenario specification](moon-heist-example.md). Do not replace Aurora's legacy

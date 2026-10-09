@@ -1,0 +1,891 @@
+{
+  "format": "planacity",
+  "schema_version": 11,
+  "plan": {
+    "name": "Operation Moon Heist",
+    "horizon": {
+      "start": "2027-01-04",
+      "end": "2027-02-12"
+    },
+    "description": "Gru sponsors a playful, entirely fictional program to prepare a shrink ray, a banana-powered spacecraft, a lunar retrieval, and a clear demonstration. The baseline is complete and feasible so new users can inspect a trustworthy plan before trying the guided repair exercises.",
+    "id": "11ae968f-a6d9-511a-819c-446b74ad3b6f",
+    "work_items": [
+      {
+        "title": "Build the shrink ray",
+        "kind": "epic",
+        "id": "99635262-e678-5d5c-9741-d38898135502",
+        "parent_id": null,
+        "assignee_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+        "estimate_hours": null,
+        "start": "2027-01-04",
+        "end": "2027-01-13",
+        "description": "Feature ownership for a controlled shrink-ray demonstration.",
+        "labels": [
+          "technology",
+          "mission-critical"
+        ],
+        "primary_group_id": "be0184ae-6989-51ab-9b1f-9afe3691e402",
+        "priority": "high"
+      },
+      {
+        "title": "Design the focusing lens",
+        "kind": "task",
+        "id": "1770b9aa-aec3-5341-b11e-143ed59cc27c",
+        "parent_id": "99635262-e678-5d5c-9741-d38898135502",
+        "assignee_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+        "estimate_hours": "12",
+        "start": "2027-01-04",
+        "end": "2027-01-05",
+        "description": "Define the lens geometry and tolerances for the compact beam path.",
+        "labels": [
+          "optics",
+          "design"
+        ],
+        "primary_group_id": "be0184ae-6989-51ab-9b1f-9afe3691e402",
+        "priority": "high"
+      },
+      {
+        "title": "Calibrate the beam",
+        "kind": "task",
+        "id": "8af322e2-6308-56e4-8f1f-7bae5ec560f7",
+        "parent_id": "99635262-e678-5d5c-9741-d38898135502",
+        "assignee_id": null,
+        "estimate_hours": null,
+        "start": "2027-01-06",
+        "end": "2027-01-08",
+        "description": "Coordinate separately owned optics adjustment and beam verification.",
+        "labels": [
+          "calibration",
+          "collaborative"
+        ],
+        "primary_group_id": "be0184ae-6989-51ab-9b1f-9afe3691e402",
+        "priority": "highest"
+      },
+      {
+        "title": "Adjust the optics",
+        "kind": "subtask",
+        "id": "e9e12da2-3b55-5ccc-8dfa-51e30901a59b",
+        "parent_id": "8af322e2-6308-56e4-8f1f-7bae5ec560f7",
+        "assignee_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+        "estimate_hours": "16",
+        "start": "2027-01-06",
+        "end": "2027-01-08",
+        "description": "Align the optical train and record the repeatable calibration settings.",
+        "labels": [
+          "optics",
+          "calibration"
+        ],
+        "primary_group_id": "be0184ae-6989-51ab-9b1f-9afe3691e402",
+        "priority": "highest"
+      },
+      {
+        "title": "Verify the beam",
+        "kind": "subtask",
+        "id": "87a1c2bd-687a-51ea-b58a-f0a4b22980ca",
+        "parent_id": "8af322e2-6308-56e4-8f1f-7bae5ec560f7",
+        "assignee_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+        "estimate_hours": "8",
+        "start": "2027-01-06",
+        "end": "2027-01-08",
+        "description": "Run the safety checklist and confirm stable output at test power.",
+        "labels": [
+          "verification",
+          "safety"
+        ],
+        "primary_group_id": "be0184ae-6989-51ab-9b1f-9afe3691e402",
+        "priority": "high"
+      },
+      {
+        "title": "Test on a toy moon",
+        "kind": "task",
+        "id": "2ec24357-11a5-52a2-bd1a-68d05b760936",
+        "parent_id": "99635262-e678-5d5c-9741-d38898135502",
+        "assignee_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+        "estimate_hours": "12",
+        "start": "2027-01-11",
+        "end": "2027-01-13",
+        "description": "Demonstrate controlled shrinking and restoration on a harmless model.",
+        "labels": [
+          "test",
+          "readiness"
+        ],
+        "primary_group_id": "be0184ae-6989-51ab-9b1f-9afe3691e402",
+        "priority": "highest"
+      },
+      {
+        "title": "Prepare the banana rocket",
+        "kind": "epic",
+        "id": "cefb08cb-0bbb-585c-95fb-71763f844185",
+        "parent_id": null,
+        "assignee_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "estimate_hours": null,
+        "start": "2027-01-04",
+        "end": "2027-01-19",
+        "description": "Feature ownership for a flight-ready banana-powered spacecraft.",
+        "labels": [
+          "spacecraft",
+          "mission-critical"
+        ],
+        "primary_group_id": "f3618426-c1f4-5a4a-a423-3f380fbbc022",
+        "priority": "high"
+      },
+      {
+        "title": "Assemble banana propulsion",
+        "kind": "task",
+        "id": "a307e1e0-d7f6-5d2e-88a0-ad034606ca8f",
+        "parent_id": "cefb08cb-0bbb-585c-95fb-71763f844185",
+        "assignee_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "estimate_hours": "24",
+        "start": "2027-01-04",
+        "end": "2027-01-08",
+        "description": "Assemble the propulsion module and complete its bench checks.",
+        "labels": [
+          "propulsion",
+          "assembly"
+        ],
+        "primary_group_id": "f3618426-c1f4-5a4a-a423-3f380fbbc022",
+        "priority": "high"
+      },
+      {
+        "title": "Integrate guidance",
+        "kind": "task",
+        "id": "0f1bfcb9-722a-5621-985c-afd2ed098743",
+        "parent_id": "cefb08cb-0bbb-585c-95fb-71763f844185",
+        "assignee_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "estimate_hours": "24",
+        "start": "2027-01-11",
+        "end": "2027-01-15",
+        "description": "Connect navigation controls and verify the planned lunar route.",
+        "labels": [
+          "guidance",
+          "integration"
+        ],
+        "primary_group_id": "f3618426-c1f4-5a4a-a423-3f380fbbc022",
+        "priority": "high"
+      },
+      {
+        "title": "Rehearse the launch",
+        "kind": "task",
+        "id": "8424a866-623c-5f6c-9232-e779052afd17",
+        "parent_id": "cefb08cb-0bbb-585c-95fb-71763f844185",
+        "assignee_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "estimate_hours": "12",
+        "start": "2027-01-18",
+        "end": "2027-01-19",
+        "description": "Run the launch checklist and practice the coordinated countdown.",
+        "labels": [
+          "launch",
+          "readiness"
+        ],
+        "primary_group_id": "f3618426-c1f4-5a4a-a423-3f380fbbc022",
+        "priority": "highest"
+      },
+      {
+        "title": "Capture and return",
+        "kind": "epic",
+        "id": "7a7d8e81-967c-53c7-ac95-81a70f2d8b9a",
+        "parent_id": null,
+        "assignee_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "estimate_hours": null,
+        "start": "2027-01-11",
+        "end": "2027-02-03",
+        "description": "Feature ownership for the flight, retrieval, and safe return sequence.",
+        "labels": [
+          "operations",
+          "mission-critical"
+        ],
+        "primary_group_id": "d3265022-20ff-560b-a99d-68a398db3019",
+        "priority": "highest"
+      },
+      {
+        "title": "Confirm the flight plan",
+        "kind": "task",
+        "id": "7d56ac6e-7d88-57a8-aaeb-d48999bf6e66",
+        "parent_id": "7a7d8e81-967c-53c7-ac95-81a70f2d8b9a",
+        "assignee_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "estimate_hours": "16",
+        "start": "2027-01-11",
+        "end": "2027-01-13",
+        "description": "Review the route, decision points, and return constraints.",
+        "labels": [
+          "flight-plan",
+          "review"
+        ],
+        "primary_group_id": "d3265022-20ff-560b-a99d-68a398db3019",
+        "priority": "high"
+      },
+      {
+        "title": "Fly to the Moon",
+        "kind": "task",
+        "id": "982e2797-ee23-52b9-9981-55414ef8981b",
+        "parent_id": "7a7d8e81-967c-53c7-ac95-81a70f2d8b9a",
+        "assignee_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "estimate_hours": "24",
+        "start": "2027-01-20",
+        "end": "2027-01-25",
+        "description": "Execute the approved outbound flight plan after launch readiness.",
+        "labels": [
+          "flight",
+          "execution"
+        ],
+        "primary_group_id": "d3265022-20ff-560b-a99d-68a398db3019",
+        "priority": "highest"
+      },
+      {
+        "title": "Shrink and retrieve the Moon",
+        "kind": "task",
+        "id": "cc00a94a-ae52-51cc-b46a-03db8c74d271",
+        "parent_id": "7a7d8e81-967c-53c7-ac95-81a70f2d8b9a",
+        "assignee_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+        "estimate_hours": "12",
+        "start": "2027-01-26",
+        "end": "2027-01-28",
+        "description": "Operate the verified device and secure the payload for return.",
+        "labels": [
+          "retrieval",
+          "execution"
+        ],
+        "primary_group_id": "d3265022-20ff-560b-a99d-68a398db3019",
+        "priority": "highest"
+      },
+      {
+        "title": "Return home",
+        "kind": "task",
+        "id": "165ea5f1-8ed3-509f-b5af-7dce6f210111",
+        "parent_id": "7a7d8e81-967c-53c7-ac95-81a70f2d8b9a",
+        "assignee_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "estimate_hours": "24",
+        "start": "2027-01-29",
+        "end": "2027-02-03",
+        "description": "Complete the return route and transfer the payload to the hangar.",
+        "labels": [
+          "return",
+          "handover"
+        ],
+        "primary_group_id": "d3265022-20ff-560b-a99d-68a398db3019",
+        "priority": "high"
+      },
+      {
+        "title": "Prepare the secret base",
+        "kind": "epic",
+        "id": "14a09ecb-7d50-5573-a9d3-42a029e45028",
+        "parent_id": null,
+        "assignee_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "estimate_hours": null,
+        "start": "2027-01-04",
+        "end": "2027-02-08",
+        "description": "Feature ownership for independent facilities and demonstration support.",
+        "labels": [
+          "support",
+          "facilities"
+        ],
+        "primary_group_id": "23c86321-a6c9-5fea-abda-26bc8bd8db96",
+        "priority": "medium"
+      },
+      {
+        "title": "Stock mission bananas",
+        "kind": "task",
+        "id": "ba473b5e-eb70-57c0-b0cd-4e4e73b21e0e",
+        "parent_id": "14a09ecb-7d50-5573-a9d3-42a029e45028",
+        "assignee_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "estimate_hours": "12",
+        "start": "2027-01-04",
+        "end": "2027-01-06",
+        "description": "Prepare independent mission provisions without blocking engineering work.",
+        "labels": [
+          "logistics",
+          "independent"
+        ],
+        "primary_group_id": "23c86321-a6c9-5fea-abda-26bc8bd8db96",
+        "priority": "medium"
+      },
+      {
+        "title": "Prepare the hangar",
+        "kind": "task",
+        "id": "28655f51-4888-57c2-8bd6-883e6b6009a8",
+        "parent_id": "14a09ecb-7d50-5573-a9d3-42a029e45028",
+        "assignee_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "estimate_hours": "24",
+        "start": "2027-01-19",
+        "end": "2027-01-22",
+        "description": "Ready the receiving area after Stuart's recorded day of unavailability.",
+        "labels": [
+          "facilities",
+          "readiness"
+        ],
+        "primary_group_id": "23c86321-a6c9-5fea-abda-26bc8bd8db96",
+        "priority": "high"
+      },
+      {
+        "title": "Document the demonstration",
+        "kind": "task",
+        "id": "47e2e764-f503-50c4-9619-847f8a5d2de7",
+        "parent_id": "14a09ecb-7d50-5573-a9d3-42a029e45028",
+        "assignee_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "estimate_hours": "16",
+        "start": "2027-02-04",
+        "end": "2027-02-08",
+        "description": "Capture the agreed result, operating notes, and follow-up actions.",
+        "labels": [
+          "documentation",
+          "communication"
+        ],
+        "primary_group_id": "23c86321-a6c9-5fea-abda-26bc8bd8db96",
+        "priority": "low"
+      }
+    ],
+    "people": [
+      {
+        "name": "Dr. Nefario",
+        "id": "8092dd3c-a1b0-5108-b652-9640667bfe82"
+      },
+      {
+        "name": "Kevin",
+        "id": "46150de4-83b6-53f4-be6c-3254451bb22b"
+      },
+      {
+        "name": "Stuart",
+        "id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f"
+      },
+      {
+        "name": "Bob",
+        "id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c"
+      },
+      {
+        "name": "Dave",
+        "id": "d70265f2-df74-5bd1-9444-0f07fa9a6448"
+      }
+    ],
+    "work_groups": [
+      {
+        "name": "Shrink technology",
+        "id": "be0184ae-6989-51ab-9b1f-9afe3691e402",
+        "epic_ids": [
+          "99635262-e678-5d5c-9741-d38898135502"
+        ]
+      },
+      {
+        "name": "Spacecraft",
+        "id": "f3618426-c1f4-5a4a-a423-3f380fbbc022",
+        "epic_ids": [
+          "cefb08cb-0bbb-585c-95fb-71763f844185"
+        ]
+      },
+      {
+        "name": "Lunar operations",
+        "id": "d3265022-20ff-560b-a99d-68a398db3019",
+        "epic_ids": [
+          "7a7d8e81-967c-53c7-ac95-81a70f2d8b9a"
+        ]
+      },
+      {
+        "name": "Mission support",
+        "id": "23c86321-a6c9-5fea-abda-26bc8bd8db96",
+        "epic_ids": [
+          "14a09ecb-7d50-5573-a9d3-42a029e45028"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source_id": "1770b9aa-aec3-5341-b11e-143ed59cc27c",
+        "target_id": "e9e12da2-3b55-5ccc-8dfa-51e30901a59b",
+        "kind": "blocks",
+        "id": "4dda616e-8b0d-553b-9dc1-27c7446f46bf"
+      },
+      {
+        "source_id": "e9e12da2-3b55-5ccc-8dfa-51e30901a59b",
+        "target_id": "2ec24357-11a5-52a2-bd1a-68d05b760936",
+        "kind": "blocks",
+        "id": "d36bf921-97a0-5fc1-b370-007d78bc40e8"
+      },
+      {
+        "source_id": "87a1c2bd-687a-51ea-b58a-f0a4b22980ca",
+        "target_id": "2ec24357-11a5-52a2-bd1a-68d05b760936",
+        "kind": "blocks",
+        "id": "d8d49c16-0b5e-5472-aba4-8ea8e932b97c"
+      },
+      {
+        "source_id": "a307e1e0-d7f6-5d2e-88a0-ad034606ca8f",
+        "target_id": "8424a866-623c-5f6c-9232-e779052afd17",
+        "kind": "blocks",
+        "id": "01d848cc-cf57-53e5-9a9f-adc6e513964b"
+      },
+      {
+        "source_id": "0f1bfcb9-722a-5621-985c-afd2ed098743",
+        "target_id": "8424a866-623c-5f6c-9232-e779052afd17",
+        "kind": "blocks",
+        "id": "0e79242c-fe53-5fc2-b00f-dcd8594105d8"
+      },
+      {
+        "source_id": "7d56ac6e-7d88-57a8-aaeb-d48999bf6e66",
+        "target_id": "982e2797-ee23-52b9-9981-55414ef8981b",
+        "kind": "blocks",
+        "id": "2e0c14a0-ca11-5971-a521-0a749d3898ed"
+      },
+      {
+        "source_id": "8424a866-623c-5f6c-9232-e779052afd17",
+        "target_id": "982e2797-ee23-52b9-9981-55414ef8981b",
+        "kind": "blocks",
+        "id": "ac63785d-a7b4-52ea-9ccf-5a2b1a8e65e9"
+      },
+      {
+        "source_id": "2ec24357-11a5-52a2-bd1a-68d05b760936",
+        "target_id": "982e2797-ee23-52b9-9981-55414ef8981b",
+        "kind": "blocks",
+        "id": "d0e5ef4f-ec77-53f4-a36c-c6c1ad7bcb3f"
+      },
+      {
+        "source_id": "982e2797-ee23-52b9-9981-55414ef8981b",
+        "target_id": "cc00a94a-ae52-51cc-b46a-03db8c74d271",
+        "kind": "blocks",
+        "id": "b2cae509-3e54-549d-8190-21af95b88a54"
+      },
+      {
+        "source_id": "cc00a94a-ae52-51cc-b46a-03db8c74d271",
+        "target_id": "165ea5f1-8ed3-509f-b5af-7dce6f210111",
+        "kind": "blocks",
+        "id": "a57936fd-2a71-5e70-ace2-dd952659009a"
+      },
+      {
+        "source_id": "28655f51-4888-57c2-8bd6-883e6b6009a8",
+        "target_id": "165ea5f1-8ed3-509f-b5af-7dce6f210111",
+        "kind": "blocks",
+        "id": "5fe03b8f-7113-53db-9b79-1535b5bf8b79"
+      },
+      {
+        "source_id": "165ea5f1-8ed3-509f-b5af-7dce6f210111",
+        "target_id": "47e2e764-f503-50c4-9619-847f8a5d2de7",
+        "kind": "blocks",
+        "id": "f344f0fb-cbe7-56d8-b4f1-b303f55f970e"
+      }
+    ],
+    "imports": [
+      {
+        "name": "Operation Moon Heist Jira sample",
+        "headers": [
+          "Issue key",
+          "Issue ID",
+          "Issue Type",
+          "Summary",
+          "Priority",
+          "Parent",
+          "Original Estimate",
+          "Start Date",
+          "Due Date",
+          "Assignee",
+          "Status"
+        ],
+        "rows": [
+          [
+            "MH-1",
+            "1001",
+            "Epic",
+            "Build the shrink ray",
+            "High",
+            "",
+            "",
+            "2027-01-04",
+            "2027-01-13",
+            "nefario@example.test",
+            "In Progress"
+          ],
+          [
+            "MH-2",
+            "1002",
+            "Task",
+            "Design the focusing lens",
+            "High",
+            "1001",
+            "43200",
+            "2027-01-04",
+            "2027-01-05",
+            "nefario@example.test",
+            "To Do"
+          ],
+          [
+            "MH-3",
+            "1003",
+            "Task",
+            "Calibrate the beam",
+            "Highest",
+            "1001",
+            "",
+            "2027-01-06",
+            "2027-01-08",
+            "",
+            "To Do"
+          ],
+          [
+            "MH-4",
+            "1004",
+            "Sub-task",
+            "Adjust the optics",
+            "Highest",
+            "1003",
+            "57600",
+            "2027-01-06",
+            "2027-01-08",
+            "nefario@example.test",
+            "To Do"
+          ],
+          [
+            "MH-5",
+            "1005",
+            "Sub-task",
+            "Verify the beam",
+            "High",
+            "1003",
+            "28800",
+            "2027-01-06",
+            "2027-01-08",
+            "bob@example.test",
+            "To Do"
+          ],
+          [
+            "MH-6",
+            "1006",
+            "Task",
+            "Test on a toy moon",
+            "Highest",
+            "1001",
+            "43200",
+            "2027-01-11",
+            "2027-01-13",
+            "bob@example.test",
+            "To Do"
+          ]
+        ],
+        "records": [
+          {
+            "item": {
+              "title": "Build the shrink ray",
+              "kind": "epic",
+              "id": "99635262-e678-5d5c-9741-d38898135502",
+              "parent_id": null,
+              "assignee_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+              "estimate_hours": null,
+              "start": "2027-01-04",
+              "end": "2027-01-13",
+              "description": "",
+              "labels": [],
+              "primary_group_id": null,
+              "priority": "high"
+            },
+            "external_reference": "MH-1",
+            "external_person": "nefario@example.test",
+            "person": {
+              "name": "Dr. Nefario",
+              "id": "8092dd3c-a1b0-5108-b652-9640667bfe82"
+            },
+            "status": "In Progress",
+            "external_priority": "High"
+          },
+          {
+            "item": {
+              "title": "Design the focusing lens",
+              "kind": "task",
+              "id": "1770b9aa-aec3-5341-b11e-143ed59cc27c",
+              "parent_id": "99635262-e678-5d5c-9741-d38898135502",
+              "assignee_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+              "estimate_hours": "12",
+              "start": "2027-01-04",
+              "end": "2027-01-05",
+              "description": "",
+              "labels": [],
+              "primary_group_id": null,
+              "priority": "high"
+            },
+            "external_reference": "MH-2",
+            "external_person": "nefario@example.test",
+            "person": {
+              "name": "Dr. Nefario",
+              "id": "8092dd3c-a1b0-5108-b652-9640667bfe82"
+            },
+            "status": "To Do",
+            "external_priority": "High"
+          },
+          {
+            "item": {
+              "title": "Calibrate the beam",
+              "kind": "task",
+              "id": "8af322e2-6308-56e4-8f1f-7bae5ec560f7",
+              "parent_id": "99635262-e678-5d5c-9741-d38898135502",
+              "assignee_id": null,
+              "estimate_hours": null,
+              "start": "2027-01-06",
+              "end": "2027-01-08",
+              "description": "",
+              "labels": [],
+              "primary_group_id": null,
+              "priority": "highest"
+            },
+            "external_reference": "MH-3",
+            "external_person": "",
+            "person": null,
+            "status": "To Do",
+            "external_priority": "Highest"
+          },
+          {
+            "item": {
+              "title": "Adjust the optics",
+              "kind": "subtask",
+              "id": "e9e12da2-3b55-5ccc-8dfa-51e30901a59b",
+              "parent_id": "8af322e2-6308-56e4-8f1f-7bae5ec560f7",
+              "assignee_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+              "estimate_hours": "16",
+              "start": "2027-01-06",
+              "end": "2027-01-08",
+              "description": "",
+              "labels": [],
+              "primary_group_id": null,
+              "priority": "highest"
+            },
+            "external_reference": "MH-4",
+            "external_person": "nefario@example.test",
+            "person": {
+              "name": "Dr. Nefario",
+              "id": "8092dd3c-a1b0-5108-b652-9640667bfe82"
+            },
+            "status": "To Do",
+            "external_priority": "Highest"
+          },
+          {
+            "item": {
+              "title": "Verify the beam",
+              "kind": "subtask",
+              "id": "87a1c2bd-687a-51ea-b58a-f0a4b22980ca",
+              "parent_id": "8af322e2-6308-56e4-8f1f-7bae5ec560f7",
+              "assignee_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+              "estimate_hours": "8",
+              "start": "2027-01-06",
+              "end": "2027-01-08",
+              "description": "",
+              "labels": [],
+              "primary_group_id": null,
+              "priority": "high"
+            },
+            "external_reference": "MH-5",
+            "external_person": "bob@example.test",
+            "person": {
+              "name": "Bob",
+              "id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c"
+            },
+            "status": "To Do",
+            "external_priority": "High"
+          },
+          {
+            "item": {
+              "title": "Test on a toy moon",
+              "kind": "task",
+              "id": "2ec24357-11a5-52a2-bd1a-68d05b760936",
+              "parent_id": "99635262-e678-5d5c-9741-d38898135502",
+              "assignee_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+              "estimate_hours": "12",
+              "start": "2027-01-11",
+              "end": "2027-01-13",
+              "description": "",
+              "labels": [],
+              "primary_group_id": null,
+              "priority": "highest"
+            },
+            "external_reference": "MH-6",
+            "external_person": "bob@example.test",
+            "person": {
+              "name": "Bob",
+              "id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c"
+            },
+            "status": "To Do",
+            "external_priority": "Highest"
+          }
+        ],
+        "id": "41a23d47-3f63-5374-8c65-05fd982d12ae"
+      }
+    ],
+    "work_calendars": [
+      {
+        "name": "Standard 40-hour week",
+        "weekday_hours": [
+          "8",
+          "8",
+          "8",
+          "8",
+          "8",
+          "0",
+          "0"
+        ],
+        "id": "df7f4358-a5fb-56de-a18c-7654d1c9ffcd"
+      },
+      {
+        "name": "Bob 30-hour week",
+        "weekday_hours": [
+          "6",
+          "6",
+          "6",
+          "6",
+          "6",
+          "0",
+          "0"
+        ],
+        "id": "c409efa1-f956-54f0-9722-c45321bb6048"
+      }
+    ],
+    "person_calendars": [
+      {
+        "person_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+        "calendar_id": "df7f4358-a5fb-56de-a18c-7654d1c9ffcd"
+      },
+      {
+        "person_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "calendar_id": "df7f4358-a5fb-56de-a18c-7654d1c9ffcd"
+      },
+      {
+        "person_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "calendar_id": "df7f4358-a5fb-56de-a18c-7654d1c9ffcd"
+      },
+      {
+        "person_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+        "calendar_id": "c409efa1-f956-54f0-9722-c45321bb6048"
+      },
+      {
+        "person_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "calendar_id": "df7f4358-a5fb-56de-a18c-7654d1c9ffcd"
+      }
+    ],
+    "availability_events": [
+      {
+        "person_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "period": {
+          "start": "2027-01-18",
+          "end": "2027-01-18"
+        },
+        "unavailable_fraction": "1",
+        "id": "54a8ef91-45df-57c5-8658-5a0019f066c0"
+      }
+    ],
+    "reservation_rules": [
+      {
+        "name": "Weekly mission briefing",
+        "person_ids": [
+          "8092dd3c-a1b0-5108-b652-9640667bfe82",
+          "46150de4-83b6-53f4-be6c-3254451bb22b",
+          "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+          "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+          "d70265f2-df74-5bd1-9444-0f07fa9a6448"
+        ],
+        "hours_per_person": "2",
+        "anchor": "2027-01-04",
+        "interval_weeks": 1,
+        "effective": {
+          "start": "2027-01-04",
+          "end": "2027-02-12"
+        },
+        "id": "17489397-f130-5c93-a7a7-b38280027aeb"
+      },
+      {
+        "name": "Front-office duty",
+        "person_ids": [
+          "46150de4-83b6-53f4-be6c-3254451bb22b"
+        ],
+        "hours_per_person": "4",
+        "anchor": "2027-01-04",
+        "interval_weeks": 1,
+        "effective": {
+          "start": "2027-01-04",
+          "end": "2027-02-12"
+        },
+        "id": "ccf330f3-ecc4-5198-a22e-3bcbc856f708"
+      }
+    ],
+    "estimate_preferences": {
+      "unit": "hours",
+      "calendar_id": null
+    },
+    "allocations": [
+      {
+        "work_item_id": "1770b9aa-aec3-5341-b11e-143ed59cc27c",
+        "person_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+        "hours": "12",
+        "id": "17a2db00-b2d5-57b4-89fe-b48740b5c484"
+      },
+      {
+        "work_item_id": "e9e12da2-3b55-5ccc-8dfa-51e30901a59b",
+        "person_id": "8092dd3c-a1b0-5108-b652-9640667bfe82",
+        "hours": "16",
+        "id": "d5f50157-613b-5a98-991b-440151bbd301"
+      },
+      {
+        "work_item_id": "87a1c2bd-687a-51ea-b58a-f0a4b22980ca",
+        "person_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+        "hours": "8",
+        "id": "33248b92-b1ce-531f-aa8a-e6c31a6a428a"
+      },
+      {
+        "work_item_id": "2ec24357-11a5-52a2-bd1a-68d05b760936",
+        "person_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+        "hours": "12",
+        "id": "9abea77c-7f02-5403-bef9-ae8605afb77d"
+      },
+      {
+        "work_item_id": "a307e1e0-d7f6-5d2e-88a0-ad034606ca8f",
+        "person_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "hours": "24",
+        "id": "10a19ce7-9cc9-599d-9bea-852760bdea23"
+      },
+      {
+        "work_item_id": "0f1bfcb9-722a-5621-985c-afd2ed098743",
+        "person_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "hours": "24",
+        "id": "3fb55f36-2301-5162-88f7-c798f569cb27"
+      },
+      {
+        "work_item_id": "8424a866-623c-5f6c-9232-e779052afd17",
+        "person_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "hours": "12",
+        "id": "3c6bba8b-a3ed-59d6-9dc4-180ca8c06fe8"
+      },
+      {
+        "work_item_id": "7d56ac6e-7d88-57a8-aaeb-d48999bf6e66",
+        "person_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "hours": "16",
+        "id": "babf1f6d-6bda-5b1c-a8d0-cd742587b0fa"
+      },
+      {
+        "work_item_id": "982e2797-ee23-52b9-9981-55414ef8981b",
+        "person_id": "46150de4-83b6-53f4-be6c-3254451bb22b",
+        "hours": "24",
+        "id": "562a4590-7d20-586b-88be-ac73dd0338cf"
+      },
+      {
+        "work_item_id": "cc00a94a-ae52-51cc-b46a-03db8c74d271",
+        "person_id": "bcf2c8ef-8ebb-5bd3-a21b-ac1053ddac9c",
+        "hours": "12",
+        "id": "3303a587-f2d3-5d2f-9562-c2a9d873ada9"
+      },
+      {
+        "work_item_id": "165ea5f1-8ed3-509f-b5af-7dce6f210111",
+        "person_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "hours": "24",
+        "id": "41b4b39d-3d3c-5cc7-a6ab-47dfad349782"
+      },
+      {
+        "work_item_id": "ba473b5e-eb70-57c0-b0cd-4e4e73b21e0e",
+        "person_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "hours": "12",
+        "id": "2f48de25-0189-5861-a053-ddeac18670ff"
+      },
+      {
+        "work_item_id": "28655f51-4888-57c2-8bd6-883e6b6009a8",
+        "person_id": "21f70ab6-0a96-5a89-b4d0-9e79db97874f",
+        "hours": "24",
+        "id": "81cdfe3b-9c9f-532a-8dc7-685dd52d523a"
+      },
+      {
+        "work_item_id": "47e2e764-f503-50c4-9619-847f8a5d2de7",
+        "person_id": "d70265f2-df74-5bd1-9444-0f07fa9a6448",
+        "hours": "16",
+        "id": "9eccc723-b8ee-51c3-ad22-578d146b84a1"
+      }
+    ]
+  }
+}

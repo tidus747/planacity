@@ -61,8 +61,10 @@ default.
   the complete capacity breakdown from the Overview analysis.
 - Use light or dark appearance and keyboard navigation across the main views.
 
-See the [getting-started guide](docs/getting-started.md) for the complete workflow
-and load the fictional `examples/aurora.planacity.json` plan to explore the app.
+See the [getting-started guide](docs/getting-started.md) for the complete workflow.
+Load `examples/moon-heist.planacity.json` for the complete v0.4 demonstration, or
+use `examples/aurora.planacity.json` for the unchanged legacy and incomplete-plan
+example.
 
 ## Current development status
 

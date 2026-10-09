@@ -1,4 +1,42 @@
-# Aurora Test Bench
+# Planacity examples
+
+All example data is fictional and contains no real company, customer, or
+employee information. Restore a JSON backup through File -> Restore JSON
+backup... It opens as an unsaved copy, so save it to a new `.planacity` file
+before making changes.
+
+## Operation Moon Heist
+
+`moon-heist.planacity.json` is the complete v0.4 demonstration. Gru sponsors a
+playful program with five allocatable people, four WorkGroups, four Epics, one
+collaborative Task split into separately owned Subtasks, and fourteen executable
+leaves. Every leaf has dates, a description, priority, one canonical assignee,
+and one matching positive Allocation. Epic feature owners add no capacity demand.
+
+The fixed horizon is 2027-01-04 through 2027-02-12. The example includes:
+
+- standard 40-hour calendars and Bob's explicit 30-hour calendar;
+- a 2 h weekly mission briefing for everyone;
+- Kevin's separate 4 h weekly front-office duty;
+- Stuart's full unavailability on 2027-01-18;
+- 236 h of dated work across four reporting topics;
+- twelve valid dependency edges, including parallel prerequisites that converge
+  on launch;
+- an unchanged Jira baseline for the shrink-technology branch; and
+- no initial planning findings, unplaced work, dependency conflicts, or overloads.
+
+The exact capacity contract is tested and documented in the
+[Moon Heist walkthrough](../docs/moon-heist-example.md). A matching six-row Jira
+sample is available as `jira-moon-heist.csv`.
+
+Real application views:
+
+![Moon Heist Overview in light appearance](../docs/images/moon-heist-overview-light.png)
+![Moon Heist Plan in dark appearance](../docs/images/moon-heist-plan-dark.png)
+![Moon Heist People in light appearance](../docs/images/moon-heist-people-light.png)
+![Moon Heist Timeline in dark appearance](../docs/images/moon-heist-timeline-dark.png)
+
+## Aurora Test Bench
 
 This fictional program demonstrates manual planning and v0.3 Visual Planning. All names and
 work are invented; it contains no real company or customer data.
@@ -29,7 +67,7 @@ Open Timeline (Ctrl+3) and compare Day, Week, and Month. The initial summary is
 - Save to a new project, reopen, and continue. The supplied JSON remains unchanged.
 
 This remains a schema 1 backup to exercise backward compatibility. Restoring and
-saving produces the current schema 7 project format. The roster is not an
+saving produces the current project format. The roster is not an
 allocation model, and the example contains no synthetic zero-duration milestones.
 
 ## Jira roundtrip sample
@@ -40,9 +78,4 @@ the two example people. Repeated Labels columns demonstrate source preservation.
 See [the import guide](../docs/jira-import.md) and
 [the export guide](../docs/jira-export.md).
 
-## Planned demonstration
-
-[Operation Moon Heist](../docs/moon-heist-example.md) specifies a future Gru and
-minions planning example with groups, allocations, duties, and guided exercises.
-It is not an available JSON example yet. Aurora remains the backward-compatibility
-sample when the new demonstration is added.
+Aurora remains unchanged as the legacy migration and incomplete-planning sample.

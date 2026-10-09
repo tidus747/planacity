@@ -221,17 +221,26 @@ Actual Overview analysis in both appearances:
 ![Overview analysis in light mode](images/overview-analysis-light.png)
 ![Overview analysis in dark mode](images/overview-analysis-dark.png)
 
-## Try the fictional example
+## Try the complete fictional example
 
 Use **File -> Restore JSON backup...** and choose
-`examples/aurora.planacity.json`. It opens as an unsaved copy, preserving the sample
-file. Save it to a new `.planacity` path. The sample contains two Epics, Tasks and
-Subtasks, three people, hour estimates, dates, a WorkGroup, and dependencies.
-Missing estimates/dates are intentional examples of incomplete planning data.
-The expanded [example walkthrough](../examples/README.md#visual-planning-walkthrough)
-covers partial dates, outside-horizon work, grouping, dependency arrows, resizing,
-and saving a new project. The [v0.3 validation record](v0.3-validation.md) records
-the checks performed for this source preview.
+`examples/moon-heist.planacity.json`. It opens as an unsaved copy, preserving the
+sample file. Save it to a new `.planacity` path. The complete v0.4 baseline has
+four WorkGroups and Epics, fourteen separately owned leaves, five people, two
+calendar patterns, an absence, recurring duties, priorities, descriptions, and a
+valid fork/join dependency network. Its 236 h of dated work is feasible against
+1,048 h of planning capacity with no initial findings.
+
+The [Moon Heist walkthrough](moon-heist-example.md) records the exact per-person
+and per-topic totals and provides repeatable exercises for overload, unknown
+inputs, dependency guards, persistence, and Jira baseline preservation.
+
+Use `examples/aurora.planacity.json` for the unchanged schema 1 migration sample.
+Aurora intentionally includes incomplete and outside-horizon work. Its
+[Visual Planning walkthrough](../examples/README.md#visual-planning-walkthrough)
+covers partial dates, grouping, dependency arrows, resizing, and saving a new
+project. The [v0.3 validation record](v0.3-validation.md) records the checks for
+that source preview.
 
 Use **File -> Export JSON backup...** for a portable backup. See
 [project-file-format.md](project-file-format.md) for validation and recovery.

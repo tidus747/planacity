@@ -1,0 +1,7 @@
+Issue key,Issue ID,Issue Type,Summary,Priority,Parent,Original Estimate,Start Date,Due Date,Assignee,Status
+MH-1,1001,Epic,Build the shrink ray,High,,,2027-01-04,2027-01-13,nefario@example.test,In Progress
+MH-2,1002,Task,Design the focusing lens,High,1001,43200,2027-01-04,2027-01-05,nefario@example.test,To Do
+MH-3,1003,Task,Calibrate the beam,Highest,1001,,2027-01-06,2027-01-08,,To Do
+MH-4,1004,Sub-task,Adjust the optics,Highest,1003,57600,2027-01-06,2027-01-08,nefario@example.test,To Do
+MH-5,1005,Sub-task,Verify the beam,High,1003,28800,2027-01-06,2027-01-08,bob@example.test,To Do
+MH-6,1006,Task,Test on a toy moon,Highest,1001,43200,2027-01-11,2027-01-13,bob@example.test,To Do
