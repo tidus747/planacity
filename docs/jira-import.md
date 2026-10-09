@@ -10,6 +10,9 @@ connection are used.
    are required. Columns are identified by position, including repeated headers.
    Map numeric issue IDs to **Row ID** when Parent contains those numbers.
    Otherwise, Parent must contain external references. Include all parent rows.
+   In a Planacity hierarchical export, Work item ID values are temporary,
+   export-local references and Parent points to those values. They are separate
+   from genuine Jira issue keys. A flat Planacity export omits both columns.
 2. Choose **seconds** or **hours** for estimates and the exact date format.
    Story points are not hours and are never converted automatically. Blank
    estimates remain unknown; zero remains zero. Dates outside the plan horizon

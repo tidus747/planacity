@@ -4,7 +4,7 @@ import json
 
 from planacity.domain import WorkItemType, WorkPriority
 from planacity.integrations.jira.csv_io import Mapping
-from planacity.integrations.jira.export import ExportOptions
+from planacity.integrations.jira.export import EXPORT_FIELDS, ExportOptions
 
 
 def dump_profile(headers: tuple[str, ...], mapping: Mapping) -> str:
@@ -84,9 +84,10 @@ def load_profile(text: str, headers: tuple[str, ...]) -> Mapping:
 def dump_export_profile(options: ExportOptions) -> str:
     return json.dumps(
         {
-            "version": 1,
+            "version": 2,
             "kind": "jira-export",
             "headers": options.headers,
+            "fields": options.fields,
             "estimate_unit": options.estimate_unit,
             "date_format": options.date_format,
             "delimiter": options.delimiter,
@@ -108,11 +109,14 @@ def load_export_profile(text: str) -> ExportOptions:
             "delimiter",
             "priority_labels",
         }
+        version = data.get("version") if isinstance(data, dict) else None
+        if version == 2:
+            expected.add("fields")
         if (
             not isinstance(data, dict)
             or set(data) != expected
             or type(data["version"]) is not int
-            or data["version"] != 1
+            or data["version"] not in (1, 2)
             or data["kind"] != "jira-export"
         ):
             raise ValueError("Unsupported export mapping profile.")
@@ -120,6 +124,9 @@ def load_export_profile(text: str) -> ExportOptions:
             not isinstance(header, str) for header in data["headers"]
         ):
             raise ValueError("Export profile headers must be text.")
+        fields = data.get("fields", list(EXPORT_FIELDS))
+        if not isinstance(fields, list) or any(not isinstance(field, str) for field in fields):
+            raise ValueError("Export profile fields must be text.")
         labels = data["priority_labels"]
         if not isinstance(labels, list) or any(
             not isinstance(pair, list)
@@ -131,6 +138,7 @@ def load_export_profile(text: str) -> ExportOptions:
             raise ValueError("Export priority labels must contain text pairs.")
         return ExportOptions(
             headers=tuple(data["headers"]),
+            fields=tuple(fields),
             estimate_unit=data["estimate_unit"],
             date_format=data["date_format"],
             delimiter=data["delimiter"],

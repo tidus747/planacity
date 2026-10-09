@@ -24,9 +24,11 @@ from planacity.integrations.jira.csv_io import (
     read_csv,
 )
 from planacity.integrations.jira.export import (
+    EXPORT_FIELDS,
     ExportOptions,
     assignee_export_preview,
     export_csv,
+    identity_export_preview,
     priority_export_preview,
 )
 from planacity.integrations.jira.profiles import (
@@ -92,6 +94,84 @@ def test_roundtrip_preserves_baseline_and_unmapped_cells(plan, tmp_path):
     assert output.rows[1][3] == "Agreed"
     assert output.rows[1][4] == "Blocker"
     assert reopened.imports == baseline
+
+
+def test_flat_export_omits_temporary_hierarchy_identity(plan):
+    item = WorkItem(title="Standalone", kind=WorkItemType.TASK)
+    current = replace(plan, work_items=(item,))
+    fields = tuple(
+        field for field in EXPORT_FIELDS if field not in {"reference", "row_id", "parent"}
+    )
+
+    output = read_csv(export_csv(current, ExportOptions(fields=fields)))
+
+    assert "Issue ID" not in output.headers
+    assert "Parent" not in output.headers
+    assert "Issue key" not in output.headers
+    assert current == replace(plan, work_items=(item,))
+
+
+def test_new_hierarchy_uses_parent_first_export_local_ids(plan):
+    epic = WorkItem(title="Epic", kind=WorkItemType.EPIC)
+    task = WorkItem(title="Task", kind=WorkItemType.TASK, parent_id=epic.id)
+    subtask = WorkItem(title="Subtask", kind=WorkItemType.SUBTASK, parent_id=task.id)
+    current = replace(plan, work_items=(subtask, task, epic))
+
+    output = read_csv(export_csv(current))
+
+    assert [row[3] for row in output.rows] == ["Epic", "Task", "Subtask"]
+    assert [row[0] for row in output.rows] == ["", "", ""]
+    assert [row[1] for row in output.rows] == ["1", "2", "3"]
+    assert [row[5] for row in output.rows] == ["", "1", "2"]
+    preview = identity_export_preview(current)
+    assert len({row.csv_id for row in preview}) == 3
+    assert {row.importer for row in preview} == {"External system import"}
+
+
+def test_mixed_existing_and_new_hierarchy_keeps_keys_separate_from_csv_ids(plan):
+    result = imported(plan)
+    task = result.work_items[0]
+    new = WorkItem(title="New child", kind=WorkItemType.SUBTASK, parent_id=task.id)
+    current = replace(result, work_items=(*result.work_items, new))
+
+    output = read_csv(export_csv(current))
+
+    assert [row[0] for row in output.rows] == ["A-1", "A-2", ""]
+    assert [row[1] for row in output.rows] == ["1", "2", "3"]
+    assert [row[5] for row in output.rows] == ["", "1", "2"]
+
+
+def test_export_selection_blocks_dangling_parent_but_flat_export_is_explicit(plan):
+    epic = WorkItem(title="Epic", kind=WorkItemType.EPIC)
+    task = WorkItem(title="Task", kind=WorkItemType.TASK, parent_id=epic.id)
+    current = replace(plan, work_items=(task, epic))
+    before = dumps(current)
+
+    parent_only = read_csv(export_csv(current, included_item_ids=(epic.id,)))
+    assert len(parent_only.rows) == 1
+    assert parent_only.rows[0][3] == "Epic" and parent_only.rows[0][5] == ""
+
+    with pytest.raises(ValueError, match="Include its parent, exclude the child, or choose flat"):
+        export_csv(current, included_item_ids=(task.id,))
+
+    fields = tuple(field for field in EXPORT_FIELDS if field not in {"row_id", "parent"})
+    output = read_csv(
+        export_csv(current, ExportOptions(fields=fields), included_item_ids=(task.id,))
+    )
+    assert len(output.rows) == 1 and output.rows[0][2] == "Task"
+    assert dumps(current) == before
+
+
+def test_export_selection_and_identity_mapping_reject_invalid_input(plan):
+    item = WorkItem(title="Only", kind=WorkItemType.TASK)
+    current = replace(plan, work_items=(item,))
+
+    with pytest.raises(ValueError, match="at most once"):
+        export_csv(current, included_item_ids=(item.id, item.id))
+    with pytest.raises(ValueError, match="current plan"):
+        export_csv(current, included_item_ids=(uuid4(),))
+    with pytest.raises(ValueError, match="enabled together"):
+        ExportOptions(fields=tuple(field for field in EXPORT_FIELDS if field != "parent"))
 
 
 def test_import_sets_canonical_assignee_on_current_and_immutable_baseline(plan):
@@ -343,6 +423,11 @@ def test_export_profile_rejects_ambiguous_or_invalid_priority_labels():
     data["priority_labels"][1][1] = data["priority_labels"][0][1]
     with pytest.raises(ValueError, match="must be unique"):
         load_export_profile(json.dumps(data))
+
+    legacy = json.loads(profile)
+    legacy["version"] = 1
+    legacy.pop("fields")
+    assert load_export_profile(json.dumps(legacy)).fields == EXPORT_FIELDS
 
 
 def test_unresolved_source_priority_is_preserved_until_user_edits(plan):
