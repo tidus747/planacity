@@ -269,6 +269,23 @@ coverage only and are not individual productivity scores.
 ![Timeline team coverage in light appearance](images/timeline-team-coverage-light.png)
 ![Timeline team coverage in dark appearance](images/timeline-team-coverage-dark.png)
 
+Enable **Show unavailability** to reveal one lane for each person with a positive
+availability entry intersecting the planning horizon. Hatched blocks use their
+horizontal position for dates and their height for unavailable share: a full-height
+block is fully unavailable, while a shorter block is partial unavailability.
+Select a lane with the mouse or keyboard to read the person's original entry dates
+and exact share. An entry crossing the horizon is clipped only on screen; Planacity
+does not rewrite its stored dates.
+
+The overlay is off by default. It follows the day, week, and month scale, but work
+search and filters do not hide recorded availability. Zero-share and wholly
+outside-horizon entries do not create lanes. Availability entries intentionally
+store no absence reason, and this view neither edits them nor scores attendance,
+utilization, or productivity.
+
+![Timeline unavailability lanes in light appearance](images/timeline-unavailability-light.png)
+![Timeline unavailability lanes in dark appearance](images/timeline-unavailability-dark.png)
+
 **Show dependency arrows** connects predecessor ends to successor starts:
 `A depends_on B` draws `B -> A`; `A blocks B` draws `A -> B`. Hierarchy and
 `related_to` links do not create dependency arrows. Select work to read its links
