@@ -61,6 +61,7 @@ from planacity.planning.timeline_axis import (
     bar_span,
 )
 from planacity.planning.timeline_dependencies import timeline_dependencies
+from planacity.planning.timeline_team import TeamTimelineProjection, project_team_timeline
 from planacity.planning.timeline_view import TimelineFilters, TimelineGrouping, arrange_timeline
 from planacity.planning.work_context import TopicState
 from planacity.ui.pages import WorkspacePage, label
@@ -75,6 +76,7 @@ from planacity.ui.timeline_identity import (
     work_shape,
 )
 from planacity.ui.timeline_resize import ResizeScheduleView, edit_timeline_dates
+from planacity.ui.timeline_team import TeamTimelinePanel
 
 Index = QModelIndex | QPersistentModelIndex
 ROOT = QModelIndex()
@@ -571,11 +573,12 @@ class TimelinePage(WorkspacePage):
     def __init__(self, session: Session, settings: QSettings | None = None) -> None:
         super().__init__(
             "Timeline",
-            "Explore the schedule. Drag a bar edge or edit dates to adjust planned work.",
+            "Explore planned work and team capacity across the schedule.",
         )
         self.session = session
         self.settings = settings
         self.projection: TimelineProjection | None = None
+        self.team_projection: TeamTimelineProjection | None = None
         self._syncing_selection = False
         self._resized_columns: set[int] = set()
         self.summary = label("Open a project to see its schedule.", "badge")
@@ -615,7 +618,9 @@ class TimelinePage(WorkspacePage):
             filters.addWidget(control)
         self.clear_filters = QPushButton("Clear filters")
         filters.addWidget(self.clear_filters)
-        self.content.addLayout(filters)
+        self.filters_widget = QWidget()
+        self.filters_widget.setLayout(filters)
+        self.content.addWidget(self.filters_widget)
 
         self.labels = QTableView()
         self.labels.setObjectName("timelineLabels")
@@ -639,6 +644,14 @@ class TimelinePage(WorkspacePage):
             else TimelineScale.DAY
         )
         self.schedule_model.set_scale(scale)
+        self.mode_box = QComboBox()
+        self.mode_box.setAccessibleName("Timeline mode")
+        self.mode_box.addItem("Plan", "plan")
+        self.mode_box.addItem("Team", "team")
+        mode_label = QLabel("&Mode")
+        mode_label.setBuddy(self.mode_box)
+        self.header.addWidget(mode_label)
+        self.header.addWidget(self.mode_box)
         self.scale_box = QComboBox()
         self.scale_box.setAccessibleName("Timeline scale")
         for choice in TimelineScale:
@@ -683,6 +696,11 @@ class TimelinePage(WorkspacePage):
         self.splitter = split
         self.content.addWidget(split, 1)
 
+        self.team_panel = TeamTimelinePanel(scale)
+        self.team_panel.splitter.setSizes(split.sizes())
+        self.team_panel.setVisible(False)
+        self.content.addWidget(self.team_panel, 1)
+
         self.availability_toggle = QCheckBox("Show unavailability")
         self.availability_toggle.setChecked(False)
         self.availability_toggle.setAccessibleName("Show unavailability lanes")
@@ -704,7 +722,9 @@ class TimelinePage(WorkspacePage):
         layers.addWidget(self.dependency_toggle)
         layers.addWidget(self.availability_toggle)
         layers.addStretch()
-        self.content.addLayout(layers)
+        self.layers_widget = QWidget()
+        self.layers_widget.setLayout(layers)
+        self.content.addWidget(self.layers_widget)
         self.dependency_details = QPlainTextEdit()
         self.dependency_details.setReadOnly(True)
         self.dependency_details.setAccessibleName("Dependency details")
@@ -720,20 +740,29 @@ class TimelinePage(WorkspacePage):
         self.schedule.horizontalScrollBar().valueChanged.connect(
             self.availability_panel.schedule.horizontalScrollBar().setValue
         )
+        self.schedule.horizontalScrollBar().valueChanged.connect(
+            self.team_panel.schedule.horizontalScrollBar().setValue
+        )
         self.availability_panel.schedule.horizontalScrollBar().valueChanged.connect(
+            self.schedule.horizontalScrollBar().setValue
+        )
+        self.team_panel.schedule.horizontalScrollBar().valueChanged.connect(
             self.schedule.horizontalScrollBar().setValue
         )
         self.splitter.splitterMoved.connect(self._work_splitter_moved)
         self.availability_panel.splitter.splitterMoved.connect(self._availability_splitter_moved)
+        self.team_panel.splitter.splitterMoved.connect(self._team_splitter_moved)
         self.labels.selectionModel().currentRowChanged.connect(self._labels_selected)
         self.schedule.selectionModel().currentRowChanged.connect(self._schedule_selected)
         self.availability_toggle.toggled.connect(self._toggle_availability)
+        self.mode_box.currentIndexChanged.connect(self._change_mode)
         self.scale_box.currentIndexChanged.connect(self._change_scale)
         for box in (self.grouping_box, self.kind_filter, self.group_filter, self.state_filter):
             box.currentIndexChanged.connect(self.refresh)
         self.search.textChanged.connect(self.refresh)
         self.clear_filters.clicked.connect(self._clear_filters)
         session.changed.connect(self.refresh)
+        self._apply_mode_visibility()
         self.refresh()
 
     def _clear_filters(self) -> None:
@@ -768,6 +797,7 @@ class TimelinePage(WorkspacePage):
                 header.resizeSection(column, max(1, visible_width))
         self.schedule.setAccessibleName(f"Timeline schedule by {self.schedule_model.scale.value}")
         self.availability_panel.size_periods(width)
+        self.team_panel.size_periods(width)
 
     def _change_scale(self) -> None:
         self.schedule.cancel_resize()
@@ -790,6 +820,7 @@ class TimelinePage(WorkspacePage):
         self._syncing_selection = True
         self.schedule_model.set_scale(scale)
         self.availability_panel.set_scale(scale)
+        self.team_panel.set_scale(scale)
         self._size_periods()
         # Recompute scrollbar ranges before restoring the date anchor; Qt otherwise
         # clamps it against the previous scale until the next layout event.
@@ -855,18 +886,55 @@ class TimelinePage(WorkspacePage):
         self.availability_panel.splitter.blockSignals(True)
         self.availability_panel.splitter.setSizes(self.splitter.sizes())
         self.availability_panel.splitter.blockSignals(False)
+        self.team_panel.splitter.blockSignals(True)
+        self.team_panel.splitter.setSizes(self.splitter.sizes())
+        self.team_panel.splitter.blockSignals(False)
 
     def _availability_splitter_moved(self, position: int, index: int) -> None:
         self.splitter.blockSignals(True)
         self.splitter.setSizes(self.availability_panel.splitter.sizes())
         self.splitter.blockSignals(False)
+        self.team_panel.splitter.blockSignals(True)
+        self.team_panel.splitter.setSizes(self.availability_panel.splitter.sizes())
+        self.team_panel.splitter.blockSignals(False)
+
+    def _team_splitter_moved(self, position: int, index: int) -> None:
+        self.splitter.blockSignals(True)
+        self.splitter.setSizes(self.team_panel.splitter.sizes())
+        self.splitter.blockSignals(False)
+        self.availability_panel.splitter.blockSignals(True)
+        self.availability_panel.splitter.setSizes(self.team_panel.splitter.sizes())
+        self.availability_panel.splitter.blockSignals(False)
 
     def _toggle_availability(self, checked: bool) -> None:
-        self.availability_panel.setVisible(checked)
-        if checked:
+        visible = checked and self.mode_box.currentData() == "plan"
+        self.availability_panel.setVisible(visible)
+        if visible:
             self.availability_panel.splitter.setSizes(self.splitter.sizes())
             if not self.availability_panel.labels.currentIndex().isValid():
                 self.availability_panel.select_first()
+
+    def _change_mode(self) -> None:
+        self.schedule.cancel_resize()
+        self._apply_mode_visibility()
+        self.refresh()
+        if (
+            self.mode_box.currentData() == "team"
+            and not self.team_panel.labels.currentIndex().isValid()
+        ):
+            self.team_panel.select_first()
+
+    def _apply_mode_visibility(self) -> None:
+        team = self.mode_box.currentData() == "team"
+        self.legend.setVisible(not team)
+        self.filters_widget.setVisible(not team)
+        self.splitter.setVisible(not team)
+        self.team_panel.setVisible(team)
+        self.resize_preview.setVisible(not team)
+        self.layers_widget.setVisible(not team)
+        self.dependency_details.setVisible(not team)
+        self.edit_dates.setVisible(not team)
+        self.availability_panel.setVisible(not team and self.availability_toggle.isChecked())
 
     def refresh(self) -> None:
         self.schedule.cancel_resize()
@@ -876,6 +944,11 @@ class TimelinePage(WorkspacePage):
         selected_column = max(0, self.schedule.currentIndex().column())
         plan = self.session.document.plan
         projection = project_timeline(plan) if plan is not None else None
+        team_projection = (
+            project_team_timeline(plan)
+            if plan is not None and self.mode_box.currentData() == "team"
+            else None
+        )
         availability_projection = (
             project_timeline_unavailability(plan) if plan is not None else None
         )
@@ -913,6 +986,7 @@ class TimelinePage(WorkspacePage):
             self.labels.setColumnWidth(1, 170 if grouped else 210)
         self._syncing_selection = True
         self.projection = projection
+        self.team_projection = team_projection
         self.schedule.projection = projection
         self.schedule.dependencies = (
             timeline_dependencies(plan, projection)
@@ -922,11 +996,24 @@ class TimelinePage(WorkspacePage):
         self.label_model.set_projection(projection)
         self.schedule_model.set_projection(projection)
         self.availability_panel.set_projection(availability_projection)
+        self.team_panel.set_projection(team_projection)
         self._size_periods()
         self._syncing_selection = False
 
         if projection is None:
             self.summary.setText("Open a project to see its schedule.")
+        elif self.mode_box.currentData() == "team":
+            assert team_projection is not None
+            scheduled = sum(len(person.work) for person in team_projection.people)
+            unplaced = sum(len(person.unplaced_work) for person in team_projection.people)
+            incomplete = sum(bool(person.gaps) for person in team_projection.people)
+            self.summary.setText(
+                f"{team_projection.horizon.start.isoformat()} to "
+                f"{team_projection.horizon.end.isoformat()} | "
+                f"{len(team_projection.people)} roster people | "
+                f"{scheduled} dated allocation(s) | {unplaced} missing dates | "
+                f"{incomplete} person(s) with incomplete inputs"
+            )
         else:
             assert plan is not None
             coverage = timeline_team_coverage(
