@@ -45,11 +45,13 @@ from PySide6.QtWidgets import (
 )
 
 from planacity.domain import WorkItemType
+from planacity.planning.estimate_units import format_fraction
 from planacity.planning.timeline import (
     TimelineDateState,
     TimelineProjection,
     TimelineRow,
     project_timeline,
+    timeline_team_coverage,
 )
 from planacity.planning.timeline_axis import (
     TimelineAxis,
@@ -878,24 +880,46 @@ class TimelinePage(WorkspacePage):
 
         if projection is None:
             self.summary.setText("Open a project to see its schedule.")
-        elif not projection.rows:
-            self.summary.setText(
-                f"{projection.horizon.start.isoformat()} to "
-                f"{projection.horizon.end.isoformat()} | No matching work items"
-            )
         else:
-            unique_rows = {row.item_id: row for row in projection.rows}.values()
-            scheduled = sum(row.date_state == TimelineDateState.SCHEDULED for row in unique_rows)
-            partial = sum(
-                row.date_state in (TimelineDateState.START_ONLY, TimelineDateState.END_ONLY)
-                for row in unique_rows
+            assert plan is not None
+            coverage = timeline_team_coverage(
+                plan, frozenset(row.item_id for row in projection.rows)
             )
-            unscheduled = len(unique_rows) - scheduled - partial
-            self.summary.setText(
-                f"{projection.horizon.start.isoformat()} to "
-                f"{projection.horizon.end.isoformat()} | {scheduled} scheduled | "
-                f"{partial} partial | {unscheduled} unscheduled"
+            team = (
+                "No roster people"
+                if coverage.roster_people == 0
+                else f"Team {coverage.visible_people} visible / "
+                f"{coverage.whole_plan_people} plan / {coverage.roster_people} roster"
             )
+            completeness = (
+                "complete inputs"
+                if coverage.input_gaps == 0
+                else f"{coverage.input_gaps} input gap(s)"
+            )
+            team_summary = (
+                f"{team} | {format_fraction(coverage.unplaced_hours)} h unplaced | {completeness}"
+            )
+            if not projection.rows:
+                self.summary.setText(
+                    f"{projection.horizon.start.isoformat()} to "
+                    f"{projection.horizon.end.isoformat()} | No matching work items | "
+                    f"{team_summary}"
+                )
+            else:
+                unique_rows = {row.item_id: row for row in projection.rows}.values()
+                scheduled = sum(
+                    row.date_state == TimelineDateState.SCHEDULED for row in unique_rows
+                )
+                partial = sum(
+                    row.date_state in (TimelineDateState.START_ONLY, TimelineDateState.END_ONLY)
+                    for row in unique_rows
+                )
+                unscheduled = len(unique_rows) - scheduled - partial
+                self.summary.setText(
+                    f"{projection.horizon.start.isoformat()} to "
+                    f"{projection.horizon.end.isoformat()} | {scheduled} scheduled | "
+                    f"{partial} partial | {unscheduled} unscheduled | {team_summary}"
+                )
         enabled = bool(projection and projection.rows)
         self.labels.setEnabled(enabled)
         self.schedule.setEnabled(enabled)

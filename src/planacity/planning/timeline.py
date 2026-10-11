@@ -3,9 +3,11 @@
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
+from fractions import Fraction
 from uuid import UUID
 
 from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
+from planacity.planning.capacity import calculate_dated_capacity
 from planacity.planning.work_context import TopicState, effective_group_ids, resolve_topic
 
 
@@ -58,6 +60,39 @@ class TimelineProjection:
     total_days: int
     groups: tuple[TimelineGroup, ...]
     rows: tuple[TimelineRow, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class TimelineTeamCoverage:
+    """People represented by positive allocations, without productivity scoring."""
+
+    visible_people: int
+    whole_plan_people: int
+    roster_people: int
+    unplaced_hours: Fraction
+    input_gaps: int
+
+
+def timeline_team_coverage(
+    plan: ProgramPlan, visible_item_ids: frozenset[UUID]
+) -> TimelineTeamCoverage:
+    """Summarize filtered and whole-plan allocation coverage over shared capacity results."""
+    positive = tuple(allocation for allocation in plan.allocations if allocation.hours > 0)
+    whole_people = {allocation.person_id for allocation in positive}
+    visible_people = {
+        allocation.person_id
+        for allocation in positive
+        if allocation.work_item_id in visible_item_ids
+    }
+    capacity = calculate_dated_capacity(plan, plan.horizon)
+    work_gaps = tuple(gap for gap in capacity.all_gaps if gap.work_item_id is not None)
+    return TimelineTeamCoverage(
+        visible_people=len(visible_people),
+        whole_plan_people=len(whole_people),
+        roster_people=len(plan.people),
+        unplaced_hours=sum((gap.hours for gap in work_gaps if gap.hours is not None), Fraction()),
+        input_gaps=len(capacity.all_gaps),
+    )
 
 
 def _date_state(item: WorkItem) -> TimelineDateState:

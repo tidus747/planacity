@@ -259,6 +259,16 @@ match individual rows, so matching children can appear without their parents.
 **Clear filters** restores all work in the current grouping. These controls can
 be reached with Tab and operated using the keyboard.
 
+The Timeline summary reports distinct people with positive allocations as
+`visible / plan / roster`. Visible coverage follows the current filters; plan
+coverage, unplaced allocation hours, and input-gap counts always describe the
+complete plan. Zero-hour entries do not count as coverage, and repeated rows in
+WorkGroup sections do not count a person twice. These values describe planning
+coverage only and are not individual productivity scores.
+
+![Timeline team coverage in light appearance](images/timeline-team-coverage-light.png)
+![Timeline team coverage in dark appearance](images/timeline-team-coverage-dark.png)
+
 **Show dependency arrows** connects predecessor ends to successor starts:
 `A depends_on B` draws `B -> A`; `A blocks B` draws `A -> B`. Hierarchy and
 `related_to` links do not create dependency arrows. Select work to read its links
