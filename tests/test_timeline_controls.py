@@ -6,6 +6,7 @@ from datetime import date
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
+from test_timeline import team_coverage_plan
 from test_timeline_dependencies import dependency_plan
 from test_timeline_view import grouped_plan
 
@@ -49,6 +50,29 @@ def test_filters_group_selection_and_clear_do_not_edit_plan(app):
         session.apply(replace(plan, work_groups=()))
         assert page.group_filter.currentData() == ""
         assert page.label_model.rowCount() == 4
+    finally:
+        page.close()
+        page.deleteLater()
+        app.processEvents()
+
+
+def test_timeline_summary_separates_visible_and_whole_plan_team_coverage(app):
+    session = Session()
+    plan = team_coverage_plan()
+    session.apply(plan)
+    page = TimelinePage(session)
+    page.show()
+    try:
+        assert "Team 2 visible / 2 plan / 3 roster" in page.summary.text()
+        assert "3 h unplaced" in page.summary.text()
+        assert "1 input gap" in page.summary.text()
+
+        page.search.setText("Visible")
+        assert "Team 1 visible / 2 plan / 3 roster" in page.summary.text()
+        page.search.setText("No match")
+        assert "No matching work items" in page.summary.text()
+        assert "Team 0 visible / 2 plan / 3 roster" in page.summary.text()
+        assert session.document.plan is plan
     finally:
         page.close()
         page.deleteLater()

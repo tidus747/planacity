@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Team coverage in the Timeline summary. Distinct people with positive
+  allocations are reported for visible filtered work and for the whole plan,
+  alongside roster size, unplaced allocation hours, and explicit input gaps.
+  Filters never hide the whole-plan demand competing for team capacity.
 - Selective Jira CSV export with explicit flat and external-system hierarchy
   workflows. Genuine Jira keys remain separate from deterministic export-local
   Work item IDs, new work keeps a blank Jira key, and parent-first hierarchy

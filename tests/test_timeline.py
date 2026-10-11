@@ -1,11 +1,62 @@
 """Timeline projection remains deterministic and independent from Qt."""
 
 from datetime import date
+from decimal import Decimal
+from fractions import Fraction
 from uuid import uuid4
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkGroup, WorkItem, WorkItemType
-from planacity.planning.timeline import TimelineDateState, project_timeline
+from planacity.domain import (
+    Allocation,
+    Person,
+    PersonCalendar,
+    PlanningHorizon,
+    ProgramPlan,
+    WorkCalendar,
+    WorkGroup,
+    WorkItem,
+    WorkItemType,
+)
+from planacity.planning.timeline import (
+    TimelineDateState,
+    project_timeline,
+    timeline_team_coverage,
+)
 from planacity.planning.work_context import TopicState
+
+
+def team_coverage_plan() -> ProgramPlan:
+    alice, bob, cara = (Person(name=name) for name in ("Alice", "Bob", "Cara"))
+    calendar = WorkCalendar(name="Standard", weekday_hours=(Decimal(8),) * 5 + (Decimal(0),) * 2)
+    first = WorkItem(
+        title="Visible first",
+        kind=WorkItemType.TASK,
+        start=date(2026, 1, 5),
+        end=date(2026, 1, 6),
+    )
+    second = WorkItem(
+        title="Visible second",
+        kind=WorkItemType.TASK,
+        start=date(2026, 1, 7),
+        end=date(2026, 1, 8),
+    )
+    undated = WorkItem(title="Hidden undated", kind=WorkItemType.TASK)
+    return ProgramPlan(
+        name="Coverage",
+        horizon=PlanningHorizon(date(2026, 1, 5), date(2026, 1, 9)),
+        people=(alice, bob, cara),
+        work_items=(first, second, undated),
+        work_calendars=(calendar,),
+        person_calendars=tuple(
+            PersonCalendar(person_id=person.id, calendar_id=calendar.id)
+            for person in (alice, bob, cara)
+        ),
+        allocations=(
+            Allocation(work_item_id=first.id, person_id=alice.id, hours=Decimal(4)),
+            Allocation(work_item_id=second.id, person_id=alice.id, hours=Decimal(2)),
+            Allocation(work_item_id=second.id, person_id=bob.id, hours=Decimal(0)),
+            Allocation(work_item_id=undated.id, person_id=cara.id, hours=Decimal(3)),
+        ),
+    )
 
 
 def test_projection_preserves_hierarchy_order_identity_and_effective_groups() -> None:
@@ -110,3 +161,28 @@ def test_projection_handles_empty_same_day_plan_without_mutating_it() -> None:
     assert projection.total_days == 1
     assert projection.rows == projection.groups == ()
     assert plan.work_items == plan.work_groups == ()
+
+
+def test_team_coverage_counts_people_once_and_keeps_unplaced_demand_explicit() -> None:
+    plan = team_coverage_plan()
+    first, second, _ = plan.work_items
+
+    result = timeline_team_coverage(plan, frozenset((first.id, second.id)))
+
+    assert (result.visible_people, result.whole_plan_people, result.roster_people) == (1, 2, 3)
+    assert result.unplaced_hours == Fraction(3)
+    assert result.input_gaps == 1
+    assert timeline_team_coverage(plan, frozenset()).visible_people == 0
+
+
+def test_empty_timeline_team_coverage_is_explicit_and_complete() -> None:
+    plan = ProgramPlan(
+        name="Empty",
+        horizon=PlanningHorizon(date(2026, 1, 5), date(2026, 1, 9)),
+    )
+
+    result = timeline_team_coverage(plan, frozenset())
+
+    assert (result.visible_people, result.whole_plan_people, result.roster_people) == (0, 0, 0)
+    assert result.unplaced_hours == 0
+    assert result.input_gaps == 0
