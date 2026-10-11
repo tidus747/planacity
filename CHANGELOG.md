@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Optional personal-unavailability lanes beneath the Timeline. Positive recorded
+  entries appear as named, hatched person lanes aligned with the day, week, or
+  month scale. Block height distinguishes partial from full unavailability, and
+  keyboard details retain the original dates when drawing is clipped to the
+  planning horizon. The overlay is off by default and never changes plan data.
 - Team coverage in the Timeline summary. Distinct people with positive
   allocations are reported for visible filtered work and for the whole plan,
   alongside roster size, unplaced allocation hours, and explicit input gaps.

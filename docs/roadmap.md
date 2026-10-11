@@ -274,6 +274,10 @@ on hierarchy, People, topics, Jira snapshots, agent guidance, and Timeline.
 | V06 | Critical-path Timeline overlay | V04, V05 | Optional red critical connectors and labelled task outlines, readable in both themes. Filters do not recalculate criticality. Keyboard details expose float and coverage. |
 | V07 | WorkGroup colors and work shapes | Existing topic resolution and Timeline | Stable primary-WorkGroup colors, named neutral exception styles, and distinct Epic/Task/Subtask silhouettes. Tracked by issue #120. |
 
+V01 was completed by [issue #124](https://github.com/tidus747/planacity/issues/124)
+and [PR #125](https://github.com/tidus747/planacity/pull/125). V02 is tracked by
+[issue #126](https://github.com/tidus747/planacity/issues/126).
+
 Use existing Qt graphics for V04. Start with immediate neighbours and a bounded
 view, not a full-program layout engine. Show when nodes are omitted and allow
 navigation to their list. No Graphviz executable, browser, Mermaid runtime, or

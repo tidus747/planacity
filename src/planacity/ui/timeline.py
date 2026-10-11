@@ -53,6 +53,7 @@ from planacity.planning.timeline import (
     project_timeline,
     timeline_team_coverage,
 )
+from planacity.planning.timeline_availability import project_timeline_unavailability
 from planacity.planning.timeline_axis import (
     TimelineAxis,
     TimelinePeriod,
@@ -65,6 +66,7 @@ from planacity.planning.work_context import TopicState
 from planacity.ui.pages import WorkspacePage, label
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Colors, Theme
+from planacity.ui.timeline_availability import TimelineAvailabilityPanel
 from planacity.ui.timeline_identity import (
     TimelineBarIdentity,
     TimelineBarShape,
@@ -680,6 +682,15 @@ class TimelinePage(WorkspacePage):
         split.setStretchFactor(1, 1)
         self.splitter = split
         self.content.addWidget(split, 1)
+
+        self.availability_toggle = QCheckBox("Show unavailability")
+        self.availability_toggle.setChecked(False)
+        self.availability_toggle.setAccessibleName("Show unavailability lanes")
+        self.availability_panel = TimelineAvailabilityPanel(scale)
+        self.availability_panel.splitter.setSizes(split.sizes())
+        self.availability_panel.setVisible(False)
+        self.content.addWidget(self.availability_panel)
+
         self.resize_preview = label(
             "Drag a bar edge to resize dates. Escape cancels. Effort is unchanged."
         )
@@ -689,7 +700,11 @@ class TimelinePage(WorkspacePage):
         self.dependency_toggle = QCheckBox("Show dependency arrows")
         self.dependency_toggle.setChecked(True)
         self.dependency_toggle.toggled.connect(self._toggle_dependencies)
-        self.content.addWidget(self.dependency_toggle)
+        layers = QHBoxLayout()
+        layers.addWidget(self.dependency_toggle)
+        layers.addWidget(self.availability_toggle)
+        layers.addStretch()
+        self.content.addLayout(layers)
         self.dependency_details = QPlainTextEdit()
         self.dependency_details.setReadOnly(True)
         self.dependency_details.setAccessibleName("Dependency details")
@@ -702,8 +717,17 @@ class TimelinePage(WorkspacePage):
         self.schedule.verticalScrollBar().valueChanged.connect(
             self.labels.verticalScrollBar().setValue
         )
+        self.schedule.horizontalScrollBar().valueChanged.connect(
+            self.availability_panel.schedule.horizontalScrollBar().setValue
+        )
+        self.availability_panel.schedule.horizontalScrollBar().valueChanged.connect(
+            self.schedule.horizontalScrollBar().setValue
+        )
+        self.splitter.splitterMoved.connect(self._work_splitter_moved)
+        self.availability_panel.splitter.splitterMoved.connect(self._availability_splitter_moved)
         self.labels.selectionModel().currentRowChanged.connect(self._labels_selected)
         self.schedule.selectionModel().currentRowChanged.connect(self._schedule_selected)
+        self.availability_toggle.toggled.connect(self._toggle_availability)
         self.scale_box.currentIndexChanged.connect(self._change_scale)
         for box in (self.grouping_box, self.kind_filter, self.group_filter, self.state_filter):
             box.currentIndexChanged.connect(self.refresh)
@@ -743,6 +767,7 @@ class TimelinePage(WorkspacePage):
                 )
                 header.resizeSection(column, max(1, visible_width))
         self.schedule.setAccessibleName(f"Timeline schedule by {self.schedule_model.scale.value}")
+        self.availability_panel.size_periods(width)
 
     def _change_scale(self) -> None:
         self.schedule.cancel_resize()
@@ -764,6 +789,7 @@ class TimelinePage(WorkspacePage):
         vertical = self.schedule.verticalScrollBar().value()
         self._syncing_selection = True
         self.schedule_model.set_scale(scale)
+        self.availability_panel.set_scale(scale)
         self._size_periods()
         # Recompute scrollbar ranges before restoring the date anchor; Qt otherwise
         # clamps it against the previous scale until the next layout event.
@@ -825,6 +851,23 @@ class TimelinePage(WorkspacePage):
         if not self._syncing_selection and current.isValid():
             self._select_row(current.row(), current.column())
 
+    def _work_splitter_moved(self, position: int, index: int) -> None:
+        self.availability_panel.splitter.blockSignals(True)
+        self.availability_panel.splitter.setSizes(self.splitter.sizes())
+        self.availability_panel.splitter.blockSignals(False)
+
+    def _availability_splitter_moved(self, position: int, index: int) -> None:
+        self.splitter.blockSignals(True)
+        self.splitter.setSizes(self.availability_panel.splitter.sizes())
+        self.splitter.blockSignals(False)
+
+    def _toggle_availability(self, checked: bool) -> None:
+        self.availability_panel.setVisible(checked)
+        if checked:
+            self.availability_panel.splitter.setSizes(self.splitter.sizes())
+            if not self.availability_panel.labels.currentIndex().isValid():
+                self.availability_panel.select_first()
+
     def refresh(self) -> None:
         self.schedule.cancel_resize()
         selected_id = self._selected_id()
@@ -833,6 +876,9 @@ class TimelinePage(WorkspacePage):
         selected_column = max(0, self.schedule.currentIndex().column())
         plan = self.session.document.plan
         projection = project_timeline(plan) if plan is not None else None
+        availability_projection = (
+            project_timeline_unavailability(plan) if plan is not None else None
+        )
         self.legend.set_projection(projection)
         current_group = self.group_filter.currentData()
         self.group_filter.blockSignals(True)
@@ -875,6 +921,7 @@ class TimelinePage(WorkspacePage):
         )
         self.label_model.set_projection(projection)
         self.schedule_model.set_projection(projection)
+        self.availability_panel.set_projection(availability_projection)
         self._size_periods()
         self._syncing_selection = False
 
