@@ -53,6 +53,8 @@ No account or network connection is needed while planning.
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling
    do not change the plan.
+   Use **Mode** to switch between the editable Plan schedule and the read-only
+   Team view of work, absence, recurring duties, and weekly load.
    Use **Scale** to choose Day, Week, or Month. Weeks start on Monday and use ISO
    week numbers; months follow the calendar, including leap days. Partial periods
    at the horizon edges are clipped, with exact dates in header tooltips.
@@ -285,6 +287,30 @@ utilization, or productivity.
 
 ![Timeline unavailability lanes in light appearance](images/timeline-unavailability-light.png)
 ![Timeline unavailability lanes in dark appearance](images/timeline-unavailability-dark.png)
+
+Choose **Mode -> Team** to review the same planning horizon by person. Every
+roster member has one section with four lanes:
+
+- **Work** shows positively allocated, dated work. Its bars describe the saved
+  allocation rather than inventing a second ownership model. Allocated work with
+  missing dates remains explicit in the details.
+- **Absence** uses the same hatched, partial/full language as the optional Plan
+  overlay and retains the canonical availability dates and share.
+- **Duties** lists each saved reservation rule and the exact hours deducted in
+  the displayed period. These are recurring capacity deductions, not meetings
+  placed at fictional times.
+- **Weekly load** reconciles allocated, planning, and signed remaining hours
+  from the shared capacity engine. Unknown, incomplete, full, and overloaded
+  states remain textual and keyboard-readable.
+
+Team mode includes roster members with no allocated work and people whose
+calendar or dates are incomplete. Plan filters do not change Team totals. Day,
+Week, and Month change only the display axis; switching mode or scale does not
+mark the project as changed. The values support plan feasibility discussions and
+are not attendance, utilization, or productivity scores.
+
+![Team Timeline in light appearance](images/timeline-team-light.png)
+![Team Timeline in dark appearance](images/timeline-team-dark.png)
 
 **Show dependency arrows** connects predecessor ends to successor starts:
 `A depends_on B` draws `B -> A`; `A blocks B` draws `A -> B`. Hierarchy and

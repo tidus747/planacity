@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Plan and Team modes in Timeline. Team mode keeps one read-only section per
+  roster person with aligned Work, Absence, Duties, and Weekly load lanes.
+  Named reservation hours remain capacity deductions rather than fictitious
+  appointments, while missing dates/calendars and exact capacity states stay
+  explicit. Switching modes and scales never changes project data.
 - Optional personal-unavailability lanes beneath the Timeline. Positive recorded
   entries appear as named, hatched person lanes aligned with the day, week, or
   month scale. Block height distinguishes partial from full unavailability, and
