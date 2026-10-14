@@ -126,6 +126,7 @@ Capture a branching graph in both themes. No full graph editor or CPM required.
 ## V05 - Critical-path analysis service
 
 Target: v0.5. Depends on R02 and R03. Pure service and tests; no UI in this PR.
+Tracked by [issue #132](https://github.com/tidus747/planacity/issues/132).
 
 Implement the explicit analysis contract in the decision record. Return analysis
 scope, completeness, durations, early/late offsets, total float, critical node
