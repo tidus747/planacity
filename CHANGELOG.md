@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Pure elapsed-day critical-path analysis over the complete leaf-work dependency
+  graph. The result exposes durations, early and late offsets, total float, all
+  tied critical nodes and stored relationship IDs, plus explicit empty,
+  incomplete, and unsupported diagnostics. Dates establish durations and a
+  common origin but are never moved; priority, filters, allocations, calendars,
+  hierarchy, and planning-horizon clipping do not alter the calculation.
 - A bounded selected-work dependency graph in Timeline. Immediate predecessors,
   the selected item, and immediate successors show dates, assigned people or
   aggregate teams, and calculated warnings. Native keyboard-accessible cards

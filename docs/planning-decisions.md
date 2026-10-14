@@ -259,7 +259,8 @@ mappings and the schema 10 source-text copy.
 
 ## 11. Initial critical-path analysis contract
 
-V05 implements a deliberately bounded, pure dependency/duration analysis.
+V05 implements a deliberately bounded, pure dependency/duration analysis in
+`planning/critical_path.py` without changing schema 11 or project data.
 V06 presents it as "Critical path (elapsed days)" with assumptions visible.
 This is a design choice for the first release, not a resource-feasible schedule
 or an analysis of working-day calendars. The

@@ -84,13 +84,27 @@ identity and one capacity total; zero-hour allocations create no association.
 `WorkItem.priority` is optional and accepts only Highest, High, Medium, Low, or
 Lowest. `None` is the explicit Unset state, not Medium. Priority belongs to the
 individual item and is never inherited from an ancestor. It does not affect
-dates, effort rollups, dependencies, capacity, person load, or future
+dates, effort rollups, dependencies, capacity, person load, or
 critical-path calculations.
 
 `planning/work_context.set_work_priority` returns one validated immutable plan
 candidate. `update_work_details` includes the same value in the inspector's
 single atomic draft. The Plan proxy filters exact priority values, including
 Unset, and can stably order siblings Highest through Lowest with Unset last.
+
+## Critical-path analysis
+
+Criticality is calculated, not stored. The pure service scopes leaf work, uses
+inclusive start/end dates as elapsed-day durations, and follows only normalized
+finish-to-start relationships. Containers remain summaries and hierarchy adds no
+dependency. A complete result exposes early and late offsets, total float, and
+all tied critical nodes and tight stored relationship IDs.
+
+Missing dates, date conflicts, cycles, unknown endpoints, and explicit
+dependencies involving containers prevent a whole-plan result and remain
+diagnostic data. Empty work is a distinct no-analysis result. The calculation
+does not use priority, estimates, allocations, people, calendars, filters,
+grouping, or planning-horizon clipping, and it never changes canonical dates.
 
 ## Editing
 

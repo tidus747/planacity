@@ -9,7 +9,8 @@ The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
 effort, dated capacity, work-context, priority, ownership, and Jira mapping
-services operate over schema 11 inputs.
+services operate over schema 11 inputs. Critical-path analysis is another pure
+projection over those inputs and adds no persisted state.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
 people, estimates, dates, groups, and relationships. See
@@ -191,6 +192,15 @@ orthogonal connector geometry is independently testable. The Qt schedule view
 maps day coordinates to visible cells and draws arrows only when both actual
 endpoints are on screen. Cross-section links use the first occurrence when no
 shared section exists. None of these operations changes the canonical plan.
+
+`planning/critical_path.py` scopes canonical leaf work independently from the
+Timeline projection. It deduplicates normalized finish-to-start pairs and uses
+inclusive dates only to derive elapsed-day durations. Complete acyclic inputs
+produce early/late offsets, total float, and all critical tight edges. Empty,
+missing, conflicting, cyclic, unknown-endpoint, and container-edge inputs return
+explicit diagnostic results instead of a partial critical path. Priority,
+allocations, calendars, filters, grouping, and horizon clipping are not inputs.
+The calculated result is never persisted and requires no schema migration.
 
 Timeline editing is separate from projection and painting. `timeline_resize.py`
 in planning snaps period fractions to inclusive days and delegates validation to
