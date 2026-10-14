@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
 )
 
 from planacity.domain import WorkItemType
+from planacity.planning.dependency_neighborhood import project_dependency_neighborhood
 from planacity.planning.estimate_units import format_fraction
 from planacity.planning.timeline import (
     TimelineDateState,
@@ -68,6 +69,7 @@ from planacity.ui.pages import WorkspacePage, label
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Colors, Theme
 from planacity.ui.timeline_availability import TimelineAvailabilityPanel
+from planacity.ui.timeline_dependency_graph import TimelineDependencyGraph
 from planacity.ui.timeline_identity import (
     TimelineBarIdentity,
     TimelineBarShape,
@@ -330,6 +332,8 @@ class TimelineLegend(QFrame):
         heading.setProperty("role", "heading")
         layout.addWidget(heading)
         self.items = QWidget()
+        self.items.setObjectName("timelineLegendItems")
+        self.items.setStyleSheet("QWidget#timelineLegendItems { background: transparent; }")
         self.items_layout = QHBoxLayout(self.items)
         self.items_layout.setContentsMargins(0, 0, 0, 0)
         self.items_layout.setSpacing(12)
@@ -339,6 +343,10 @@ class TimelineLegend(QFrame):
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setFixedHeight(34)
+        scroll.viewport().setObjectName("timelineLegendViewport")
+        scroll.viewport().setStyleSheet(
+            "QWidget#timelineLegendViewport { background: transparent; }"
+        )
         scroll.setWidget(self.items)
         layout.addWidget(scroll, 1)
         self.set_projection(None)
@@ -718,13 +726,20 @@ class TimelinePage(WorkspacePage):
         self.dependency_toggle = QCheckBox("Show dependency arrows")
         self.dependency_toggle.setChecked(True)
         self.dependency_toggle.toggled.connect(self._toggle_dependencies)
+        self.dependency_graph_toggle = QCheckBox("Show selected dependency graph")
+        self.dependency_graph_toggle.setChecked(False)
+        self.dependency_graph_toggle.toggled.connect(self._toggle_dependency_graph)
         layers = QHBoxLayout()
         layers.addWidget(self.dependency_toggle)
+        layers.addWidget(self.dependency_graph_toggle)
         layers.addWidget(self.availability_toggle)
         layers.addStretch()
         self.layers_widget = QWidget()
         self.layers_widget.setLayout(layers)
         self.content.addWidget(self.layers_widget)
+        self.dependency_graph = TimelineDependencyGraph()
+        self.dependency_graph.navigate_requested.connect(self._navigate_dependency_graph)
+        self.content.addWidget(self.dependency_graph)
         self.dependency_details = QPlainTextEdit()
         self.dependency_details.setReadOnly(True)
         self.dependency_details.setAccessibleName("Dependency details")
@@ -932,6 +947,7 @@ class TimelinePage(WorkspacePage):
         self.team_panel.setVisible(team)
         self.resize_preview.setVisible(not team)
         self.layers_widget.setVisible(not team)
+        self.dependency_graph.setVisible(not team and self.dependency_graph_toggle.isChecked())
         self.dependency_details.setVisible(not team)
         self.edit_dates.setVisible(not team)
         self.availability_panel.setVisible(not team and self.availability_toggle.isChecked())
@@ -1084,6 +1100,53 @@ class TimelinePage(WorkspacePage):
         self.schedule.show_dependencies = checked
         self.schedule.viewport().update()
 
+    def _toggle_dependency_graph(self, checked: bool) -> None:
+        self.dependency_graph.setVisible(checked and self.mode_box.currentData() == "plan")
+        self._update_dependency_graph()
+
+    def _update_dependency_graph(self) -> None:
+        plan = self.session.document.plan
+        selected = self._selected_id()
+        if (
+            not self.dependency_graph_toggle.isChecked()
+            or plan is None
+            or selected is None
+            or self.projection is None
+        ):
+            self.dependency_graph.set_neighborhood(None)
+            return
+        visible_ids = frozenset(row.item_id for row in self.projection.rows)
+        self.dependency_graph.set_neighborhood(
+            project_dependency_neighborhood(plan, selected, visible_ids=visible_ids)
+        )
+
+    def _navigate_dependency_graph(self, value: str) -> None:
+        plan = self.session.document.plan
+        if plan is None:
+            return
+        item_id = UUID(value)
+        if self.projection is None or item_id not in {row.item_id for row in self.projection.rows}:
+            self._clear_filters()
+        if self.projection is None:
+            return
+        row_number = next(
+            (index for index, row in enumerate(self.projection.rows) if row.item_id == item_id),
+            None,
+        )
+        if row_number is None:
+            return
+        item = plan.work_item(item_id)
+        axis = self.schedule_model.axis
+        column = 0
+        if axis is not None:
+            anchor = item.start or item.end or plan.horizon.start
+            column = axis.column_for_day((anchor - plan.horizon.start).days)
+        self._select_row(row_number, column)
+        label_index = self.label_model.index(row_number, 0)
+        schedule_index = self.schedule_model.index(row_number, column)
+        self.labels.scrollTo(label_index, QAbstractItemView.ScrollHint.PositionAtCenter)
+        self.schedule.scrollTo(schedule_index, QAbstractItemView.ScrollHint.PositionAtCenter)
+
     def _update_dependency_details(self) -> None:
         selected = self._selected_id()
         self.edit_dates.setEnabled(selected is not None)
@@ -1104,6 +1167,7 @@ class TimelinePage(WorkspacePage):
             "Predecessor end -> successor start. Select work to inspect its links. "
             "Arrows require both endpoints on screen. Dates are never changed."
         )
+        self._update_dependency_graph()
 
     def _edit_dates(self) -> None:
         selected = self._selected_id()
