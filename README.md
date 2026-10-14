@@ -49,7 +49,7 @@ default.
   mappings; keep a baseline, review assignee and priority changes, and export
   explicit Jira identities and target priority labels with the agreed structure.
 - Explore work on a Timeline with day, week, and month scales, grouping, filters,
-  dependency arrows, and direct date editing.
+  dependency arrows, a selected-work dependency graph, and direct date editing.
 - Define personal work calendars and availability, reserve recurring capacity,
   and assign each leaf to one person with optional explicit capacity hours.
 - Filter People by derived WorkGroup associations and trace each reporting topic

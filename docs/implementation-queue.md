@@ -114,6 +114,7 @@ V04/V06 extend this same example later, without pretending those features exist.
 ## V04 - Visual dependency neighbourhood (existing scope)
 
 Target: v0.5. Depends on R02, R03, and R08.
+Tracked by [issue #130](https://github.com/tidus747/planacity/issues/130).
 
 Keep the existing roadmap scope: selected item, immediate predecessors and
 successors, dates, assigned people, findings, and keyboard/text navigation.

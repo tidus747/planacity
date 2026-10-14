@@ -324,6 +324,22 @@ within shared sections; links across sections use the first occurrences.
 Toggle arrows off to reduce visual clutter. Grouping, filtering, and arrow display
 do not change dates, estimates, relationships, or imported baselines.
 
+Enable **Show selected dependency graph** for a bounded view of the selected
+item's immediate dependency neighbourhood. The three columns show predecessors,
+the selected work, and successors. Each card includes dates, the explicit
+assignee or derived aggregate team, and calculated warnings. Activate a card
+with the mouse or keyboard to select that work and recenter the schedule.
+
+An endpoint hidden by the current filters stays in the graph and is labelled as
+hidden. Activating it clears the work filters before navigating. The graph shows
+at most 30 cards; any additional neighbours remain available from explicit
+navigation lists. Dependency cycles, date conflicts, and unevaluated links are
+reported in the summary and cards. The text details panel remains the complete
+text equivalent. The graph does not create relationships or change plan data.
+
+![Selected dependency graph in light appearance](images/timeline-dependency-graph-light.png)
+![Selected dependency graph in dark appearance](images/timeline-dependency-graph-dark.png)
+
 ### Read Timeline colors and shapes
 
 Scheduled bars use the resolved primary WorkGroup as their color. The same group

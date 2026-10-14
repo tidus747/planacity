@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- A bounded selected-work dependency graph in Timeline. Immediate predecessors,
+  the selected item, and immediate successors show dates, assigned people or
+  aggregate teams, and calculated warnings. Native keyboard-accessible cards
+  select and recenter work, including endpoints hidden by filters; cycles and
+  omitted neighbours remain explicit while the existing text details stay
+  available. The graph is read-only and never changes project data.
 - Plan and Team modes in Timeline. Team mode keeps one read-only section per
   roster person with aligned Work, Absence, Duties, and Weekly load lanes.
   Named reservation hours remain capacity deductions rather than fictitious
