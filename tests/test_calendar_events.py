@@ -29,6 +29,7 @@ from planacity.persistence.project import APPLICATION_ID, load_project, save_pro
 from planacity.planning.availability import availability_capacity
 from planacity.planning.calendar_events import (
     add_calendar_event,
+    calendar_event,
     remove_calendar_event,
     update_calendar_event,
 )
@@ -119,6 +120,7 @@ def test_lifecycle_preserves_identity_imports_and_unrelated_plan_data():
     second = event("0", name="Customer visit", kind=CalendarEventKind.CUSTOMER_VISIT)
     plan = capacity_plan(first)
     added = add_calendar_event(plan, second)
+    assert calendar_event(added, second.id) is second
     changed = update_calendar_event(added, replace(first, name="Company shutdown"))
     removed = remove_calendar_event(changed, second.id)
 
@@ -133,6 +135,8 @@ def test_lifecycle_preserves_identity_imports_and_unrelated_plan_data():
         update_calendar_event(plan, replace(first, id=uuid4()))
     with pytest.raises(ValueError, match="does not exist"):
         remove_calendar_event(plan, uuid4())
+    with pytest.raises(ValueError, match="does not exist"):
+        calendar_event(plan, uuid4())
     with pytest.raises(ValueError, match="UUID"):
         remove_calendar_event(plan, "bad")  # type: ignore[arg-type]
 

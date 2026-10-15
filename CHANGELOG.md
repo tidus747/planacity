@@ -10,7 +10,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   inclusive dates, and exact capacity impact. Holidays and other events apply to
   every roster person; overlapping personal and shared reductions use the
   strongest fraction instead of being added twice. Projects persist these inputs
-  in schema 12 while the editing UI remains a later Program Calendar slice.
+  in schema 12. A dedicated Calendar workspace now lists, creates, edits, and
+  deletes these events with themed date pickers, explicit impact, horizon status,
+  and confirmation before deletion.
 - An optional critical-path overlay in Timeline. Red dashed connectors and bar
   outlines mark every tied dependency-only critical branch while preserving
   WorkGroup colors and work shapes. Keyboard-readable details expose duration,

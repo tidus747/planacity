@@ -47,10 +47,17 @@ No account or network connection is needed while planning.
    Choose **Reserve capacity...** here or from the **Planning** menu for recurring
    meetings or other duties. Enter hours per person, review sprint proration and
    remaining hours, then Confirm. Select an existing rule to edit or preview its
-   deletion. See the [wizard guide](capacity-wizards.md). Shared program events
-   participate in capacity calculations; their editor is a later calendar slice.
-   Saved work allocations are included in People capacity.
-7. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
+   deletion. See the [wizard guide](capacity-wizards.md). Saved work allocations
+   are included in People capacity.
+7. Open **Calendar** (`Ctrl+5`) to add shared public holidays, customer visits,
+   company events, program events, or other dated context. Enter an unavailable
+   share from 0 to 1. A zero share keeps context without reducing capacity; a
+   full share removes each person's nominal calendar hours on affected dates.
+   Personal and shared overlaps use the strongest share rather than adding them.
+   Events outside the plan horizon are retained and identified explicitly.
+   Real Calendar workspace screenshots: [light](images/program-calendar-light.png)
+   and [dark](images/program-calendar-dark.png).
+8. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling
    do not change the plan.
@@ -62,10 +69,10 @@ No account or network connection is needed while planning.
    The selected work and visible date context are preserved where scrolling allows.
    The scale is remembered locally and never changes dates, hours, or project data.
    Use `Alt+S` to focus Scale, then arrow keys to choose a value.
-8. Choose **File -> Save** (`Ctrl+S`) and select a `.planacity` path. **Save As**
+9. Choose **File -> Save** (`Ctrl+S`) and select a `.planacity` path. **Save As**
    (`Ctrl+Shift+S`) saves a separate project. The window title shows `*` while
    changes are unsaved. Cancelled or failed saves retain the current draft.
-9. Close Planacity, launch it again, then use **File -> Open...** (`Ctrl+O`) to
+10. Close Planacity, launch it again, then use **File -> Open...** (`Ctrl+O`) to
    reopen the project. Continue editing and save again.
 
 New, Open, Restore, and Exit ask whether to save, discard, or cancel when the

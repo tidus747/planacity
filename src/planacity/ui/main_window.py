@@ -25,6 +25,7 @@ from planacity.ui.icons import image_icon, image_pixmap, navigation_icon
 from planacity.ui.jira_pages import ChangesPage, ImportPage
 from planacity.ui.overview import OverviewPage
 from planacity.ui.pages import label
+from planacity.ui.program_calendar import CalendarPage
 from planacity.ui.project_actions import ProjectActions
 from planacity.ui.reservations import reserve_capacity_dialog
 from planacity.ui.session import Session
@@ -59,6 +60,7 @@ class MainWindow(QMainWindow):
         self.plan_page = PlanPage(self.session)
         self.timeline_page = TimelinePage(self.session, self.settings)
         self.people_page = PeoplePage(self.session)
+        self.calendar_page = CalendarPage(self.session)
         self.overview_page = OverviewPage(
             self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)
         )
@@ -67,6 +69,7 @@ class MainWindow(QMainWindow):
             self.plan_page,
             self.timeline_page,
             self.people_page,
+            self.calendar_page,
             ImportPage(self.session),
             ChangesPage(self.session),
         ):
@@ -116,7 +119,7 @@ class MainWindow(QMainWindow):
         group = QButtonGroup(self)
         group.setExclusive(True)
         for index, name_text in enumerate(
-            ("Overview", "Plan", "Timeline", "People", "Import", "Changes")
+            ("Overview", "Plan", "Timeline", "People", "Calendar", "Import", "Changes")
         ):
             button = QPushButton("  " + name_text)
             button.setAccessibleName(name_text)
@@ -137,7 +140,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(label("PROJECT", "eyebrow"))
         self.project_label = label("No project open", "heading")
         layout.addWidget(self.project_label)
-        layout.addWidget(label("Team & Capacity\nv0.4 preview"))
+        layout.addWidget(label("Program Calendar\nv0.5 milestone"))
         layout.addStretch()
         layout.addWidget(label("APPEARANCE", "eyebrow"))
         modes = QHBoxLayout()
@@ -192,14 +195,14 @@ class MainWindow(QMainWindow):
             self,
             "About Planacity",
             "<b>Planacity</b><p>Plan the work. "
-            "Respect the capacity.</p><p>Team &amp; Capacity development preview. "
+            "Respect the capacity.</p><p>Program Calendar development preview. "
             "Create, edit, and save local Program Plans. "
             "Import and export Jira CSV, and review work on the Timeline. "
             "Configure work calendars and review nominal hours. "
             "Edit dated availability and review overlaps. "
             "Reserve recurring capacity with a per-person preview. "
             "Review dated capacity, reservations, allocations, and planning findings. "
-            "Program events remain planned.</p>",
+            "Manage shared holidays and program events with explicit capacity impact.</p>",
         )
 
     def _refresh_document(self) -> None:
