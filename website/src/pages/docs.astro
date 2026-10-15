@@ -54,16 +54,17 @@ const linux =
           <h2>02. Open the example</h2>
           <p>
             Choose <strong>File -&gt; Restore JSON backup...</strong> and open{" "}
-            <code>examples/aurora.planacity.json</code> from the repository you
-            just cloned.
+            <code>examples/moon-heist.planacity.json</code> from the repository
+            you just cloned.
           </p>
           <p>
-            Aurora is a fictional test-bench program with work, people, and
-            dates. Use <strong>File -&gt; Save As...</strong> to save your own{" "}
+            Moon Heist is a fictional engineering program with work, people,
+            capacity, priorities, and dependencies. Use
+            <strong>File -&gt; Save As...</strong> to save your own{" "}
             <code>.planacity</code> copy before experimenting.
           </p>
           <p>
-            <a href={`${repo}/blob/main/examples/aurora.planacity.json`}>
+            <a href={`${repo}/blob/main/examples/moon-heist.planacity.json`}>
               Inspect the example on GitHub
             </a>
           </p>
@@ -77,8 +78,9 @@ const linux =
             </li>
             <li>
               <strong>See the schedule.</strong> Open Timeline, choose a scale,
-              and filter by work type or WorkGroup. Dependency arrows show
-              relationships; automatic dependency enforcement is still planned.
+              and filter by work type or WorkGroup. Dependency arrows, the
+              selected-work graph, and critical-path overlay explain
+              relationships.
             </li>
             <li>
               <strong>Set up your team.</strong> In People, create work
@@ -87,8 +89,8 @@ const linux =
             </li>
             <li>
               <strong>Reserve and allocate.</strong> Use Planning -&gt; Reserve
-              capacity... for recurring duties. In Plan, select work and open
-              Work allocations... to split its hours between people.
+              capacity... for recurring duties. In Plan, assign each executable
+              leaf to one person with optional explicit capacity hours.
             </li>
             <li>
               <strong>Save and continue.</strong> Save the project, close it,
@@ -132,7 +134,7 @@ const linux =
             </li>
             <li>
               <a href={`${repo}/blob/main/docs/allocation-model.md`}>
-                Split work between people
+                Assign work and capacity hours
               </a>
             </li>
           </ul>
@@ -140,19 +142,20 @@ const linux =
         <section id="status">
           <h2>Know the current boundaries</h2>
           <p>
-            Current source is <strong>0.4.0.dev0</strong>. Calendars,
-            availability, recurring reservations, and allocations are editable,
-            but they do not yet form one combined remaining-capacity
-            calculation.
+            Current source is <strong>0.4.0.dev0</strong>; v0.5 Program Calendar
+            is the active development milestone, not a published release.
+            Calendars, availability, reservations, and dated work use one exact
+            capacity calculation across findings, People, and Overview.
           </p>
           <p>
-            Projects save in schema 7. Older schemas remain readable; keep a
+            Projects save in schema 12. Schemas 1-11 remain readable; keep a
             backup or use Save As if an older build must still open your
             original file.
           </p>
           <p>
-            Next: stronger dependency checks, hierarchy effort totals, and
-            consistent capacity views.{" "}
+            Shared holidays and program events already affect capacity. Next:
+            edit and project them in the application, then add reviewed generic
+            CSV and Factorial exported-file imports.{" "}
             <a href={`${base}/roadmap/`}>See the roadmap</a>, or{" "}
             <a href={`${repo}/issues`}>report what you find</a>.
           </p>

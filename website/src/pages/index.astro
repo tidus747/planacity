@@ -1,10 +1,10 @@
 ---
 import Page from "../layouts/Page.astro";
 import AppScreenshot from "../components/AppScreenshot.astro";
-import planLight from "../../../docs/images/plan-filters-light.png";
-import planDark from "../../../docs/images/plan-filters-dark.png";
-import timelineLight from "../../../docs/images/timeline-month-light.png";
-import timelineDark from "../../../docs/images/timeline-month-dark.png";
+import planLight from "../../../docs/images/moon-heist-plan-light.png";
+import planDark from "../../../docs/images/moon-heist-plan-dark.png";
+import timelineLight from "../../../docs/images/moon-heist-timeline-light.png";
+import timelineDark from "../../../docs/images/moon-heist-timeline-dark.png";
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const features = [
   [
@@ -22,7 +22,7 @@ const features = [
   [
     "03",
     "Bring the team into the plan.",
-    "Define work calendars and availability. Reserve hours for recurring duties and split work between people with explicit allocations.",
+    "Define work calendars and availability. Reserve recurring duties and assign executable work to one person with explicit capacity hours.",
     "Prepare capacity",
   ],
 ];
@@ -31,8 +31,8 @@ const features = [
 <Page title="Plan the work. Respect the capacity.">
   <section class="hero shell">
     <a class="eyebrow-pill" href={`${base}/roadmap/`}>
-      <span class="live-dot" aria-hidden="true"></span> v0.4 development preview{" "}
-      <span aria-hidden="true">/</span> See what's next
+      <span class="live-dot" aria-hidden="true"></span> 0.4.0.dev0 source
+      preview <span aria-hidden="true">/</span> See what's next
     </a>
     <h1>
       Plan the work.
@@ -59,7 +59,7 @@ const features = [
       light={planLight}
       dark={planDark}
       alt="Planacity Plan view with hierarchical work, estimates, dates, and filters"
-      caption="Your program, in one editable workspace. Shown with the fictional Aurora example."
+      caption="Your program, in one editable workspace. Shown with the fictional Moon Heist example."
       eager
     />
   </section>
@@ -98,9 +98,10 @@ const features = [
       ))}
     </div>
     <p class="scope-note">
-      Capacity is growing: calendars, availability, reservations, and
-      allocations are available. Combined workload and remaining team capacity
-      are the next step. <a href={`${base}/roadmap/`}>Read the roadmap</a>.
+      Capacity is explainable today across calendars, availability, recurring
+      duties, and dated work. The active v0.5 work adds shared program events
+      and file-based availability imports.{" "}
+      <a href={`${base}/roadmap/`}>Read the roadmap</a>.
     </p>
   </section>
   <section class="section shell timeline-section">
@@ -115,8 +116,8 @@ const features = [
     <AppScreenshot
       light={timelineLight}
       dark={timelineDark}
-      alt="Planacity monthly Timeline showing scheduled work across the planning horizon"
-      caption="Switch between day, week, and month scales. Open the capture to explore it at full size."
+      alt="Planacity Timeline showing the fictional Moon Heist program and its dependencies"
+      caption="Switch between Plan and Team modes, inspect dependencies, and review critical work without changing the plan."
     />
   </section>
   <section class="section shell workflow-section">
