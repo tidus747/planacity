@@ -51,14 +51,14 @@ const later = [
       <aside class="doc-nav" aria-label="Roadmap sections">
         <p>In this roadmap</p>
         <a href="#available">Available today</a>
-        <a href="#current">v0.4 / Current focus</a>
-        <a href="#next">v0.5 / Team visibility</a>
+        <a href="#current">v0.5 / Current focus</a>
+        <a href="#next">v0.5 / File imports</a>
         <a href="#later">Beyond the preview</a>
         <a href={`${repo}/issues`}>Track GitHub issues</a>
       </aside>
       <div class="prose">
         <div class="notice">
-          <strong>Current target: v0.4 Team &amp; Capacity</strong>
+          <strong>Current target: v0.5 Program Calendar</strong>
           <p>
             This is a development preview, not a published stable release. The
             roadmap describes direction, not promised delivery dates.
@@ -77,12 +77,12 @@ const later = [
               comparison.
             </li>
             <li>
-              Timeline scales, grouping, filters, dependency arrows, and
-              bar-edge date editing.
+              Timeline scales, grouping, filters, dependency arrows, Team mode,
+              a selected-work graph, critical-path analysis, and date editing.
             </li>
             <li>
-              People, work calendars, dated availability, recurring-duty
-              previews, and explicit work allocations.
+              People, work calendars, dated availability, recurring duties,
+              one-person executable-work assignments, and exact capacity views.
             </li>
             <li>
               Estimate units in hours, days, or weeks, with calendar setup in
@@ -90,72 +90,74 @@ const later = [
             </li>
           </ul>
           <p>
-            These foundations are implemented. Combined workload checks and
-            remaining team capacity are still ahead.
+            These foundations are implemented. Shared holidays and program
+            events now participate in capacity calculations; their editor and
+            visual projection are the active work.
           </p>
         </section>
         <section id="current">
-          <h2>Next: make the numbers agree.</h2>
+          <h2>Now: put program events in context.</h2>
           <p>
-            One calculation should explain the same plan in every view. We are
-            progressing through focused issues, one at a time.
+            Development proceeds through focused issues, one at a time. The
+            source version remains 0.4.0.dev0 until a release change is
+            reviewed.
           </p>
-          <article class="release">
-            <span class="release-tag">v0.4 A</span>
-            <div>
-              <h3>Reliable editing</h3>
-              <p>
-                Estimate-calendar setup is complete. Next are guarded dependency
-                edits and hierarchy effort totals without double counting.
-              </p>
-              <a href={`${repo}/issues/77`}>
-                Next app issue: dependency protection
-              </a>
-            </div>
-          </article>
-          <article class="release">
-            <span class="release-tag">v0.4 B</span>
-            <div>
-              <h3>Explainable capacity</h3>
-              <p>
-                Combine calendars, availability, reservations, and dated
-                allocations. Surface overload and missing-data findings, with a
-                complete People breakdown.
-              </p>
-            </div>
-          </article>
-          <article class="release">
-            <span class="release-tag">v0.4 C</span>
-            <div>
-              <h3>Understand the plan</h3>
-              <p>
-                Add descriptions, labels, primary reporting groups, an editable
-                work inspector, and a compact Overview analysis selector.
-              </p>
-            </div>
-          </article>
-        </section>
-        <section id="next">
-          <h2>Then: bring the team into view.</h2>
           <article class="release">
             <span class="release-tag">v0.5 A</span>
             <div>
-              <h3>Team visibility</h3>
+              <h3>Team visibility - complete</h3>
               <p>
-                Optional absence overlays, a Team Timeline mode for work and
-                duties, team coverage, and a small selected-work dependency
-                graph.
+                Team Timeline lanes, availability overlays, dependency cards,
+                stable work identity, and critical-path analysis are available.
               </p>
+              <a href={`${repo}/blob/main/docs/roadmap.md`}>
+                Review the detailed roadmap
+              </a>
             </div>
           </article>
           <article class="release">
             <span class="release-tag">v0.5 B</span>
             <div>
-              <h3>Program Calendar</h3>
+              <h3>Program Calendar - in progress</h3>
               <p>
-                Shared holidays and events, followed by generic availability CSV
-                and exported-file adapters. Existing absences and duties become
-                visible before new providers are added.
+                The shared-event domain, schema 12 persistence, and capacity
+                effects are complete. Editing and Timeline/Overview projection
+                come next, without turning duties into fictitious appointments.
+              </p>
+            </div>
+          </article>
+          <article class="release">
+            <span class="release-tag">v0.4</span>
+            <div>
+              <h3>Team &amp; Capacity - complete in source</h3>
+              <p>
+                Capacity findings, People breakdowns, Overview analysis, work
+                context, priorities, and single-person assignments are
+                available.
+              </p>
+            </div>
+          </article>
+        </section>
+        <section id="next">
+          <h2>Then: import availability safely.</h2>
+          <article class="release">
+            <span class="release-tag">v0.5 C</span>
+            <div>
+              <h3>Generic availability CSV</h3>
+              <p>
+                Preview mappings, match people explicitly, identify duplicates,
+                and retain ambiguous rows for correction instead of guessing.
+              </p>
+            </div>
+          </article>
+          <article class="release">
+            <span class="release-tag">v0.5 D</span>
+            <div>
+              <h3>Factorial exported files</h3>
+              <p>
+                Adapt exported files to the same reviewed import workflow. Keep
+                provider terminology outside the canonical planning model and
+                avoid storing unnecessary HR detail.
               </p>
             </div>
           </article>

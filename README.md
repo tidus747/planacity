@@ -79,8 +79,9 @@ example.
 The v0.1 planning foundation and v0.2 Jira roundtrip are implemented. The v0.3
 Visual Planning source candidate has
 [prepared release notes](docs/releases/v0.3.0.md), but publication still requires
-an approved release. Development now targets the shared capacity calculations,
-validation, and planning context needed for v0.4.
+an approved release. The v0.4 Team & Capacity feature set is implemented in the
+source preview. Active work now targets the v0.5 Program Calendar milestone;
+this does not publish or rename the current `0.4.0.dev0` source version.
 
 Current reservation previews deduct shared capacity-affecting program events but
 not work allocations. Plan findings and People now present the shared dated-capacity

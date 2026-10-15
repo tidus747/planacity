@@ -168,6 +168,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Changed
 
+- The public website now distinguishes the `0.4.0.dev0` source version from the
+  active v0.5 Program Calendar milestone. Its Home, Roadmap, and getting-started
+  status now reflect implemented capacity, Team Timeline, dependency, ownership,
+  schema 12, and shared-event behavior without announcing a new release.
 - Dependency links now reject new cycles and fully dated conflicts. Plan and
   Timeline date edits reject only new or worsened conflicts, with affected work
   and permitted boundaries; legacy conflicts and incomplete edges remain visible
