@@ -143,6 +143,7 @@ analysis, not a zero-day successfully planned program. No third-party runtime.
 
 Target: v0.5. Depends on V04, V05, and V07's visual conventions.
 Tracked by [issue #134](https://github.com/tidus747/planacity/issues/134).
+Implemented by [PR #135](https://github.com/tidus747/planacity/pull/135).
 
 - Add a clearly labelled toggle, off by default. Highlight critical connectors
   in red with a distinct line treatment and label/legend; outline critical bars.
@@ -156,6 +157,26 @@ Tracked by [issue #134](https://github.com/tidus747/planacity/issues/134).
 
 Non-goals: moving work, leveling resources, a priority-based schedule, automatic
 deadline promises, or claiming the analysis proves capacity feasibility.
+
+## C01 - Shared calendar-event capacity foundation
+
+Target: v0.5. Depends on R04. Tracked by
+[issue #136](https://github.com/tidus747/planacity/issues/136).
+
+Add one immutable shared CalendarEvent model with stable identity, category,
+inclusive dates, and an exact unavailable fraction. Persist events in schema 12
+and provide add/update/remove lifecycle services. Apply every event to every
+roster person through their own calendar. Combine overlapping personal and shared
+events using the strongest fraction, then apply reservations and allocations.
+
+Accept full, partial, zero-impact, outside-horizon, overlapping, variable-calendar,
+legacy migration, malformed-file, exact-precision, and no-mutation fixtures.
+Keep imported snapshots unchanged and expose the same result through capacity,
+reservation preview, and breakdown consumers.
+
+Non-goals: Calendar UI, Timeline/Overview projection, recurrence, per-person event
+targeting, generic CSV import, Factorial mapping, provider APIs, or automatic
+holiday lookup.
 
 ## S01 - Define single-person assignment transitions
 

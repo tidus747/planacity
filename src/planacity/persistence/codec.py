@@ -10,6 +10,8 @@ from uuid import UUID
 from planacity.domain import (
     Allocation,
     AvailabilityEvent,
+    CalendarEvent,
+    CalendarEventKind,
     Person,
     PersonCalendar,
     PlanningHorizon,
@@ -27,7 +29,7 @@ from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 SUPPORTED_SCHEMA_VERSIONS = tuple(range(1, SCHEMA_VERSION + 1))
 
 
@@ -128,7 +130,8 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             + (" availability_events" if schema_version >= 4 else "")
             + (" reservation_rules" if schema_version >= 5 else "")
             + (" estimate_preferences" if schema_version >= 6 else "")
-            + (" allocations" if schema_version >= 7 else ""),
+            + (" allocations" if schema_version >= 7 else "")
+            + (" calendar_events" if schema_version >= 12 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -173,6 +176,9 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             ),
             availability_events=tuple(
                 _availability(value) for value in _rows(p.get("availability_events", []))
+            ),
+            calendar_events=tuple(
+                _calendar_event(value) for value in _rows(p.get("calendar_events", []))
             ),
             reservation_rules=tuple(
                 _reservation(value) for value in _rows(p.get("reservation_rules", []))
@@ -229,6 +235,18 @@ def _availability(value: object) -> AvailabilityEvent:
     return AvailabilityEvent(
         id=_id(row["id"]),
         person_id=_id(row["person_id"]),
+        period=PlanningHorizon(_date(period["start"]), _date(period["end"])),
+        unavailable_fraction=Decimal(_text(row["unavailable_fraction"])),
+    )
+
+
+def _calendar_event(value: object) -> CalendarEvent:
+    row = _object(value, "id name kind period unavailable_fraction")
+    period = _object(row["period"], "start end")
+    return CalendarEvent(
+        id=_id(row["id"]),
+        name=_text(row["name"]),
+        kind=CalendarEventKind(_text(row["kind"])),
         period=PlanningHorizon(_date(period["start"]), _date(period["end"])),
         unavailable_fraction=Decimal(_text(row["unavailable_fraction"])),
     )

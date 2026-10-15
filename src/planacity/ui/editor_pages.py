@@ -839,6 +839,7 @@ class PeoplePage(WorkspacePage):
                             for event in plan.availability_events
                             if event.person_id == person.id
                         ),
+                        plan.calendar_events,
                     )
                     if calendar
                     else None

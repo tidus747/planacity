@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Shared program calendar events with stable identities, explicit categories,
+  inclusive dates, and exact capacity impact. Holidays and other events apply to
+  every roster person; overlapping personal and shared reductions use the
+  strongest fraction instead of being added twice. Projects persist these inputs
+  in schema 12 while the editing UI remains a later Program Calendar slice.
 - An optional critical-path overlay in Timeline. Red dashed connectors and bar
   outlines mark every tied dependency-only critical branch while preserving
   WorkGroup colors and work shapes. Keyboard-readable details expose duration,
@@ -146,11 +151,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 - Recurring capacity wizard from Planning and People for meetings, front-office
   duties, or named reservations. Preview per-person/per-sprint hours, proration,
   overlaps, and overloads before confirming creation, edits, or deletion.
-  The preview uses work calendars and recorded availability; program events and
-  work allocations are not yet included.
+  The preview uses work calendars, recorded availability, and shared program
+  events; work allocations are not included.
 - Dated availability editing in People with keyboard entry, calendar pickers,
   live totals, and explicit overlap previews. Entries persist with the plan;
-  available hours are shown before program events, reservations, and allocations.
+  available hours include shared program events and are shown before reservations
+  and allocations.
 - Named work calendars with explicit weekday hours, per-person assignments,
   and nominal horizon hours in People, before leave, events, or reservations.
 
@@ -166,10 +172,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   Timeline date edits reject only new or worsened conflicts, with affected work
   and permitted boundaries; legacy conflicts and incomplete edges remain visible
   and repairable without automatic rescheduling.
-- Development continues as 0.4.0.dev0. Projects and backups now save as schema 11
-  to retain canonical work assignees alongside original imported identity and
+- Development continues as 0.4.0.dev0. Projects and backups now save as schema 12
+  to retain shared program calendar events and canonical work assignees alongside
+  original imported identity and
   priority text, work context, calendars, availability, reservations, preferences,
-  and allocations. Schemas 1-10 open with assignees unset; schemas 1-9 open with
+  and allocations. Schemas 1-11 open with no shared calendar events; schemas 1-10
+  open with assignees unset; schemas 1-9 open with
   empty source-priority text; schemas 1-8 open with priority unset; schemas 1-7
   open with empty work context; schemas 1-6 open without inferred allocations.
   Schemas 1-5 open with estimates displayed in hours; keep a backup or use Save As

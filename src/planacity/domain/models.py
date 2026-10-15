@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 
 from planacity.domain.allocation import Allocation, validate_allocation_references
 from planacity.domain.availability import AvailabilityEvent
+from planacity.domain.calendar_event import CalendarEvent
 from planacity.domain.estimate_units import EstimatePreferences
 from planacity.domain.horizon import PlanningHorizon as PlanningHorizon
 from planacity.domain.reservations import ReservationRule
@@ -234,6 +235,7 @@ class ProgramPlan:
     work_calendars: tuple[WorkCalendar, ...] = ()
     person_calendars: tuple[PersonCalendar, ...] = ()
     availability_events: tuple[AvailabilityEvent, ...] = ()
+    calendar_events: tuple[CalendarEvent, ...] = ()
     reservation_rules: tuple[ReservationRule, ...] = ()
     estimate_preferences: EstimatePreferences = field(default_factory=EstimatePreferences)
     allocations: tuple[Allocation, ...] = ()
@@ -290,6 +292,12 @@ class ProgramPlan:
             raise ValueError("Availability event IDs must be unique within a plan.")
         for event in self.availability_events:
             self.person(event.person_id)
+        if not isinstance(self.calendar_events, tuple) or any(
+            not isinstance(event, CalendarEvent) for event in self.calendar_events
+        ):
+            raise ValueError("Calendar events must be a tuple of CalendarEvent objects.")
+        if len({event.id for event in self.calendar_events}) != len(self.calendar_events):
+            raise ValueError("Calendar event IDs must be unique within a plan.")
         if not isinstance(self.reservation_rules, tuple) or any(
             not isinstance(rule, ReservationRule) for rule in self.reservation_rules
         ):

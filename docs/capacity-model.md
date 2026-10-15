@@ -45,10 +45,11 @@ Entries outside the selected range are retained; only intersecting dates
 contribute. Clearing a calendar retains availability; reassigning one recalculates
 it. Confirming an edit retains its ID, while cancellation leaves the draft
 unapplied. Deleting a person asks before clearing their availability entries.
-Imported snapshots remain unchanged. Program events are not yet modeled.
+Imported snapshots remain unchanged. Shared program events are persisted inputs,
+but their desktop editor belongs to the next Program Calendar slice.
 
 Schemas 1-3 open without availability; schemas 1-4 open without reservations.
-Saving writes schema 11. Keep a backup
+Saving writes schema 12. Schemas 1-11 open without shared program events. Keep a backup
 or use Save As if the file must remain readable in an older build.
 
 Screenshots using an explicitly configured example schedule:
@@ -71,8 +72,9 @@ may be working days. Each value must be finite and between 0 and 24 inclusive.
 Integers, floats, strings, missing entries, and invalid identities are rejected.
 
 This represents nominal date-based hours, not shift start/end times or elapsed
-time across timezone or daylight-saving transitions. Leave, holidays, and program
-events will be separate inputs rather than hidden exceptions in this pattern.
+time across timezone or daylight-saving transitions. Personal availability and
+shared holidays or program events remain separate inputs rather than hidden
+exceptions in this pattern.
 
 ```python
 from datetime import date
@@ -119,7 +121,7 @@ lengths. Estimate unit settings in #39 must specify that convention explicitly.
 inputs for any inclusive query period:
 
     Nominal calendar hours
-    - Recorded personal unavailability
+    - Strongest personal/shared unavailable fraction
     = Available hours
     - Recurring reservations
     = Planning capacity
@@ -149,8 +151,11 @@ incomplete result as a fully feasible plan. Queries requiring more than 100,000
 person-days return one actionable incomplete result and no partial totals.
 
 All public hour values use exact `Fraction` results derived from stored Decimal
-inputs. No display rounding or caller Decimal context changes the total. Program
-events are not yet a source because their domain model belongs to v0.5.
+inputs. No display rounding or caller Decimal context changes the total. Shared
+calendar events apply to every roster person. On each date, the strongest active
+personal or shared unavailable fraction wins; fractions are never added, so the
+same lost capacity cannot be deducted twice. Zero-impact events retain calendar
+context without changing capacity.
 
 `planning.findings.planning_findings` turns this shared result and the canonical
 effort rollups into calculated, non-persisted advice. Each finding has a stable
@@ -169,8 +174,8 @@ exposes its gaps and overloads as reusable planning findings. R06 exposes the sa
 exact totals and source IDs in People. Overview projects those same results over
 the fixed inclusive plan horizon, with known-person subtotals and explicit
 coverage notes when any result is partial. Its topic view keeps scheduled
-horizon allocations separate from whole-plan estimated leaf effort. Program
-events remain a later input.
+horizon allocations separate from whole-plan estimated leaf effort. Shared
+program events use the same calculation boundary even before their editor exists.
 
 People WorkGroup filtering is a presentation over the same complete person
 result. It never recalculates capacity from only the visible group. Whole-plan
@@ -179,15 +184,13 @@ scheduled and unplaced hours come from the shared engine and use one additive
 reporting topic. A person's planning and remaining hours are never duplicated
 across groups.
 
-Program-event deductions follow in v0.5. They are not a prerequisite for showing
-the currently entered meetings and front-office reservations consistently.
-The recurring reservation API (#8) now consumes explicit daily capacity after
-these deductions. Rules persist (#9), and the wizard (#10) previews saved calendars
-and entered availability before reservations. Program-event deductions are not yet
-modeled in the desktop; the preview labels that limitation. People then combines
+Shared program-event deductions are part of the v0.5 calculation foundation.
+The recurring reservation API (#8) consumes explicit daily capacity after these
+deductions. Rules persist (#9), and the wizard (#10) previews saved calendars,
+entered availability, and shared events before reservations. People then combines
 the saved reservation result with dated allocations for the selected range.
-Calendar and availability data remain unchanged in schema 11, while Jira hour
-estimates and import baselines are unchanged. See
+CalendarEvent inputs are introduced in schema 12; work calendars, personal
+availability, Jira hour estimates, and import baselines are unchanged. See
 [recurring reservations](capacity-wizards.md).
 The distribution and missing-data rules are defined in
 [planning decisions](planning-decisions.md).
@@ -195,8 +198,10 @@ The distribution and missing-data rules are defined in
 ## Availability calculation API
 
 The calculation foundation for [#60](https://github.com/tidus747/planacity/issues/60)
-accepts explicit AvailabilityEvents for one person. Each event has an identity,
-person UUID, inclusive PlanningHorizon, and unavailable fraction from 0 to 1.
+accepts explicit AvailabilityEvents for one person plus shared CalendarEvents.
+Each personal event has an identity, person UUID, inclusive PlanningHorizon, and
+unavailable fraction from 0 to 1. Shared events omit the person reference and
+apply to every roster member.
 For example, 0.5 removes half of each date's nominal hours; 1 removes all of them.
 No 8-hour day or reason for the absence is inferred or stored. Fractions must be
 finite Decimal values. ProgramPlan now stores these events, and People exposes
@@ -243,11 +248,13 @@ visible in overlap reports. Zero-share entries have no effect and do not create
 overlap warnings. Adjacent inclusive ranges do not overlap unless they share a
 date. Inputs are never modified, and event order does not change the result.
 
-Callers must supply only the requested person's events and explicitly resolve
-their calendar. Duplicate event IDs and mismatched person references are rejected,
-even outside the horizon. A missing calendar is an error, not zero capacity.
-The result is available hours **before** program events, reservations, and
-allocations; it must not be labelled remaining planning capacity.
+Callers must supply only the requested person's personal events, all applicable
+shared events, and explicitly resolve their calendar. Duplicate IDs within either
+collection and mismatched person references are rejected, even outside the
+horizon. A missing calendar is an error, not zero capacity.
+The result is available hours after personal and shared calendar events, but
+**before** reservations and allocations; it must not be labelled remaining
+planning capacity.
 
 ### Range and precision
 

@@ -47,8 +47,9 @@ No account or network connection is needed while planning.
    Choose **Reserve capacity...** here or from the **Planning** menu for recurring
    meetings or other duties. Enter hours per person, review sprint proration and
    remaining hours, then Confirm. Select an existing rule to edit or preview its
-   deletion. See the [wizard guide](capacity-wizards.md). Program events remain
-   future work; saved work allocations are included in People capacity.
+   deletion. See the [wizard guide](capacity-wizards.md). Shared program events
+   participate in capacity calculations; their editor is a later calendar slice.
+   Saved work allocations are included in People capacity.
 7. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling

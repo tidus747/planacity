@@ -300,6 +300,7 @@ def calculate_capacity_breakdown(
                     for event in plan.availability_events
                     if event.person_id == roster_person.id
                 ),
+                plan.calendar_events,
             )
             working_days = sum(day.nominal_hours > 0 for day in result.days)
             overlaps = len(availability.overlaps)

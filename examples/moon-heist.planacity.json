@@ -1,6 +1,6 @@
 {
   "format": "planacity",
-  "schema_version": 11,
+  "schema_version": 12,
   "plan": {
     "name": "Operation Moon Heist",
     "horizon": {
@@ -763,6 +763,7 @@
         "id": "54a8ef91-45df-57c5-8658-5a0019f066c0"
       }
     ],
+    "calendar_events": [],
     "reservation_rules": [
       {
         "name": "Weekly mission briefing",

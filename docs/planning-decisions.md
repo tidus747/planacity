@@ -5,10 +5,9 @@ Dependency guards, hierarchy effort, dated capacity, reusable findings, People
 breakdowns, persisted work context, compact Overview analysis, and derived People
 WorkGroup associations, canonical work priority, and explicit Jira CSV priority
 mapping are implemented. Work context introduced schema 8, priority schema 9,
-preserved Jira source-priority text schema 10, and canonical work ownership
-schema 11; the transactional Plan
-inspector, Overview analysis, and People associations require no further schema
-change.
+preserved Jira source-priority text schema 10, canonical work ownership schema 11,
+and shared calendar events schema 12. The transactional Plan inspector, Overview
+analysis, and People associations require no additional persisted state.
 Later presentation sections remain future behavior.
 See the [roadmap](roadmap.md) for order and acceptance.
 
@@ -84,18 +83,21 @@ values into imported baselines or current stored estimates.
 For each person/date, calculate from configured inputs:
 
     Nominal calendar hours
-    - Recorded unavailability
-    - Capacity-affecting program events (once implemented)
+    - Strongest personal/shared unavailable fraction
     = Available hours before duties
     - Recurring reservations
     = Planning capacity
     - Scheduled allocated work
     = Remaining capacity
 
-v0.4 uses calendars, recorded availability, and saved reservations. Program-event
-deductions join in v0.5; UI copy states which inputs are included. Existing
-availability overlap handling (strongest fraction) and reservation proration
-(equal shares over eligible days in complete anchored periods) remain unchanged.
+Schema 12 adds shared holidays and program events to the v0.5 calculation input.
+They apply to every roster person through that person's calendar. On an affected
+date, the strongest personal or shared unavailable fraction wins; fractions are
+not additive. A zero-impact event remains useful context, and a full-impact event
+removes that date's nominal hours. Reservations and allocations are applied only
+after this combined reduction, preventing double deductions. Reservation
+proration (equal shares over eligible days in complete anchored periods) remains
+unchanged.
 
 The initial allocation schedule uses its WorkItem's complete start/end window;
 it does not inherit dates from a parent or silently use the visible horizon.

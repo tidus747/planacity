@@ -2,9 +2,9 @@
 
 Available in the v0.4 Team & Capacity development preview. The two-step wizard
 uses the calculation API (#8) and schema 5 rules (#9). It previews before applying
-any change. The desktop preview uses explicit work calendars and recorded
-availability only. Program events and work allocations are not deducted here;
-the preview clearly labels its remaining hours as before those inputs.
+any change. The desktop preview uses explicit work calendars, recorded
+availability, and shared program events. Work allocations are not deducted here;
+the preview clearly labels its remaining hours as before that input.
 
 The [work-calendar calculation foundation](capacity-model.md) is implemented for
 review in [#56](https://github.com/tidus747/planacity/issues/56). It accepts an
@@ -175,7 +175,7 @@ The wizard uses a separate desktop adapter and retains these boundaries explicit
 
 `ProgramPlan.reservation_rules` contains the canonical rules. SQLite and JSON
 round-trip IDs, selected people, dates, intervals, and exact Decimal hours.
-Schemas 1-4 load without rules; saving upgrades to schema 11. Keep a backup or
+Schemas 1-4 load without rules; saving upgrades to schema 12. Keep a backup or
 use Save As if an older build must still read the plan.
 
 `add_reservation`, `update_reservation`, and `remove_reservation` return validated

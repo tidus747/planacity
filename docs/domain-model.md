@@ -19,6 +19,7 @@ estimates, which remain exact Decimal hours. See [estimate units](estimate-units
 | `Person` | `id`, `name` | Non-blank name; unique ID within the roster |
 | `WorkGroup` | `id`, `name`, `epic_ids` | Named group of existing Epics |
 | `Relationship` | `id`, `source_id`, `target_id`, `kind` | Existing distinct endpoints; no duplicate links |
+| `CalendarEvent` | `id`, `name`, `kind`, `period`, `unavailable_fraction` | Shared dated context with an exact capacity impact from 0 to 1 |
 | `ImportedWork` | `item`, `external_reference`, `external_person`, `person`, `status`, `external_priority` | Immutable source baseline and original integration text |
 
 IDs are Python `uuid.UUID` values. Constructors generate UUIDs by default and
@@ -207,7 +208,8 @@ plan = add_work_item(plan, task)
 assert plan.children(epic.id) == (task,)
 ```
 
-Automatic scheduling and capacity remain future work. Storage is documented in
+Automatic scheduling remains future work. Capacity calculations are documented
+in [capacity-model.md](capacity-model.md), and storage is documented in
 [project-file-format.md](project-file-format.md). Run domain tests with
 `python -m pytest tests/domain`;
 neither these tests nor the model require importing Qt.
@@ -218,9 +220,9 @@ ProgramPlan contains named WorkCalendars and separate PersonCalendar references.
 A calendar has an ID, name, and seven explicit Decimal weekday hours. An
 assignment links one roster Person to one calendar; a calendar may be shared.
 Imported Person snapshots do not contain these assignments and remain unchanged.
-People shows nominal, unavailable, and available horizon hours, before program
-events, reservations, or allocations. See the
-[capacity model](capacity-model.md) for lifecycle rules and future deductions.
+People shows nominal, unavailable, and available horizon hours after personal
+and shared event reductions, but before reservations or allocations. See the
+[capacity model](capacity-model.md) for lifecycle and calculation rules.
 
 AvailabilityEvent is an immutable calculation input with a stable UUID, person
 reference, inclusive period, and Decimal unavailable fraction. It records no
@@ -230,6 +232,15 @@ references, and persists them in schema 5. People edits them while preserving ID
 Person removal requires explicit confirmation to remove associated entries.
 The [availability API](capacity-model.md#availability-calculation-api)
 documents these boundaries and the partial-day interpretation.
+
+CalendarEvent is a shared planning input with a stable UUID, name, category,
+inclusive period, and Decimal unavailable fraction. Supported categories are
+public holiday, customer visit, company event, program event, and other. It does
+not target a person: every roster member is affected through their own work
+calendar. A zero fraction records context only; one removes all nominal hours.
+When personal and shared events overlap, the strongest fraction wins rather than
+adding reductions. ProgramPlan owns these events in schema 12, and lifecycle
+services preserve identity and order without changing imported snapshots.
 
 ## Recurring reservations (v0.4 calculation API)
 
@@ -241,8 +252,8 @@ Lifecycle services return immutable candidates for preview before confirmation;
 edits preserve IDs and order. Removing a person requires explicit resolution:
 retain shared rules for remaining people and delete rules left empty.
 The reservation wizard previews a candidate before applying it once on confirmation.
-The desktop adapter supplies saved calendars and availability; it does not infer
-program-event deductions or work allocations.
+The desktop adapter supplies saved calendars, availability, and shared program
+events; it does not infer work allocations.
 See [recurring reservations](capacity-wizards.md#calculation-api-8) for proration
 and zero-capacity rules.
 
