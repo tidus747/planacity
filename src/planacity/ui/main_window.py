@@ -62,7 +62,10 @@ class MainWindow(QMainWindow):
         self.people_page = PeoplePage(self.session)
         self.calendar_page = CalendarPage(self.session)
         self.overview_page = OverviewPage(
-            self.session, lambda: self.file_actions.new(), partial(self.show_page, 1)
+            self.session,
+            lambda: self.file_actions.new(),
+            partial(self.show_page, 1),
+            partial(self.show_page, 4),
         )
         for page in (
             self.overview_page,

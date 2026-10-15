@@ -6,6 +6,13 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Shared Program Calendar projection in Overview and as an optional Timeline
+  layer. Overview lists every horizon-intersecting event with its category,
+  canonical dates, exact capacity impact, and clipping status, while counting
+  retained events outside the horizon. Timeline draws one aligned lane per
+  visible event at day, week, or month scale in Plan and Team modes; patterned
+  bars affect capacity and dashed outlines remain context only. Both views are
+  read-only and independent from work filters.
 - Shared program calendar events with stable identities, explicit categories,
   inclusive dates, and exact capacity impact. Holidays and other events apply to
   every roster person; overlapping personal and shared reductions use the
