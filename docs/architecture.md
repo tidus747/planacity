@@ -202,6 +202,13 @@ explicit diagnostic results instead of a partial critical path. Priority,
 allocations, calendars, filters, grouping, and horizon clipping are not inputs.
 The calculated result is never persisted and requires no schema migration.
 
+Timeline consumes that result only as presentation state. The critical-path
+toggle maps complete whole-plan node and stored-relationship IDs onto visible
+bars and connectors; it never recalculates from the filtered projection.
+Invalid or incomplete results clear those visual IDs and expose diagnostics.
+WorkGroup color and work shape remain the bar identity, while the red dashed
+outline is a separate temporary layer.
+
 Timeline editing is separate from projection and painting. `timeline_resize.py`
 in planning snaps period fractions to inclusive days and delegates validation to
 `set_work_dates`. The UI holds the original immutable snapshot throughout a drag,

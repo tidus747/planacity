@@ -14,6 +14,7 @@ from PySide6.QtCore import (
     QRectF,
     QSettings,
     Qt,
+    QTimer,
 )
 from PySide6.QtGui import (
     QBrush,
@@ -32,10 +33,12 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLayout,
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QSplitter,
     QStyle,
     QStyledItemDelegate,
@@ -45,6 +48,11 @@ from PySide6.QtWidgets import (
 )
 
 from planacity.domain import WorkItemType
+from planacity.planning.critical_path import (
+    CriticalPathAnalysis,
+    CriticalPathStatus,
+    calculate_critical_path,
+)
 from planacity.planning.dependency_neighborhood import project_dependency_neighborhood
 from planacity.planning.estimate_units import format_fraction
 from planacity.planning.timeline import (
@@ -77,6 +85,7 @@ from planacity.ui.timeline_identity import (
     group_identity,
     work_shape,
 )
+from planacity.ui.timeline_links import CRITICAL_COLORS
 from planacity.ui.timeline_resize import ResizeScheduleView, edit_timeline_dates
 from planacity.ui.timeline_team import TeamTimelinePanel
 
@@ -274,16 +283,20 @@ class _LegendSwatch(QWidget):
         *,
         identity: TimelineBarIdentity | None = None,
         shape: TimelineBarShape | None = None,
+        critical: bool = False,
     ) -> None:
         super().__init__()
         self.identity = identity
         self.shape = shape
+        self.critical = critical
         self.setFixedSize(22, 18)
         name = (
             identity.label
             if identity is not None
             else shape.value.replace("_", " ").title()
             if shape is not None
+            else "Critical path"
+            if critical
             else "Timeline legend swatch"
         )
         self.setAccessibleName(name)
@@ -315,6 +328,16 @@ class _LegendSwatch(QWidget):
                 False,
                 QColor(COLORS[theme].text),
             )
+        elif self.critical:
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(
+                QPen(
+                    QColor(CRITICAL_COLORS[theme.value]),
+                    2,
+                    Qt.PenStyle.DashLine,
+                )
+            )
+            painter.drawRoundedRect(rect, 3, 3)
         painter.end()
 
 
@@ -337,9 +360,11 @@ class TimelineLegend(QFrame):
         self.items_layout = QHBoxLayout(self.items)
         self.items_layout.setContentsMargins(0, 0, 0, 0)
         self.items_layout.setSpacing(12)
+        self.items_layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
         scroll = QScrollArea()
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setWidgetResizable(True)
+        scroll.setWidgetResizable(False)
+        scroll.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setFixedHeight(34)
@@ -358,6 +383,7 @@ class TimelineLegend(QFrame):
                 break
             widget = child.widget()
             if widget is not None:
+                widget.hide()
                 widget.deleteLater()
 
     def _entry(
@@ -366,23 +392,29 @@ class TimelineLegend(QFrame):
         *,
         identity: TimelineBarIdentity | None = None,
         shape: TimelineBarShape | None = None,
+        critical: bool = False,
     ) -> None:
         item = QWidget()
         layout = QHBoxLayout(item)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
-        layout.addWidget(_LegendSwatch(identity=identity, shape=shape))
+        layout.addWidget(_LegendSwatch(identity=identity, shape=shape, critical=critical))
         layout.addWidget(QLabel(text))
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
         item.setAccessibleName(text)
         self.items_layout.addWidget(item)
 
-    def set_projection(self, projection: TimelineProjection | None) -> None:
+    def set_projection(
+        self, projection: TimelineProjection | None, *, critical: bool = False
+    ) -> None:
         self._clear()
         if projection is None:
             self._entry("Open a plan to see group colors")
             self.setAccessibleDescription("Open a plan to see Timeline visual identities.")
             self.items_layout.addStretch()
             return
+        if critical:
+            self._entry("Critical path - red dashed", critical=True)
         for group in projection.groups:
             self._entry(group.name, identity=group_identity(group))
         states = {row.topic_state for row in projection.rows}
@@ -406,6 +438,7 @@ class TimelineLegend(QFrame):
             f"WorkGroup colors: {groups}. Neutral exceptions: {exceptions}. "
             "Work shapes: Epic bracket, "
             "Task rounded bar, Subtask slim bar."
+            + (" Critical path: red dashed outline." if critical else "")
         )
 
 
@@ -440,6 +473,7 @@ def _paint_bar_shape(
     at_end: bool,
     selected: bool,
     outline: QColor,
+    critical_outline: QColor | None = None,
 ) -> None:
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(brush)
@@ -461,6 +495,10 @@ def _paint_bar_shape(
         painter.drawRect(slim)
         selection_path = QPainterPath()
         selection_path.addRect(slim)
+    if critical_outline is not None:
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.setPen(QPen(critical_outline, 2, Qt.PenStyle.DashLine))
+        painter.drawPath(selection_path)
     if selected:
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(QPen(outline, 2))
@@ -535,6 +573,10 @@ class TimelineBarDelegate(QStyledItemDelegate):
                     period.start_day <= row.end_day <= period.end_day,
                     bool(state & QStyle.StateFlag.State_Selected),
                     QColor(colors.text),
+                    QColor(CRITICAL_COLORS[theme.value])
+                    if getattr(parent, "show_critical_path", False)
+                    and row.item_id in getattr(parent, "critical_node_ids", frozenset())
+                    else None,
                 )
         elif (
             row.date_state == TimelineDateState.START_ONLY
@@ -587,6 +629,7 @@ class TimelinePage(WorkspacePage):
         self.settings = settings
         self.projection: TimelineProjection | None = None
         self.team_projection: TeamTimelineProjection | None = None
+        self.critical_analysis: CriticalPathAnalysis | None = None
         self._syncing_selection = False
         self._resized_columns: set[int] = set()
         self.summary = label("Open a project to see its schedule.", "badge")
@@ -729,9 +772,17 @@ class TimelinePage(WorkspacePage):
         self.dependency_graph_toggle = QCheckBox("Show selected dependency graph")
         self.dependency_graph_toggle.setChecked(False)
         self.dependency_graph_toggle.toggled.connect(self._toggle_dependency_graph)
+        self.critical_toggle = QCheckBox("Show critical path")
+        self.critical_toggle.setChecked(False)
+        self.critical_toggle.setAccessibleName("Show critical path overlay")
+        self.critical_toggle.setToolTip(
+            "Highlight the dependency-only elapsed-day critical path without changing dates."
+        )
+        self.critical_toggle.toggled.connect(self._toggle_critical_path)
         layers = QHBoxLayout()
         layers.addWidget(self.dependency_toggle)
         layers.addWidget(self.dependency_graph_toggle)
+        layers.addWidget(self.critical_toggle)
         layers.addWidget(self.availability_toggle)
         layers.addStretch()
         self.layers_widget = QWidget()
@@ -745,6 +796,12 @@ class TimelinePage(WorkspacePage):
         self.dependency_details.setAccessibleName("Dependency details")
         self.dependency_details.setMaximumHeight(90)
         self.content.addWidget(self.dependency_details)
+        self.critical_details = QPlainTextEdit()
+        self.critical_details.setReadOnly(True)
+        self.critical_details.setAccessibleName("Critical path analysis details")
+        self.critical_details.setMaximumHeight(125)
+        self.critical_details.setVisible(False)
+        self.content.addWidget(self.critical_details)
 
         self.labels.verticalScrollBar().valueChanged.connect(
             self.schedule.verticalScrollBar().setValue
@@ -844,7 +901,7 @@ class TimelinePage(WorkspacePage):
         axis = self.schedule_model.axis
         if axis is not None:
             if selected_row >= 0:
-                self._select_row(selected_row, axis.column_for_day(selected_day))
+                self._select_row(selected_row, axis.column_for_day(selected_day), scroll=False)
             column = axis.column_for_day(int(anchor))
             period = axis.period(column)
             fraction = (anchor - period.start_day) / period.days
@@ -853,6 +910,24 @@ class TimelinePage(WorkspacePage):
                 round(position + fraction * self.schedule.columnWidth(column))
             )
             self.schedule.verticalScrollBar().setValue(vertical)
+
+            def restore_after_layout() -> None:
+                current_axis = self.schedule_model.axis
+                if current_axis is None or self.schedule_model.scale != scale:
+                    return
+                current_column = current_axis.column_for_day(int(anchor))
+                current_period = current_axis.period(current_column)
+                current_fraction = (anchor - current_period.start_day) / current_period.days
+                current_position = self.schedule.horizontalHeader().sectionPosition(current_column)
+                self.schedule.horizontalScrollBar().setValue(
+                    round(
+                        current_position
+                        + current_fraction * self.schedule.columnWidth(current_column)
+                    )
+                )
+                self.schedule.verticalScrollBar().setValue(vertical)
+
+            QTimer.singleShot(0, restore_after_layout)
         if self.settings is not None:
             self.settings.setValue("timeline/scale", scale.value)
             self.settings.sync()
@@ -868,7 +943,13 @@ class TimelinePage(WorkspacePage):
                 return UUID(value)
         return None
 
-    def _select_row(self, row: int, schedule_column: int | None = None) -> None:
+    def _select_row(
+        self,
+        row: int,
+        schedule_column: int | None = None,
+        *,
+        scroll: bool = True,
+    ) -> None:
         if self.projection is None or not 0 <= row < len(self.projection.rows):
             return
         self._syncing_selection = True
@@ -884,10 +965,12 @@ class TimelinePage(WorkspacePage):
         schedule_index = self.schedule_model.index(row, schedule_column)
         self.labels.selectionModel().setCurrentIndex(label_index, flags)
         self.schedule.selectionModel().setCurrentIndex(schedule_index, flags)
-        self.labels.scrollTo(label_index)
-        self.schedule.scrollTo(schedule_index)
+        if scroll:
+            self.labels.scrollTo(label_index)
+            self.schedule.scrollTo(schedule_index)
         self._syncing_selection = False
         self._update_dependency_details()
+        self._update_critical_details()
 
     def _labels_selected(self, current: QModelIndex, previous: QModelIndex) -> None:
         if not self._syncing_selection and current.isValid():
@@ -949,6 +1032,7 @@ class TimelinePage(WorkspacePage):
         self.layers_widget.setVisible(not team)
         self.dependency_graph.setVisible(not team and self.dependency_graph_toggle.isChecked())
         self.dependency_details.setVisible(not team)
+        self.critical_details.setVisible(not team and self.critical_toggle.isChecked())
         self.edit_dates.setVisible(not team)
         self.availability_panel.setVisible(not team and self.availability_toggle.isChecked())
 
@@ -959,6 +1043,7 @@ class TimelinePage(WorkspacePage):
         section_id = selected.section_id if isinstance(selected, TimelineRow) else None
         selected_column = max(0, self.schedule.currentIndex().column())
         plan = self.session.document.plan
+        self.critical_analysis = calculate_critical_path(plan) if plan is not None else None
         projection = project_timeline(plan) if plan is not None else None
         team_projection = (
             project_team_timeline(plan)
@@ -968,7 +1053,6 @@ class TimelinePage(WorkspacePage):
         availability_projection = (
             project_timeline_unavailability(plan) if plan is not None else None
         )
-        self.legend.set_projection(projection)
         current_group = self.group_filter.currentData()
         self.group_filter.blockSignals(True)
         self.group_filter.clear()
@@ -1014,6 +1098,7 @@ class TimelinePage(WorkspacePage):
         self.availability_panel.set_projection(availability_projection)
         self.team_panel.set_projection(team_projection)
         self._size_periods()
+        self._apply_critical_overlay()
         self._syncing_selection = False
 
         if projection is None:
@@ -1094,6 +1179,7 @@ class TimelinePage(WorkspacePage):
             if selected_row is not None:
                 self._select_row(selected_row, selected_column)
         self._update_dependency_details()
+        self._update_critical_details()
         self.schedule.viewport().update()
 
     def _toggle_dependencies(self, checked: bool) -> None:
@@ -1103,6 +1189,90 @@ class TimelinePage(WorkspacePage):
     def _toggle_dependency_graph(self, checked: bool) -> None:
         self.dependency_graph.setVisible(checked and self.mode_box.currentData() == "plan")
         self._update_dependency_graph()
+
+    def _toggle_critical_path(self, checked: bool) -> None:
+        self._apply_critical_overlay()
+
+    def _apply_critical_overlay(self) -> None:
+        analysis = self.critical_analysis
+        active = bool(
+            self.critical_toggle.isChecked() and analysis is not None and analysis.complete
+        )
+        self.schedule.show_critical_path = active
+        self.schedule.critical_node_ids = (
+            frozenset(analysis.critical_node_ids)
+            if active and analysis is not None
+            else frozenset()
+        )
+        self.schedule.critical_relationship_ids = (
+            frozenset(analysis.critical_relationship_ids)
+            if active and analysis is not None
+            else frozenset()
+        )
+        self.legend.set_projection(self.projection, critical=active)
+        self.critical_details.setVisible(
+            self.mode_box.currentData() == "plan" and self.critical_toggle.isChecked()
+        )
+        self._update_critical_details()
+        self.schedule.viewport().update()
+
+    def _update_critical_details(self) -> None:
+        if not self.critical_toggle.isChecked():
+            self.critical_details.clear()
+            return
+        analysis = self.critical_analysis
+        if analysis is None:
+            self.critical_details.setPlainText("Open a plan to calculate its critical path.")
+            return
+        if analysis.status != CriticalPathStatus.COMPLETE:
+            heading = {
+                CriticalPathStatus.EMPTY: "No critical path: the plan has no leaf work.",
+                CriticalPathStatus.INCOMPLETE: "Critical path unavailable: inputs are incomplete.",
+                CriticalPathStatus.UNSUPPORTED: "Critical path unavailable: unsupported inputs.",
+            }[analysis.status]
+            messages = "\n".join(f"- {value.message}" for value in analysis.diagnostics)
+            self.critical_details.setPlainText(
+                heading + ("\n" + messages if messages else "") + "\nNo overlay is shown."
+            )
+            return
+
+        assert analysis.origin is not None and analysis.finish_offset is not None
+        visible_ids = (
+            {row.item_id for row in self.projection.rows} if self.projection is not None else set()
+        )
+        hidden = len(set(analysis.critical_node_ids) - visible_ids)
+        critical_links = sum(link.critical for link in analysis.links)
+        link_word = "link" if critical_links == 1 else "links"
+        lines = [
+            f"Critical path: {len(analysis.critical_node_ids)} activities and "
+            f"{critical_links} tight dependency {link_word}; "
+            f"{hidden} critical activities hidden by current Timeline filters.",
+            f"Origin {analysis.origin.isoformat()}; earliest dependency-only finish offset "
+            f"{analysis.finish_offset} elapsed days. All tied critical branches are shown.",
+        ]
+        selected = self._selected_id()
+        activity = next(
+            (value for value in analysis.activities if value.work_item_id == selected), None
+        )
+        plan = self.session.document.plan
+        if activity is not None and plan is not None:
+            item = plan.work_item(activity.work_item_id)
+            state = "critical" if activity.critical else "not critical"
+            lines.append(
+                f"Selected leaf: {item.title} | duration {activity.duration_days} days | "
+                f"early {activity.early_start}-{activity.early_finish} | "
+                f"late {activity.late_start}-{activity.late_finish} | "
+                f"total float {activity.total_float} days | {state}."
+            )
+        elif selected is not None:
+            lines.append("Selected work is a container; critical-path analysis uses leaf work.")
+        else:
+            lines.append("Select a leaf activity to inspect its duration and total float.")
+        lines.append(
+            "Offsets use exclusive finish boundaries from the origin. Entered gaps, calendars, "
+            "capacity, priority, and filters do not change this analysis or move work."
+        )
+        self.critical_details.setPlainText("\n".join(lines))
 
     def _update_dependency_graph(self) -> None:
         plan = self.session.document.plan

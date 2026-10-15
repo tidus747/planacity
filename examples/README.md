@@ -29,6 +29,11 @@ The exact capacity contract is tested and documented in the
 [Moon Heist walkthrough](../docs/moon-heist-example.md). A matching six-row Jira
 sample is available as `jira-moon-heist.csv`.
 
+Open Timeline and enable Show critical path to highlight the complete
+elapsed-day critical chain. Select a leaf to read its duration, early/late
+offsets, and total float. Apply a title filter to see the hidden critical count
+without changing the result.
+
 Real application views:
 
 ![Moon Heist Overview in light appearance](../docs/images/moon-heist-overview-light.png)

@@ -340,6 +340,38 @@ text equivalent. The graph does not create relationships or change plan data.
 ![Selected dependency graph in light appearance](images/timeline-dependency-graph-light.png)
 ![Selected dependency graph in dark appearance](images/timeline-dependency-graph-dark.png)
 
+Enable **Show critical path** to overlay the complete leaf-work critical path.
+The control is off by default. Critical dependency connectors and task outlines
+use a red dashed treatment, while each bar keeps its WorkGroup color and work-type
+shape. The details panel states the elapsed-day origin and calculated finish,
+then shows the selected leaf's duration, early and late offsets, total float, and
+critical state. All tied longest branches are shown.
+
+The calculation always uses the complete plan, even when Timeline filters hide
+work. The details report how many critical activities are hidden rather than
+silently calculating a different path. Missing dates, conflicts, cycles, unknown
+endpoints, or dependencies involving containers clear the overlay and explain
+why it is unavailable. Ordinary dependency findings remain visible.
+
+This is dependency-only analysis in elapsed calendar days. Entered dates define
+durations and the common origin, but entered gaps, work calendars, capacity,
+priority, grouping, and filters do not change the result. The overlay does not
+move work, prove capacity feasibility, or grant permission to violate dependency
+date rules.
+
+Keyboard walkthrough:
+
+1. Open the fictional Moon Heist example and press `Ctrl+3` for Timeline.
+2. Tab to **Show critical path** and press Space.
+3. Select a leaf row to inspect its float and early/late offsets.
+4. Enter a title filter and confirm that the hidden critical count changes while
+   the calculated finish and selected activity values remain unchanged.
+5. Clear filters, switch Day/Week/Month, and toggle the overlay off. No step marks
+   the project as changed.
+
+![Critical path overlay in light appearance](images/timeline-critical-path-light.png)
+![Critical path overlay in dark appearance](images/timeline-critical-path-dark.png)
+
 ### Read Timeline colors and shapes
 
 Scheduled bars use the resolved primary WorkGroup as their color. The same group

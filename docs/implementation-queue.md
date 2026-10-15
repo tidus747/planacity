@@ -127,6 +127,7 @@ Capture a branching graph in both themes. No full graph editor or CPM required.
 
 Target: v0.5. Depends on R02 and R03. Pure service and tests; no UI in this PR.
 Tracked by [issue #132](https://github.com/tidus747/planacity/issues/132).
+Implemented by [PR #133](https://github.com/tidus747/planacity/pull/133).
 
 Implement the explicit analysis contract in the decision record. Return analysis
 scope, completeness, durations, early/late offsets, total float, critical node
@@ -141,6 +142,7 @@ analysis, not a zero-day successfully planned program. No third-party runtime.
 ## V06 - Optional critical-path overlay
 
 Target: v0.5. Depends on V04, V05, and V07's visual conventions.
+Tracked by [issue #134](https://github.com/tidus747/planacity/issues/134).
 
 - Add a clearly labelled toggle, off by default. Highlight critical connectors
   in red with a distinct line treatment and label/legend; outline critical bars.
