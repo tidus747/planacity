@@ -6,6 +6,12 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- An optional critical-path overlay in Timeline. Red dashed connectors and bar
+  outlines mark every tied dependency-only critical branch while preserving
+  WorkGroup colors and work shapes. Keyboard-readable details expose duration,
+  early and late offsets, total float, hidden critical work, assumptions, and
+  actionable incomplete-input diagnostics. Filters change presentation only,
+  and the overlay never moves work or changes project data.
 - Pure elapsed-day critical-path analysis over the complete leaf-work dependency
   graph. The result exposes durations, early and late offsets, total float, all
   tied critical nodes and stored relationship IDs, plus explicit empty,

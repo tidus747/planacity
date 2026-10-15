@@ -261,7 +261,8 @@ mappings and the schema 10 source-text copy.
 
 V05 implements a deliberately bounded, pure dependency/duration analysis in
 `planning/critical_path.py` without changing schema 11 or project data.
-V06 presents it as "Critical path (elapsed days)" with assumptions visible.
+V06 presents it through the optional Timeline critical-path overlay with the
+elapsed-day assumptions visible. Its implementation is tracked by issue #134.
 This is a design choice for the first release, not a resource-feasible schedule
 or an analysis of working-day calendars. The
 [PMI CPM calculation explanation](https://www.pmi.org/learning/library/critical-path-method-calculations-scheduling-8040)

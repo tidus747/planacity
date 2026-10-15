@@ -281,8 +281,10 @@ by [issue #126](https://github.com/tidus747/planacity/issues/126) and
 [issue #128](https://github.com/tidus747/planacity/issues/128) and
 [PR #129](https://github.com/tidus747/planacity/pull/129). V04 was completed by
 [issue #130](https://github.com/tidus747/planacity/issues/130) and
-[PR #131](https://github.com/tidus747/planacity/pull/131). V05 is tracked by
-[issue #132](https://github.com/tidus747/planacity/issues/132).
+[PR #131](https://github.com/tidus747/planacity/pull/131). V05 was completed by
+[issue #132](https://github.com/tidus747/planacity/issues/132) and
+[PR #133](https://github.com/tidus747/planacity/pull/133). V06 is tracked by
+[issue #134](https://github.com/tidus747/planacity/issues/134).
 
 Use existing Qt graphics for V04. Start with immediate neighbours and a bounded
 view, not a full-program layout engine. Show when nodes are omitted and allow

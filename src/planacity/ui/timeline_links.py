@@ -1,12 +1,16 @@
 """Paint dependency connectors over the Timeline's existing schedule cells."""
 
+from uuid import UUID
+
 from PySide6.QtCore import QPointF, Qt
-from PySide6.QtGui import QPainter, QPaintEvent, QPen, QPolygonF
+from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPen, QPolygonF
 from PySide6.QtWidgets import QTableView
 
 from planacity.planning.timeline import TimelineProjection
 from planacity.planning.timeline_axis import TimelineAxis
 from planacity.planning.timeline_dependencies import TimelineDependency, connector_points
+
+CRITICAL_COLORS = {"light": "#b42318", "dark": "#ff7b72"}
 
 
 class DependencyScheduleView(QTableView):
@@ -14,10 +18,15 @@ class DependencyScheduleView(QTableView):
     axis: TimelineAxis | None = None
     dependencies: tuple[TimelineDependency, ...] = ()
     show_dependencies = True
+    show_critical_path = False
+    critical_node_ids: frozenset[UUID] = frozenset()
+    critical_relationship_ids: frozenset[UUID] = frozenset()
 
-    def dependency_paths(self) -> tuple[tuple[tuple[float, float], ...], ...]:
-        """Only draw connectors whose actual endpoints are visible in this viewport."""
-        if not self.show_dependencies or self.axis is None or self.projection is None:
+    def _path_entries(
+        self,
+    ) -> tuple[tuple[TimelineDependency, tuple[tuple[float, float], ...]], ...]:
+        """Return connector geometry whose actual endpoints are visible."""
+        if self.axis is None or self.projection is None:
             return ()
         axis = self.axis
         rows = self.projection.rows
@@ -53,23 +62,57 @@ class DependencyScheduleView(QTableView):
                 if all(
                     0 <= x <= bounds.width() and 0 <= y < bounds.height() for x, y in (start, end)
                 ):
-                    paths.append(connector_points(start, end))
+                    paths.append((link, connector_points(start, end)))
         return tuple(paths)
+
+    def critical_dependency_paths(self) -> tuple[tuple[tuple[float, float], ...], ...]:
+        if not self.show_critical_path:
+            return ()
+        return tuple(
+            path
+            for link, path in self._path_entries()
+            if link.relationship_id in self.critical_relationship_ids
+        )
+
+    def ordinary_dependency_paths(self) -> tuple[tuple[tuple[float, float], ...], ...]:
+        if not self.show_dependencies:
+            return ()
+        return tuple(
+            path
+            for link, path in self._path_entries()
+            if not self.show_critical_path
+            or link.relationship_id not in self.critical_relationship_ids
+        )
+
+    def dependency_paths(self) -> tuple[tuple[tuple[float, float], ...], ...]:
+        """Return every connector currently presented by either optional layer."""
+        return self.ordinary_dependency_paths() + self.critical_dependency_paths()
+
+    def _draw_paths(
+        self,
+        painter: QPainter,
+        paths: tuple[tuple[tuple[float, float], ...], ...],
+        pen: QPen,
+    ) -> None:
+        painter.setPen(pen)
+        painter.setBrush(pen.color())
+        for path in paths:
+            painter.drawPolyline(QPolygonF([QPointF(x, y) for x, y in path]))
+            x, y = path[-1]
+            painter.drawPolygon(
+                QPolygonF([QPointF(x, y), QPointF(x - 6, y - 4), QPointF(x - 6, y + 4)])
+            )
+        painter.setBrush(Qt.BrushStyle.NoBrush)
 
     def paintEvent(self, event: QPaintEvent) -> None:
         super().paintEvent(event)
         painter = QPainter(self.viewport())
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         color = self.palette().text().color()
-        painter.setPen(QPen(color, 1.5))
-        for path in self.dependency_paths():
-            painter.drawPolyline(QPolygonF([QPointF(x, y) for x, y in path]))
-            x, y = path[-1]
-            painter.setBrush(color)
-            painter.drawPolygon(
-                QPolygonF([QPointF(x, y), QPointF(x - 6, y - 4), QPointF(x - 6, y + 4)])
-            )
-            painter.setBrush(Qt.BrushStyle.NoBrush)
+        self._draw_paths(painter, self.ordinary_dependency_paths(), QPen(color, 1.5))
+        theme = "dark" if self.palette().window().color().lightness() < 128 else "light"
+        critical_pen = QPen(QColor(CRITICAL_COLORS[theme]), 2.5, Qt.PenStyle.DashLine)
+        self._draw_paths(painter, self.critical_dependency_paths(), critical_pen)
         painter.end()
 
     def scrollContentsBy(self, dx: int, dy: int) -> None:
