@@ -51,4 +51,5 @@ def person_availability(plan: ProgramPlan, person_id: UUID) -> AvailableCapacity
         plan.horizon,
         person_id,
         tuple(e for e in plan.availability_events if e.person_id == person_id),
+        plan.calendar_events,
     )

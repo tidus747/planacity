@@ -2,6 +2,7 @@
 
 from planacity.domain.allocation import Allocation
 from planacity.domain.availability import AvailabilityEvent
+from planacity.domain.calendar_event import CalendarEvent, CalendarEventKind
 from planacity.domain.models import (
     Person,
     PlanningHorizon,
@@ -20,6 +21,8 @@ __all__ = [
     "Allocation",
     "ReservationRule",
     "AvailabilityEvent",
+    "CalendarEvent",
+    "CalendarEventKind",
     "Person",
     "PersonCalendar",
     "PlanningHorizon",

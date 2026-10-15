@@ -9,7 +9,7 @@ The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
 effort, dated capacity, work-context, priority, ownership, and Jira mapping
-services operate over schema 11 inputs. Critical-path analysis is another pure
+services operate over schema 12 inputs. Critical-path analysis is another pure
 projection over those inputs and adds no persisted state.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
@@ -246,8 +246,16 @@ schema 5 persists them and reads schemas 1-3 without inferred entries. Lifecycle
 services preserve IDs and guard person deletion. People delegates previews and
 totals to the planning layer, with validated date/share forms and stale-draft
 protection. PlanningHorizon lives in a shared domain module to avoid a circular
-dependency between ProgramPlan and its availability events. Program-event deductions, reservations,
-and allocations remain separate inputs. See [the capacity model](capacity-model.md)
+dependency between ProgramPlan and its availability events.
+
+`domain/calendar_event.py` defines shared holidays and program events with a
+stable identity, category, inclusive period, and exact unavailable fraction.
+ProgramPlan persists them in schema 12. The same availability service combines
+personal and shared inputs with a strongest-active-fraction policy, so overlaps
+cannot deduct the same nominal capacity twice. The lifecycle service returns
+validated immutable plan candidates. The editing and calendar-projection UI is
+deliberately deferred to a separate slice. Reservations and allocations remain
+later calculation inputs. See [the capacity model](capacity-model.md)
 for the public API and limits.
 
 ## Recurring reservation calculation
@@ -266,9 +274,9 @@ without side effects. Person deletion requires explicit resolution of affected
 rules; shared rules retain IDs and other people.
 
 `reservation_preview.py` builds complete daily sprint inputs from assigned
-calendars and recorded availability. Missing calendars and oversized previews
-produce actionable errors. It explicitly excludes future program events and
-allocations. `ui/reservations.py` implements the shared menu/People two-step
+calendars, recorded availability, and shared program events. Missing calendars
+and oversized previews produce actionable errors. It excludes work allocations.
+`ui/reservations.py` implements the shared menu/People two-step
 dialog: field drafts -> validated candidate and preview -> one confirmation.
 Back invalidates the candidate, Cancel discards it, and a snapshot identity check
 prevents stale confirmation from overwriting a changed plan. Editing and deletion

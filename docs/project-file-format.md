@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 11)
+# Project files and JSON backups (schema 12)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 11` is the schema version.
+- `PRAGMA user_version = 12` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,11 +26,12 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`11`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`12`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
-`availability_events`, `reservation_rules`, `estimate_preferences`, and `allocations`.
+`availability_events`, `calendar_events`, `reservation_rules`,
+`estimate_preferences`, and `allocations`.
 Fields match [the domain model](domain-model.md).
 
 Each work item stores its existing identity, hierarchy, estimate, and dates plus
@@ -55,6 +56,15 @@ Each availability event stores `id`, `person_id`, an inclusive `period` with
 `start`/`end`, and `unavailable_fraction` as a Decimal string from 0 to 1.
 IDs must be unique and people must exist in the roster. Entries may extend beyond
 the horizon; they are retained unchanged. No absence reason is stored.
+
+Each shared calendar event stores `id`, `name`, `kind`, an inclusive `period`,
+and `unavailable_fraction` as a Decimal string from 0 to 1. Kinds are
+`public_holiday`, `customer_visit`, `company_event`, `program_event`, or `other`.
+Events apply to every roster person through that person's own work calendar. A
+zero fraction preserves context without reducing capacity; one removes all
+nominal hours on an affected date. When personal and shared events overlap, only
+the strongest fraction applies. Generated deductions and combined totals are not
+persisted.
 
 Each reservation rule stores `id`, `name`, `person_ids`, `hours_per_person` as a
 positive Decimal string, `anchor` as an ISO date, `interval_weeks` as a positive
@@ -116,7 +126,9 @@ store a separate copy of that source cell. Raw imported rows remain untouched.
 Schemas 1-10 open with `assignee_id` unset on current and baseline WorkItems.
 Existing Allocations are preserved exactly and may provide a visible legacy
 ownership fallback; no assignee or external identity is guessed during migration.
-Saving writes schema 11; older builds cannot open the upgraded file. Keep a
+Schemas 1-11 open with an empty shared calendar-event collection because earlier
+files did not store this input. Saving writes schema 12; older builds cannot open
+the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.

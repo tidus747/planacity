@@ -303,7 +303,11 @@ def _base_days(
         for ordinal in _ordinals(required_period):
             day = date.fromordinal(ordinal)
             availability = availability_capacity(
-                calendar, PlanningHorizon(day, day), person_id, events
+                calendar,
+                PlanningHorizon(day, day),
+                person_id,
+                events,
+                plan.calendar_events,
             )
             nominal = Fraction(availability.nominal_hours)
             available = Fraction(availability.available_hours)

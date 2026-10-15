@@ -1,4 +1,4 @@
-"""Desktop preview inputs from explicit calendars and recorded availability only."""
+"""Desktop preview inputs from explicit calendars and availability reductions."""
 
 from datetime import date
 
@@ -18,7 +18,7 @@ MAX_PREVIEW_DAYS = 100_000
 def preview_plan_reservations(plan: ProgramPlan) -> tuple[ReservationCapacity, ...]:
     """Build complete sprint inputs; never infer calendars or missing event data.
 
-    This preview covers recorded availability, not program events or allocations.
+    This preview covers personal and shared availability, not work allocations.
     Limit daily expansion for responsive desktop use, with an explicit error.
     """
     selected = {person for rule in plan.reservation_rules for person in rule.person_ids}
@@ -57,7 +57,13 @@ def preview_plan_reservations(plan: ProgramPlan) -> tuple[ReservationCapacity, .
         days = []
         for ordinal in range(period.start.toordinal(), period.end.toordinal() + 1):
             day = date.fromordinal(ordinal)
-            result = availability_capacity(calendar, PlanningHorizon(day, day), person_id, events)
+            result = availability_capacity(
+                calendar,
+                PlanningHorizon(day, day),
+                person_id,
+                events,
+                plan.calendar_events,
+            )
             days.append(CapacityDay(day, result.available_hours))
         capacities.append(PersonCapacity(person_id, tuple(days)))
     return preview_reservations(plan, tuple(capacities))

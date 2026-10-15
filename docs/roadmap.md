@@ -2,7 +2,7 @@
 
 Revised 2026-10-07 after the assignment-policy review.
 This is the implementation direction, not a list of features already available
-or a release announcement. Current source remains `0.4.0.dev0`, file schema 11.
+or a release announcement. Current source remains `0.4.0.dev0`, file schema 12.
 
 The next useful outcome is: "I can explain whether this plan fits the team,
 where its capacity goes, and which assumptions still need attention."
@@ -283,8 +283,9 @@ by [issue #126](https://github.com/tidus747/planacity/issues/126) and
 [issue #130](https://github.com/tidus747/planacity/issues/130) and
 [PR #131](https://github.com/tidus747/planacity/pull/131). V05 was completed by
 [issue #132](https://github.com/tidus747/planacity/issues/132) and
-[PR #133](https://github.com/tidus747/planacity/pull/133). V06 is tracked by
-[issue #134](https://github.com/tidus747/planacity/issues/134).
+[PR #133](https://github.com/tidus747/planacity/pull/133). V06 was completed by
+[issue #134](https://github.com/tidus747/planacity/issues/134) and
+[PR #135](https://github.com/tidus747/planacity/pull/135).
 
 Use existing Qt graphics for V04. Start with immediate neighbours and a bounded
 view, not a full-program layout engine. Show when nodes are omitted and allow
@@ -314,6 +315,11 @@ After V01-V06, split work into separate issues in this order:
 5. Optional Jira CSV description/label mapping, including an explicit mapping of
    primary WorkGroups to labels. Preview escaping, unsupported values, and existing
    labels; never silently replace them or assume a Jira API integration.
+
+The first Program Calendar slice is tracked by
+[issue #136](https://github.com/tidus747/planacity/issues/136). It establishes
+the shared-event domain, schema 12 persistence, and capacity policy before adding
+an editor or provider import.
 
 ## Optional external-assistant workflow
 

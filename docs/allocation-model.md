@@ -122,7 +122,7 @@ Deleting a parent includes hidden descendants. Surviving allocation IDs remain
 stable. Jira imports never create allocations automatically, and allocation edits
 do not change imported baselines or Jira CSV effort units.
 
-ProgramPlan stores allocations, introduced in schema 7, in current schema 11
+ProgramPlan stores allocations, introduced in schema 7, in current schema 12
 SQLite projects and JSON backups.
 Schemas 1-6 load with an empty collection. Keep an original backup or use Save As
 if an older build must still open the project.
