@@ -19,12 +19,13 @@ def test_shell_navigation_and_close(app: QApplication, window: MainWindow) -> No
     assert brand.text() == ""
     assert brand.pixmap() is not None
     assert not brand.pixmap().isNull()
-    assert window.pages.count() == 6
+    assert window.pages.count() == 7
     assert tuple(window.navigation) == (
         "Overview",
         "Plan",
         "Timeline",
         "People",
+        "Calendar",
         "Import",
         "Changes",
     )
@@ -46,7 +47,7 @@ def test_keyboard_navigation_and_empty_workspaces(app: QApplication, window: Mai
     app.processEvents()
     assert window.pages.currentIndex() == 1
     tables = window.findChildren(QTreeView)
-    assert len(tables) == 5
+    assert len(tables) == 6
     assert all(table.model().rowCount() == 0 for table in tables)
 
 

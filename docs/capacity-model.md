@@ -46,7 +46,8 @@ contribute. Clearing a calendar retains availability; reassigning one recalculat
 it. Confirming an edit retains its ID, while cancellation leaves the draft
 unapplied. Deleting a person asks before clearing their availability entries.
 Imported snapshots remain unchanged. Shared program events are persisted inputs,
-but their desktop editor belongs to the next Program Calendar slice.
+and the Calendar workspace manages them without changing personal availability
+or recurring reservations.
 
 Schemas 1-3 open without availability; schemas 1-4 open without reservations.
 Saving writes schema 12. Schemas 1-11 open without shared program events. Keep a backup
@@ -175,7 +176,7 @@ exact totals and source IDs in People. Overview projects those same results over
 the fixed inclusive plan horizon, with known-person subtotals and explicit
 coverage notes when any result is partial. Its topic view keeps scheduled
 horizon allocations separate from whole-plan estimated leaf effort. Shared
-program events use the same calculation boundary even before their editor exists.
+program events edited in Calendar use this same calculation boundary.
 
 People WorkGroup filtering is a presentation over the same complete person
 result. It never recalculates capacity from only the visible group. Whole-plan

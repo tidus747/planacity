@@ -88,8 +88,9 @@ not work allocations. Plan findings and People now present the shared dated-capa
 results. Overview reconciles those same plan-horizon results with work topics and
 named deductions. People derives whole-plan WorkGroup associations and keeps them
 separate from selected-range hours. The Plan inspector edits persisted work
-context as one validated draft. Program events now have a persisted calculation
-foundation; their editing UI remains the next calendar slice. The
+context as one validated draft. The Calendar workspace edits shared holidays and
+program events, including zero-impact context and events outside the planning
+horizon. The
 [implementation roadmap](docs/roadmap.md) and
 [implementation queue](docs/implementation-queue.md) describe the ordered work;
 GitHub Issues and Milestones are the live status.

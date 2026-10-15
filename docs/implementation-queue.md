@@ -178,6 +178,26 @@ Non-goals: Calendar UI, Timeline/Overview projection, recurrence, per-person eve
 targeting, generic CSV import, Factorial mapping, provider APIs, or automatic
 holiday lookup.
 
+## C02 - Manage shared program events
+
+Target: v0.5. Depends on C01. Tracked by
+[issue #142](https://github.com/tidus747/planacity/issues/142).
+
+Add a dedicated Calendar workspace that lists every shared event and uses the
+canonical lifecycle services to add, edit, and delete it. Keep strict ISO text
+entry alongside the themed date picker. Show category, inclusive dates, exact
+capacity impact, context-only events, and outside-horizon status. Editing retains
+identity; deletion requires confirmation; cancellation and stale drafts change
+nothing. No schema change is needed.
+
+Acceptance includes deterministic ordering, keyboard navigation, both themes,
+save/reopen and backup compatibility, unchanged imports, and cross-checking that
+People/Overview consume the edited values through the existing capacity engine.
+
+Non-goals: Timeline/Overview event projection, calendar-grid layouts, recurrence,
+time-of-day, per-person targeting, file imports, provider APIs, and automatic
+holiday lookup.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.

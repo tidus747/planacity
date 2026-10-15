@@ -6,6 +6,16 @@ from uuid import UUID
 from planacity.domain import CalendarEvent, ProgramPlan
 
 
+def calendar_event(plan: ProgramPlan, event_id: UUID) -> CalendarEvent:
+    """Return one shared event without exposing tuple-search details to callers."""
+    if not isinstance(event_id, UUID):
+        raise ValueError("Calendar event ID must be a UUID.")
+    try:
+        return next(event for event in plan.calendar_events if event.id == event_id)
+    except StopIteration as error:
+        raise ValueError(f"Calendar event {event_id} does not exist in this plan.") from error
+
+
 def add_calendar_event(plan: ProgramPlan, event: CalendarEvent) -> ProgramPlan:
     if any(existing.id == event.id for existing in plan.calendar_events):
         raise ValueError("Calendar event IDs must be unique within a plan.")

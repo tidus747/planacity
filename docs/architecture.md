@@ -254,9 +254,10 @@ ProgramPlan persists them in schema 12. The same availability service combines
 personal and shared inputs with a strongest-active-fraction policy, so overlaps
 cannot deduct the same nominal capacity twice. The lifecycle service returns
 validated immutable plan candidates. The editing and calendar-projection UI is
-deliberately deferred to a separate slice. Reservations and allocations remain
-later calculation inputs. See [the capacity model](capacity-model.md)
-for the public API and limits.
+split deliberately: `ui/program_calendar.py` owns the list and validated
+add/edit/delete workflow, while Timeline/Overview projection remains a later
+slice. Reservations and allocations remain later calculation inputs. See
+[the capacity model](capacity-model.md) for the public API and limits.
 
 ## Recurring reservation calculation
 
