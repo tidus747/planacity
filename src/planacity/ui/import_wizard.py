@@ -21,8 +21,8 @@ from PySide6.QtWidgets import (
 
 from planacity.domain import Person, ProgramPlan, WorkItemType, WorkPriority
 from planacity.integrations.jira.csv_io import (
-    DATE_FORMATS,
     FIELDS,
+    IMPORT_DATE_FORMATS,
     CsvTable,
     Mapping,
     external_people,
@@ -101,7 +101,7 @@ class ImportWizard(QDialog):
         self.units.addItems(["seconds", "hours"])
         form.addRow("Estimate units (never story points)", self.units)
         self.date_format = QComboBox()
-        self.date_format.addItems(DATE_FORMATS)
+        self.date_format.addItems(IMPORT_DATE_FORMATS)
         form.addRow("Date format", self.date_format)
         profiles = QHBoxLayout()
         for text, callback in (
