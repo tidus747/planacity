@@ -49,6 +49,24 @@ Imported snapshots remain unchanged. Shared program events are persisted inputs,
 and the Calendar workspace manages them without changing personal availability
 or recurring reservations.
 
+## Generic availability CSV
+
+The v0.5 import foundation accepts UTF-8 CSV data with four explicitly mapped
+fields: person, inclusive start, inclusive end, and unavailable share. Dates use
+`YYYY-MM-DD`; the share is an exact decimal from 0 to 1. Column names and order
+are not assumed. Saved mapping profiles contain headers and column positions,
+never people mappings or source HR rows.
+
+The preview keeps raw cells only in memory and classifies unknown people,
+malformed values, repeated source rows, exact existing duplicates, overlaps, and
+outside-horizon entries. Overlap and outside-horizon entries can be legitimate;
+exact duplicates and invalid rows are not selectable. Only explicitly selected
+candidate IDs are applied, in one immutable update. The Qt mapping and
+confirmation workflow follows separately in issue #150.
+
+The fictional `examples/availability-moon-heist.csv` demonstrates the portable
+format without absence reasons or other sensitive HR data.
+
 Schemas 1-3 open without availability; schemas 1-4 open without reservations.
 Saving writes schema 12. Schemas 1-11 open without shared program events. Keep a backup
 or use Save As if the file must remain readable in an older build.

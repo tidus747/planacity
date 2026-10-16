@@ -218,6 +218,25 @@ Non-goals: editing outside Calendar, a month-grid calendar, recurrence,
 time-of-day, time zones, per-person targeting, provider imports, capacity-rule
 changes, and schema changes.
 
+## C04 - Generic availability CSV preview service
+
+Target: v0.5. Depends on C03. Tracked by
+[issue #149](https://github.com/tidus747/planacity/issues/149).
+
+Build the Qt-independent CSV reader, explicit field/person mappings, row-level
+diagnostics, duplicate/overlap policy, versioned configuration-only profiles,
+and immutable selected-row application. Raw HR rows remain transient. No schema
+change or provider terminology enters the domain.
+
+## C05 - Availability CSV review wizard
+
+Target: v0.5. Depends on C04. Tracked by
+[issue #150](https://github.com/tidus747/planacity/issues/150).
+
+Expose C04 through Calendar with file selection, field and person mapping,
+save/load profile actions, complete row review, explicit selection, confirmation,
+and both-theme evidence. Factorial mapping remains the next adapter.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.
