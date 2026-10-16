@@ -301,9 +301,7 @@ class CalendarPage(WorkspacePage):
             table = read_availability_csv(
                 path.read_text(encoding="utf-8-sig"), self.delimiter.currentData()
             )
-            wizard = AvailabilityImportWizard(
-                plan, table, self.delimiter.currentData(), self
-            )
+            wizard = AvailabilityImportWizard(plan, table, self.delimiter.currentData(), self)
             if wizard.exec() == QDialog.DialogCode.Accepted and wizard.candidate is not None:
                 if self.session.document.plan is not plan:
                     raise ValueError("The plan changed. Review the CSV again.")

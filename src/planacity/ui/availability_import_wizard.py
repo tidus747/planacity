@@ -173,9 +173,7 @@ class AvailabilityImportWizard(QDialog):
                     for name, box in self.person_boxes.items()
                     if box.currentData()
                 }
-                self.preview = preview_availability_import(
-                    self.plan, self.table, mapping, people
-                )
+                self.preview = preview_availability_import(self.plan, self.table, mapping, people)
                 self._build_preview()
                 self.pages.setCurrentIndex(2)
                 self.heading.setText("3. Review and confirm")
@@ -239,9 +237,7 @@ class AvailabilityImportWizard(QDialog):
                 check,
                 QStandardItem(str(row.line)),
                 QStandardItem(
-                    people.get(event.person_id, row.person_value)
-                    if event
-                    else row.person_value
+                    people.get(event.person_id, row.person_value) if event else row.person_value
                 ),
                 QStandardItem(str(event.period.start) if event else ""),
                 QStandardItem(str(event.period.end) if event else ""),
@@ -272,9 +268,7 @@ class AvailabilityImportWizard(QDialog):
         self.pages.setCurrentIndex(step - 1)
         self.candidate = None
         self.preview = None
-        self.heading.setText(
-            "1. Map CSV columns" if step == 1 else "2. Match people"
-        )
+        self.heading.setText("1. Map CSV columns" if step == 1 else "2. Match people")
         self.back.setEnabled(self.pages.currentIndex() > 0)
         self.next.setText("Next")
         self._show_error("")

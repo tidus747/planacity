@@ -64,9 +64,7 @@ def test_wizard_maps_people_previews_warnings_and_applies_selected(app):
 
 def test_wizard_cancel_and_profile_roundtrip_do_not_change_plan(app, tmp_path, monkeypatch):
     plan = plan_with_people()
-    table = read_availability_csv(
-        "Employee;From;To;Share\nAlice;2026-04-01;2026-04-01;1\n", ";"
-    )
+    table = read_availability_csv("Employee;From;To;Share\nAlice;2026-04-01;2026-04-01;1\n", ";")
     profile = tmp_path / "availability-profile.json"
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *args: (str(profile), ""))
     monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *args: (str(profile), ""))
