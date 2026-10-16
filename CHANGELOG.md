@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Jira CSV import accepts the explicit `%d/%b/%y %I:%M %p` date-time format
+  used by exports such as `12/Dec/25 12:00 AM`. Parsing is independent of the
+  operating-system locale, validates the complete value, and retains only the
+  canonical date while preserving the original source cell.
 - A guided generic availability CSV import in Calendar. Users can select the
   delimiter, map fields and source people to the existing roster, reuse a
   configuration-only profile, review every row, and atomically import an

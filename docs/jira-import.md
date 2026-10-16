@@ -17,6 +17,10 @@ connection are used.
    Story points are not hours and are never converted automatically. Blank
    estimates remain unknown; zero remains zero. Dates outside the plan horizon
    are retained and flagged in the Plan view.
+   Untouched Jira exports may use `%d/%b/%y %I:%M %p`, for example
+   `12/Dec/25 12:00 AM`. Planacity validates the complete value with English
+   month abbreviations and imports its calendar date. It does not store a time
+   or perform timezone conversion. Blank dates remain unset.
 3. Map every external type to Epic, Task, or Subtask. Unsupported types such as
    Story require an explicit choice; their original cells remain in the source.
    If Priority is mapped, review each distinct nonblank source value. Highest,
@@ -96,6 +100,8 @@ GitHub CI also checks Windows and Linux with Python 3.11 and 3.13.
 
 Real screenshots using only the fictional example:
 
+![Jira date-time mapping in light mode](images/jira-datetime-light.png)
+![Jira date-time mapping in dark mode](images/jira-datetime-dark.png)
 ![Priority mapping in light mode](images/jira-priority-mapping-light.png)
 ![Priority mapping in dark mode](images/jira-priority-mapping-dark.png)
 ![Import preview in light mode](images/import-light.png)

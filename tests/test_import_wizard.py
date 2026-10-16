@@ -7,7 +7,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
 from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
-from planacity.integrations.jira.csv_io import Mapping, preview_import, read_csv
+from planacity.integrations.jira.csv_io import (
+    JIRA_DATE_TIME_FORMAT,
+    Mapping,
+    preview_import,
+    read_csv,
+)
 from planacity.persistence.codec import dumps
 from planacity.persistence.project import load_project
 from planacity.ui.import_wizard import ImportWizard
@@ -38,6 +43,15 @@ def test_wizard_requires_people_then_previews_without_mutating(app):
     assert plan.work_items == ()
     wizard.reject()
     assert plan.imports == ()
+    wizard.deleteLater()
+
+
+def test_wizard_offers_jira_datetime_input_format(app):
+    wizard = ImportWizard(
+        empty_plan(), read_csv("Issue key,Summary,Issue Type\nTEST-1,Test,Task\n"), "jira.csv"
+    )
+
+    assert wizard.date_format.findText(JIRA_DATE_TIME_FORMAT) >= 0
     wizard.deleteLater()
 
 

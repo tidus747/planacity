@@ -2,8 +2,9 @@
 
 import csv
 import io
+import re
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, DecimalException
 from uuid import uuid4
 
@@ -24,6 +25,19 @@ FIELDS = (
     "priority",
 )
 DATE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d/%b/%y")
+JIRA_DATE_TIME_FORMAT = "%d/%b/%y %I:%M %p"
+IMPORT_DATE_FORMATS = (*DATE_FORMATS, JIRA_DATE_TIME_FORMAT)
+_ENGLISH_MONTHS = {
+    name: month
+    for month, name in enumerate(
+        ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+        1,
+    )
+}
+_JIRA_DATE_TIME = re.compile(
+    r"(?P<day>\d{2})/(?P<month>[A-Za-z]{3})/(?P<year>\d{2}) "
+    r"(?P<hour>\d{1,2}):(?P<minute>\d{2}) (?P<period>AM|PM)"
+)
 
 
 @dataclass(frozen=True)
@@ -56,7 +70,7 @@ class Mapping:
             raise ValueError("Map title, type, and external reference before continuing.")
         if self.estimate_unit not in ("seconds", "hours"):
             raise ValueError("Choose seconds or hours; story points are not hours.")
-        if self.date_format not in DATE_FORMATS:
+        if self.date_format not in IMPORT_DATE_FORMATS:
             raise ValueError("Choose a supported date format.")
         if len({name for name, _ in self.types}) != len(self.types) or any(
             not name.strip() or not isinstance(kind, WorkItemType) for name, kind in self.types
@@ -97,6 +111,30 @@ def read_csv(text: str, delimiter: str = ",") -> CsvTable:
 def validate_columns(table: CsvTable, mapping: Mapping) -> None:
     if any(index >= len(table.headers) for _, index in mapping.columns):
         raise ValueError("A mapped column is missing. Review the field mapping.")
+
+
+def parse_import_date(value: str, date_format: str) -> date:
+    """Parse one complete Jira date value without depending on the process locale."""
+    if date_format != JIRA_DATE_TIME_FORMAT:
+        return datetime.strptime(value, date_format).date()
+    match = _JIRA_DATE_TIME.fullmatch(value)
+    if match is None:
+        raise ValueError("value does not match the selected format")
+    values = match.groupdict()
+    month = _ENGLISH_MONTHS.get(values["month"].title())
+    if month is None:
+        raise ValueError("month must use an English three-letter abbreviation")
+    hour = int(values["hour"])
+    minute = int(values["minute"])
+    if not 1 <= hour <= 12 or not 0 <= minute <= 59:
+        raise ValueError("time is outside the 12-hour clock range")
+    if values["period"] == "PM" and hour != 12:
+        hour += 12
+    elif values["period"] == "AM" and hour == 12:
+        hour = 0
+    short_year = int(values["year"])
+    year = 2000 + short_year if short_year <= 68 else 1900 + short_year
+    return datetime(year, month, int(values["day"]), hour, minute).date()
 
 
 def external_people(table: CsvTable, mapping: Mapping) -> tuple[str, ...]:
@@ -198,12 +236,19 @@ def preview_import(
                 raise ValueError("Estimate must be finite and non-negative.")
             if estimate is not None and mapping.estimate_unit == "seconds":
                 estimate /= Decimal(3600)
-            dates = [
-                None
-                if not cell(row, f).strip()
-                else datetime.strptime(cell(row, f), mapping.date_format).date()
-                for f in ("start", "end")
-            ]
+            dates: list[date | None] = []
+            for field in ("start", "end"):
+                raw_date = cell(row, field)
+                if not raw_date.strip():
+                    dates.append(None)
+                    continue
+                try:
+                    dates.append(parse_import_date(raw_date, mapping.date_format))
+                except ValueError as error:
+                    raise ValueError(
+                        f"{field.title()} date {raw_date!r} does not match "
+                        f"{mapping.date_format!r}: {error}."
+                    ) from error
             external_person = cell(row, "person")
             mapped_person = people.get(external_person)
             item = WorkItem(

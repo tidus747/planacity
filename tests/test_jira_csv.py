@@ -18,8 +18,10 @@ from planacity.domain import (
     WorkPriority,
 )
 from planacity.integrations.jira.csv_io import (
+    JIRA_DATE_TIME_FORMAT,
     Mapping,
     external_priorities,
+    parse_import_date,
     preview_import,
     read_csv,
 )
@@ -354,6 +356,63 @@ def test_numeric_parent_ids_explicit_hours_and_dates(plan):
     with pytest.raises(ValueError, match="columns differ"):
         load_profile(profile, tuple(reversed(table.headers)))
     assert "31/01/2026" not in profile
+
+
+def test_jira_datetime_is_locale_independent_and_profile_roundtrips(plan):
+    table = read_csv(
+        "Issue key,Summary,Issue Type,Start Date,Due Date\n"
+        "TEST-1,Imported task,Task,12/Dec/25 12:00 AM,03/Jan/26 1:45 PM\n"
+    )
+    mapping = Mapping(
+        (
+            ("reference", 0),
+            ("title", 1),
+            ("type", 2),
+            ("start", 3),
+            ("end", 4),
+        ),
+        date_format=JIRA_DATE_TIME_FORMAT,
+    )
+
+    result = preview_import(plan, table, mapping, {}, "jira.csv")
+
+    assert result.work_items[0].start == date(2025, 12, 12)
+    assert result.work_items[0].end == date(2026, 1, 3)
+    assert result.imports[0].rows[0][3:] == (
+        "12/Dec/25 12:00 AM",
+        "03/Jan/26 1:45 PM",
+    )
+    assert load_profile(dump_profile(table.headers, mapping), table.headers) == mapping
+    assert parse_import_date("12/dEc/25 12:00 AM", JIRA_DATE_TIME_FORMAT) == date(2025, 12, 12)
+
+
+@pytest.mark.parametrize(
+    "value,detail",
+    [
+        ("12/Dic/25 12:00 AM", "English three-letter"),
+        ("12/Dec/25 13:00 PM", "12-hour clock"),
+        ("12/Dec/25 12:00 AM trailing", "selected format"),
+        ("31/Feb/25 12:00 AM", "day is out of range"),
+    ],
+)
+def test_invalid_jira_datetime_reports_row_reference_field_and_value(plan, value, detail):
+    table = read_csv(
+        f"Issue key,Summary,Issue Type,Start Date\nTEST-7,Imported task,Task,{value}\n"
+    )
+    mapping = Mapping(
+        (("reference", 0), ("title", 1), ("type", 2), ("start", 3)),
+        date_format=JIRA_DATE_TIME_FORMAT,
+    )
+
+    with pytest.raises(ValueError) as caught:
+        preview_import(plan, table, mapping, {}, "jira.csv")
+
+    message = str(caught.value)
+    assert "CSV row 2 (TEST-7)" in message
+    assert "Start date" in message
+    assert repr(value) in message
+    assert JIRA_DATE_TIME_FORMAT in message
+    assert detail in message
 
 
 def test_priority_mapping_preserves_source_unmapped_and_blank_values(plan):
