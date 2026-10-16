@@ -28,6 +28,9 @@ The fixed horizon is 2027-01-04 through 2027-02-12. The example includes:
 The exact capacity contract is tested and documented in the
 [Moon Heist walkthrough](../docs/moon-heist-example.md). A matching six-row Jira
 sample is available as `jira-moon-heist.csv`.
+`availability-moon-heist.csv` is a fictional generic availability sample for
+the v0.5 preview workflow. Its rows are examples to review, not extra events that
+should be added blindly to the already complete backup.
 
 Open Timeline and enable Show critical path to highlight the complete
 elapsed-day critical chain. Select a leaf to read its duration, early/late

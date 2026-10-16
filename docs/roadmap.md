@@ -324,6 +324,25 @@ an editor or provider import. The focused Calendar editor is tracked by
 projection is tracked by [issue #144](https://github.com/tidus747/planacity/issues/144).
 It keeps canonical event dates in Overview and an optional read-only Timeline
 layer while clipping only the bars drawn at the horizon edges.
+Generic availability import is split into the pure preview service
+[#149](https://github.com/tidus747/planacity/issues/149) and the review wizard
+[#150](https://github.com/tidus747/planacity/issues/150), under the parent
+[#148](https://github.com/tidus747/planacity/issues/148).
+
+### Later sprint planning and API connectivity
+
+Sprint planning is tracked by
+[#147](https://github.com/tidus747/planacity/issues/147). Implement a canonical
+manual sprint model and Calendar/capacity view before any assisted distribution.
+Later automation must produce an explainable proposal and complete diff for
+explicit acceptance; it must never silently move dates or assignments.
+
+Optional REST connectivity is tracked by
+[#146](https://github.com/tidus747/planacity/issues/146). A Jira REST adapter
+comes only after v0.8 reconciliation can protect local decisions and preserved
+baselines. A local Planacity REST service is a separate post-v1.0 decision that
+requires a concrete external consumer and security model. CSV remains the
+default offline interoperability path.
 
 ## Optional external-assistant workflow
 
