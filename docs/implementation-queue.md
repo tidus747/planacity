@@ -198,6 +198,26 @@ Non-goals: Timeline/Overview event projection, calendar-grid layouts, recurrence
 time-of-day, per-person targeting, file imports, provider APIs, and automatic
 holiday lookup.
 
+## C03 - Project shared events into Overview and Timeline
+
+Target: v0.5. Depends on C02. Tracked by
+[issue #144](https://github.com/tidus747/planacity/issues/144).
+
+Project the schema 12 shared events without creating another editable model.
+Overview lists horizon-intersecting events, exact impact, canonical dates, and
+clipping status while counting retained outside-horizon events. Timeline offers
+an off-by-default Program Calendar layer in both Plan and Team modes, aligned to
+the same day, week, or month axis. Capacity-affecting and context-only events use
+different line and fill treatments as well as text labels.
+
+The projection sorts deterministically, clips only drawing coordinates, ignores
+work filters, and never changes the plan. Editing remains in Calendar. Real
+Overview and Timeline screenshots in both themes accompany the implementation.
+
+Non-goals: editing outside Calendar, a month-grid calendar, recurrence,
+time-of-day, time zones, per-person targeting, provider imports, capacity-rule
+changes, and schema changes.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.

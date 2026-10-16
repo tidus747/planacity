@@ -57,12 +57,22 @@ No account or network connection is needed while planning.
    Events outside the plan horizon are retained and identified explicitly.
    Real Calendar workspace screenshots: [light](images/program-calendar-light.png)
    and [dark](images/program-calendar-dark.png).
+   Overview also summarizes the events that intersect the planning horizon and
+   counts retained events outside it. Use **Open Calendar** from that panel to
+   edit the canonical records. Real Overview projection screenshots:
+   [light](images/calendar-overview-light.png) and
+   [dark](images/calendar-overview-dark.png).
 8. Open **Timeline** (`Ctrl+3`) for a view of scheduled bars across the
    planning horizon. Start-only, end-only, unscheduled, and outside-horizon work
    remain visible as explicit schedule states. Timeline selection and scrolling
    do not change the plan.
    Use **Mode** to switch between the editable Plan schedule and the read-only
    Team view of work, absence, recurring duties, and weekly load.
+   Enable **Show program events** to add one read-only lane per shared event in
+   either mode. Solid patterned bars reduce capacity; dashed outlines are
+   context only. Work filters never hide these lanes. Real Timeline projection
+   screenshots: [light](images/calendar-timeline-light.png) and
+   [dark](images/calendar-timeline-dark.png).
    Use **Scale** to choose Day, Week, or Month. Weeks start on Monday and use ISO
    week numbers; months follow the calendar, including leap days. Partial periods
    at the horizon edges are clipped, with exact dates in header tooltips.

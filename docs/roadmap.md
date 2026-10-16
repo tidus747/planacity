@@ -320,8 +320,10 @@ The first Program Calendar slice is tracked by
 [issue #136](https://github.com/tidus747/planacity/issues/136). It establishes
 the shared-event domain, schema 12 persistence, and capacity policy before adding
 an editor or provider import. The focused Calendar editor is tracked by
-[issue #142](https://github.com/tidus747/planacity/issues/142); Timeline/Overview
-projection follows as a separate reviewable slice.
+[issue #142](https://github.com/tidus747/planacity/issues/142). Timeline/Overview
+projection is tracked by [issue #144](https://github.com/tidus747/planacity/issues/144).
+It keeps canonical event dates in Overview and an optional read-only Timeline
+layer while clipping only the bars drawn at the horizon edges.
 
 ## Optional external-assistant workflow
 

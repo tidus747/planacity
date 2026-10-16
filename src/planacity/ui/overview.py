@@ -20,8 +20,14 @@ from PySide6.QtWidgets import (
 
 from planacity.planning.capacity_breakdown import CapacityLoadState
 from planacity.planning.overview_analysis import OverviewAnalysis, calculate_overview_analysis
+from planacity.planning.program_calendar import (
+    CalendarProjectionState,
+    ProgramCalendarProjection,
+    project_program_calendar,
+)
 from planacity.ui.analysis_chart import AnalysisBar, AnalysisBarChart
 from planacity.ui.pages import Panel, WorkspacePage, label
+from planacity.ui.program_calendar import impact_label, kind_label
 from planacity.ui.reservations import hours_text
 from planacity.ui.session import Session
 
@@ -55,7 +61,11 @@ def _state_text(state: CapacityLoadState) -> str:
 
 class OverviewPage(WorkspacePage):
     def __init__(
-        self, session: Session, on_new: Callable[[], None], on_plan: Callable[[], None]
+        self,
+        session: Session,
+        on_new: Callable[[], None],
+        on_plan: Callable[[], None],
+        on_calendar: Callable[[], None],
     ) -> None:
         super().__init__("Program overview", "Plan the work. Respect the capacity.")
         self.session = session
@@ -83,6 +93,28 @@ class OverviewPage(WorkspacePage):
         actions.addStretch()
         panel.content.addLayout(actions)
         self.content.addWidget(panel)
+
+        calendar_panel = Panel("Program Calendar")
+        calendar_header = QHBoxLayout()
+        self.calendar_summary = label("Open a plan to see shared program events.", "muted")
+        self.calendar_summary.setAccessibleName("Program Calendar summary")
+        calendar_header.addWidget(self.calendar_summary, 1)
+        open_calendar = QPushButton("Open Calendar")
+        open_calendar.clicked.connect(on_calendar)
+        calendar_header.addWidget(open_calendar)
+        calendar_panel.content.addLayout(calendar_header)
+        self.calendar_table = QTableView()
+        self.calendar_table.setAccessibleName("Program Calendar events in the planning horizon")
+        self.calendar_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.calendar_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.calendar_table.setAlternatingRowColors(True)
+        self.calendar_table.verticalHeader().setVisible(False)
+        self.calendar_table.setMinimumHeight(115)
+        self.calendar_table.setMaximumHeight(220)
+        self.calendar_model = QStandardItemModel(self)
+        self.calendar_table.setModel(self.calendar_model)
+        calendar_panel.content.addWidget(self.calendar_table)
+        self.content.addWidget(calendar_panel)
 
         self.analysis_group = QGroupBox("Analysis")
         self.analysis_group.setObjectName("overviewAnalysis")
@@ -165,6 +197,7 @@ class OverviewPage(WorkspacePage):
         plan = self.session.document.plan
         if plan is None:
             self.analysis = None
+            self._show_calendar(None)
             self.refresh_analysis()
             return
         self.name.setText(plan.name)
@@ -182,7 +215,47 @@ class OverviewPage(WorkspacePage):
         ):
             widget.setText(value)
         self.analysis = calculate_overview_analysis(plan)
+        self._show_calendar(project_program_calendar(plan))
         self.refresh_analysis()
+
+    def _show_calendar(self, projection: ProgramCalendarProjection | None) -> None:
+        self.calendar_model.clear()
+        self.calendar_model.setHorizontalHeaderLabels(
+            ("Event", "Category", "Canonical dates", "Capacity impact", "Horizon status")
+        )
+        if projection is None:
+            self.calendar_summary.setText("Open a plan to see shared program events.")
+            self.calendar_table.setVisible(False)
+            return
+        for entry in projection.visible_entries:
+            state = (
+                "Partly outside horizon"
+                if entry.state == CalendarProjectionState.PARTIAL
+                else "Inside horizon"
+            )
+            items = [
+                QStandardItem(value)
+                for value in (
+                    entry.name,
+                    kind_label(entry.kind),
+                    f"{entry.start.isoformat()} to {entry.end.isoformat()}",
+                    impact_label(entry.unavailable_fraction),
+                    state,
+                )
+            ]
+            for item in items:
+                item.setEditable(False)
+                item.setData(str(entry.id), Qt.ItemDataRole.UserRole)
+            self.calendar_model.appendRow(items)
+        visible = len(projection.visible_entries)
+        self.calendar_summary.setText(
+            f"{visible} event{'s' if visible != 1 else ''} in the horizon; "
+            f"{projection.outside_count} outside. Dates shown here remain canonical."
+        )
+        self.calendar_table.setVisible(bool(visible))
+        for column in range(self.calendar_model.columnCount()):
+            self.calendar_table.resizeColumnToContents(column)
+        self.calendar_table.horizontalHeader().setStretchLastSection(True)
 
     def refresh_analysis(self, *args: object) -> None:
         analysis = self.analysis

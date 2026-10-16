@@ -55,6 +55,7 @@ from planacity.planning.critical_path import (
 )
 from planacity.planning.dependency_neighborhood import project_dependency_neighborhood
 from planacity.planning.estimate_units import format_fraction
+from planacity.planning.program_calendar import project_program_calendar
 from planacity.planning.timeline import (
     TimelineDateState,
     TimelineProjection,
@@ -77,6 +78,7 @@ from planacity.ui.pages import WorkspacePage, label
 from planacity.ui.session import Session
 from planacity.ui.theme import COLORS, Colors, Theme
 from planacity.ui.timeline_availability import TimelineAvailabilityPanel
+from planacity.ui.timeline_calendar import TimelineCalendarPanel
 from planacity.ui.timeline_dependency_graph import TimelineDependencyGraph
 from planacity.ui.timeline_identity import (
     TimelineBarIdentity,
@@ -760,6 +762,14 @@ class TimelinePage(WorkspacePage):
         self.availability_panel.setVisible(False)
         self.content.addWidget(self.availability_panel)
 
+        self.calendar_toggle = QCheckBox("Show program events")
+        self.calendar_toggle.setChecked(False)
+        self.calendar_toggle.setAccessibleName("Show shared program event lanes")
+        self.calendar_panel = TimelineCalendarPanel(scale)
+        self.calendar_panel.splitter.setSizes(split.sizes())
+        self.calendar_panel.setVisible(False)
+        self.content.addWidget(self.calendar_panel)
+
         self.resize_preview = label(
             "Drag a bar edge to resize dates. Escape cancels. Effort is unchanged."
         )
@@ -784,6 +794,7 @@ class TimelinePage(WorkspacePage):
         layers.addWidget(self.dependency_graph_toggle)
         layers.addWidget(self.critical_toggle)
         layers.addWidget(self.availability_toggle)
+        layers.addWidget(self.calendar_toggle)
         layers.addStretch()
         self.layers_widget = QWidget()
         self.layers_widget.setLayout(layers)
@@ -815,18 +826,26 @@ class TimelinePage(WorkspacePage):
         self.schedule.horizontalScrollBar().valueChanged.connect(
             self.team_panel.schedule.horizontalScrollBar().setValue
         )
+        self.schedule.horizontalScrollBar().valueChanged.connect(
+            self.calendar_panel.schedule.horizontalScrollBar().setValue
+        )
         self.availability_panel.schedule.horizontalScrollBar().valueChanged.connect(
             self.schedule.horizontalScrollBar().setValue
         )
         self.team_panel.schedule.horizontalScrollBar().valueChanged.connect(
             self.schedule.horizontalScrollBar().setValue
         )
+        self.calendar_panel.schedule.horizontalScrollBar().valueChanged.connect(
+            self.schedule.horizontalScrollBar().setValue
+        )
         self.splitter.splitterMoved.connect(self._work_splitter_moved)
         self.availability_panel.splitter.splitterMoved.connect(self._availability_splitter_moved)
         self.team_panel.splitter.splitterMoved.connect(self._team_splitter_moved)
+        self.calendar_panel.splitter.splitterMoved.connect(self._calendar_splitter_moved)
         self.labels.selectionModel().currentRowChanged.connect(self._labels_selected)
         self.schedule.selectionModel().currentRowChanged.connect(self._schedule_selected)
         self.availability_toggle.toggled.connect(self._toggle_availability)
+        self.calendar_toggle.toggled.connect(self._toggle_calendar)
         self.mode_box.currentIndexChanged.connect(self._change_mode)
         self.scale_box.currentIndexChanged.connect(self._change_scale)
         for box in (self.grouping_box, self.kind_filter, self.group_filter, self.state_filter):
@@ -870,6 +889,7 @@ class TimelinePage(WorkspacePage):
         self.schedule.setAccessibleName(f"Timeline schedule by {self.schedule_model.scale.value}")
         self.availability_panel.size_periods(width)
         self.team_panel.size_periods(width)
+        self.calendar_panel.size_periods(width)
 
     def _change_scale(self) -> None:
         self.schedule.cancel_resize()
@@ -893,6 +913,7 @@ class TimelinePage(WorkspacePage):
         self.schedule_model.set_scale(scale)
         self.availability_panel.set_scale(scale)
         self.team_panel.set_scale(scale)
+        self.calendar_panel.set_scale(scale)
         self._size_periods()
         # Recompute scrollbar ranges before restoring the date anchor; Qt otherwise
         # clamps it against the previous scale until the next layout event.
@@ -987,6 +1008,9 @@ class TimelinePage(WorkspacePage):
         self.team_panel.splitter.blockSignals(True)
         self.team_panel.splitter.setSizes(self.splitter.sizes())
         self.team_panel.splitter.blockSignals(False)
+        self.calendar_panel.splitter.blockSignals(True)
+        self.calendar_panel.splitter.setSizes(self.splitter.sizes())
+        self.calendar_panel.splitter.blockSignals(False)
 
     def _availability_splitter_moved(self, position: int, index: int) -> None:
         self.splitter.blockSignals(True)
@@ -995,6 +1019,9 @@ class TimelinePage(WorkspacePage):
         self.team_panel.splitter.blockSignals(True)
         self.team_panel.splitter.setSizes(self.availability_panel.splitter.sizes())
         self.team_panel.splitter.blockSignals(False)
+        self.calendar_panel.splitter.blockSignals(True)
+        self.calendar_panel.splitter.setSizes(self.availability_panel.splitter.sizes())
+        self.calendar_panel.splitter.blockSignals(False)
 
     def _team_splitter_moved(self, position: int, index: int) -> None:
         self.splitter.blockSignals(True)
@@ -1003,6 +1030,16 @@ class TimelinePage(WorkspacePage):
         self.availability_panel.splitter.blockSignals(True)
         self.availability_panel.splitter.setSizes(self.team_panel.splitter.sizes())
         self.availability_panel.splitter.blockSignals(False)
+        self.calendar_panel.splitter.blockSignals(True)
+        self.calendar_panel.splitter.setSizes(self.team_panel.splitter.sizes())
+        self.calendar_panel.splitter.blockSignals(False)
+
+    def _calendar_splitter_moved(self, position: int, index: int) -> None:
+        sizes = self.calendar_panel.splitter.sizes()
+        for splitter in (self.splitter, self.availability_panel.splitter, self.team_panel.splitter):
+            splitter.blockSignals(True)
+            splitter.setSizes(sizes)
+            splitter.blockSignals(False)
 
     def _toggle_availability(self, checked: bool) -> None:
         visible = checked and self.mode_box.currentData() == "plan"
@@ -1011,6 +1048,16 @@ class TimelinePage(WorkspacePage):
             self.availability_panel.splitter.setSizes(self.splitter.sizes())
             if not self.availability_panel.labels.currentIndex().isValid():
                 self.availability_panel.select_first()
+
+    def _toggle_calendar(self, checked: bool) -> None:
+        self.calendar_panel.setVisible(checked)
+        if checked:
+            source = (
+                self.team_panel.splitter if self.mode_box.currentData() == "team" else self.splitter
+            )
+            self.calendar_panel.splitter.setSizes(source.sizes())
+            if not self.calendar_panel.labels.currentIndex().isValid():
+                self.calendar_panel.select_first()
 
     def _change_mode(self) -> None:
         self.schedule.cancel_resize()
@@ -1029,12 +1076,21 @@ class TimelinePage(WorkspacePage):
         self.splitter.setVisible(not team)
         self.team_panel.setVisible(team)
         self.resize_preview.setVisible(not team)
-        self.layers_widget.setVisible(not team)
+        self.layers_widget.setVisible(True)
+        for control in (
+            self.dependency_toggle,
+            self.dependency_graph_toggle,
+            self.critical_toggle,
+            self.availability_toggle,
+        ):
+            control.setVisible(not team)
+        self.calendar_toggle.setVisible(True)
         self.dependency_graph.setVisible(not team and self.dependency_graph_toggle.isChecked())
         self.dependency_details.setVisible(not team)
         self.critical_details.setVisible(not team and self.critical_toggle.isChecked())
         self.edit_dates.setVisible(not team)
         self.availability_panel.setVisible(not team and self.availability_toggle.isChecked())
+        self.calendar_panel.setVisible(self.calendar_toggle.isChecked())
 
     def refresh(self) -> None:
         self.schedule.cancel_resize()
@@ -1053,6 +1109,7 @@ class TimelinePage(WorkspacePage):
         availability_projection = (
             project_timeline_unavailability(plan) if plan is not None else None
         )
+        calendar_projection = project_program_calendar(plan) if plan is not None else None
         current_group = self.group_filter.currentData()
         self.group_filter.blockSignals(True)
         self.group_filter.clear()
@@ -1097,6 +1154,7 @@ class TimelinePage(WorkspacePage):
         self.schedule_model.set_projection(projection)
         self.availability_panel.set_projection(availability_projection)
         self.team_panel.set_projection(team_projection)
+        self.calendar_panel.set_projection(calendar_projection)
         self._size_periods()
         self._apply_critical_overlay()
         self._syncing_selection = False
