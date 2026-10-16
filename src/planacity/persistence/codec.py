@@ -19,6 +19,8 @@ from planacity.domain import (
     Relationship,
     RelationshipType,
     ReservationRule,
+    Sprint,
+    SprintAssignment,
     WorkCalendar,
     WorkGroup,
     WorkItem,
@@ -29,7 +31,7 @@ from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 SUPPORTED_SCHEMA_VERSIONS = tuple(range(1, SCHEMA_VERSION + 1))
 
 
@@ -131,7 +133,8 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             + (" reservation_rules" if schema_version >= 5 else "")
             + (" estimate_preferences" if schema_version >= 6 else "")
             + (" allocations" if schema_version >= 7 else "")
-            + (" calendar_events" if schema_version >= 12 else ""),
+            + (" calendar_events" if schema_version >= 12 else "")
+            + (" sprints sprint_assignments" if schema_version >= 13 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -184,6 +187,10 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
                 _reservation(value) for value in _rows(p.get("reservation_rules", []))
             ),
             allocations=tuple(_allocation(value) for value in _rows(p.get("allocations", []))),
+            sprints=tuple(_sprint(value) for value in _rows(p.get("sprints", []))),
+            sprint_assignments=tuple(
+                _sprint_assignment(value) for value in _rows(p.get("sprint_assignments", []))
+            ),
             estimate_preferences=(
                 _estimate_preferences(p["estimate_preferences"])
                 if "estimate_preferences" in p
@@ -201,6 +208,29 @@ def _allocation(value: object) -> Allocation:
         work_item_id=_id(row["work_item_id"]),
         person_id=_id(row["person_id"]),
         hours=Decimal(_text(row["hours"])),
+    )
+
+
+def _sprint(value: object) -> Sprint:
+    row = _object(value, "id name period external_reference work_group_id")
+    period = _object(row["period"], "start end")
+    return Sprint(
+        id=_id(row["id"]),
+        name=_text(row["name"]),
+        period=PlanningHorizon(_date(period["start"]), _date(period["end"])),
+        external_reference=(
+            None if row["external_reference"] is None else _text(row["external_reference"])
+        ),
+        work_group_id=(None if row["work_group_id"] is None else _id(row["work_group_id"])),
+    )
+
+
+def _sprint_assignment(value: object) -> SprintAssignment:
+    row = _object(value, "id sprint_id work_item_id")
+    return SprintAssignment(
+        id=_id(row["id"]),
+        sprint_id=_id(row["sprint_id"]),
+        work_item_id=_id(row["work_item_id"]),
     )
 
 

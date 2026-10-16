@@ -4,6 +4,7 @@
 def strip_work_context(data: dict) -> None:
     """Remove work fields added after schema 7 from current and baseline work."""
     data["plan"].pop("calendar_events", None)
+    strip_sprints(data)
     fields = ("description", "labels", "primary_group_id", "priority", "assignee_id")
     for item in data["plan"]["work_items"]:
         for field in fields:
@@ -34,8 +35,15 @@ def strip_external_priority(data: dict) -> None:
 def strip_work_assignee(data: dict) -> None:
     """Remove fields introduced after schema 10."""
     data["plan"].pop("calendar_events", None)
+    strip_sprints(data)
     for item in data["plan"]["work_items"]:
         item.pop("assignee_id")
     for source in data["plan"].get("imports", ()):
         for record in source["records"]:
             record["item"].pop("assignee_id")
+
+
+def strip_sprints(data: dict) -> None:
+    """Remove sprint fields introduced by schema 13."""
+    data["plan"].pop("sprints", None)
+    data["plan"].pop("sprint_assignments", None)

@@ -35,9 +35,11 @@ def remove_work_group(
         raise ValueError("Clearing primary WorkGroup references requires an explicit boolean.")
     plan.work_group(group_id)
     references = tuple(item for item in plan.work_items if item.primary_group_id == group_id)
-    if references and not clear_primary_references:
+    sprint_references = tuple(sprint for sprint in plan.sprints if sprint.work_group_id == group_id)
+    if (references or sprint_references) and not clear_primary_references:
         raise ValueError(
-            f"Removal affects {len(references)} primary WorkGroup reference(s). "
+            f"Removal affects {len(references)} primary WorkGroup reference(s) and "
+            f"{len(sprint_references)} sprint scope(s). "
             "Explicitly confirm clearing these references first."
         )
     return replace(
@@ -47,6 +49,10 @@ def remove_work_group(
             for item in plan.work_items
         ),
         work_groups=tuple(group for group in plan.work_groups if group.id != group_id),
+        sprints=tuple(
+            replace(sprint, work_group_id=None) if sprint.work_group_id == group_id else sprint
+            for sprint in plan.sprints
+        ),
     )
 
 

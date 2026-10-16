@@ -262,19 +262,19 @@ def test_order_precision_and_input_are_preserved():
     assert repr(plan) == before
 
 
-def test_schema_twelve_json_and_sqlite_roundtrip(tmp_path):
+def test_schema_thirteen_json_and_sqlite_roundtrip(tmp_path):
     plan = capacity_plan(event("0.333333333333333333333333333333"))
     data = json.loads(dumps(plan))
     path = tmp_path / "calendar.planacity"
     save_project(plan, path)
 
-    assert data["schema_version"] == SCHEMA_VERSION == 12
+    assert data["schema_version"] == SCHEMA_VERSION == 13
     assert data["plan"]["calendar_events"][0]["unavailable_fraction"] == (
         "0.333333333333333333333333333333"
     )
     assert loads(json.dumps(data)) == load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 12
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
 
 
 def test_schema_eleven_loads_without_events_and_upgrades_only_on_save(tmp_path):
@@ -282,6 +282,8 @@ def test_schema_eleven_loads_without_events_and_upgrades_only_on_save(tmp_path):
     data = json.loads(dumps(plan))
     data["schema_version"] = 11
     data["plan"].pop("calendar_events")
+    data["plan"].pop("sprints")
+    data["plan"].pop("sprint_assignments")
     payload = json.dumps(data)
     path = tmp_path / "schema-11.planacity"
     connection = sqlite3.connect(path)
@@ -299,7 +301,7 @@ def test_schema_eleven_loads_without_events_and_upgrades_only_on_save(tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 12
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
 
 
 @pytest.mark.parametrize(

@@ -36,7 +36,7 @@ def test_moon_heist_is_a_complete_deterministic_v04_baseline():
     raw = json.loads(EXAMPLE.read_text(encoding="utf-8"))
     plan = load_example()
 
-    assert raw["schema_version"] == SCHEMA_VERSION == 12
+    assert raw["schema_version"] == SCHEMA_VERSION == 13
     assert dumps(plan) == EXAMPLE.read_text(encoding="utf-8")
     assert plan.id == uuid5(
         NAMESPACE_URL, "https://planacity.example/moon-heist/plan/operation-moon-heist"

@@ -15,11 +15,14 @@ from planacity.domain.models import (
     WorkPriority,
 )
 from planacity.domain.reservations import ReservationRule
+from planacity.domain.sprint import Sprint, SprintAssignment
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
 
 __all__ = [
     "Allocation",
     "ReservationRule",
+    "Sprint",
+    "SprintAssignment",
     "AvailabilityEvent",
     "CalendarEvent",
     "CalendarEventKind",

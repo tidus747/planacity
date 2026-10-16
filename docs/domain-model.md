@@ -242,6 +242,19 @@ When personal and shared events overlap, the strongest fraction wins rather than
 adding reductions. ProgramPlan owns these events in schema 12, and lifecycle
 services preserve identity and order without changing imported snapshots.
 
+## Sprint and SprintAssignment
+
+A Sprint is a first-class planning period with a stable identity, name,
+inclusive dates, optional external reference, and optional WorkGroup scope. No
+WorkGroup means the whole roster. Sprint length and cadence are not assumed.
+
+SprintAssignment separately connects one executable leaf WorkItem to one
+Sprint. It is not hierarchy, a dependency, an allocation, or a replacement for
+canonical work dates. One WorkItem can belong to at most one sprint. Overlapping
+sprints, work outside its sprint, missing work dates, and periods outside the
+planning horizon are retained and reported as diagnostics. Schema 13 persists
+these inputs; Calendar and capacity projections follow in later slices.
+
 ## Recurring reservations (v0.4 calculation API)
 
 ReservationRule is a separate domain entity for fixed hours per selected person

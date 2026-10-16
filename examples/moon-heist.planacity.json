@@ -1,6 +1,6 @@
 {
   "format": "planacity",
-  "schema_version": 12,
+  "schema_version": 13,
   "plan": {
     "name": "Operation Moon Heist",
     "horizon": {
@@ -887,6 +887,8 @@
         "hours": "16",
         "id": "9eccc723-b8ee-51c3-ad22-578d146b84a1"
       }
-    ]
+    ],
+    "sprints": [],
+    "sprint_assignments": []
   }
 }
