@@ -237,6 +237,10 @@ Expose C04 through Calendar with file selection, field and person mapping,
 save/load profile actions, complete row review, explicit selection, confirmation,
 and both-theme evidence. Factorial mapping remains the next adapter.
 
+Status: completed by issue #150. Calendar now owns the UTF-8 file entry point,
+delimiter choice, field and roster-person mapping, configuration-only profiles,
+complete row review, explicit warning inclusion, and atomic confirmation.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.

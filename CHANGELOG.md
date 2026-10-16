@@ -6,13 +6,17 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- A guided generic availability CSV import in Calendar. Users can select the
+  delimiter, map fields and source people to the existing roster, reuse a
+  configuration-only profile, review every row, and atomically import an
+  explicit selection. Invalid and duplicate rows cannot be selected; overlaps
+  and dates outside the planning horizon require deliberate inclusion.
 - A Qt-independent generic availability CSV preview foundation. Explicit column
   and person mappings produce stable candidates with row-level invalid,
   unknown-person, repeated-row, exact-duplicate, overlap, and horizon context.
   Only explicitly selected valid rows are applied atomically; raw rows remain
   transient and reusable profiles contain configuration only. A fictional CSV
-  sample documents the portable format. The desktop review wizard follows in a
-  separate slice.
+  sample documents the portable format.
 - Shared Program Calendar projection in Overview and as an optional Timeline
   layer. Overview lists every horizon-intersecting event with its category,
   canonical dates, exact capacity impact, and clipping status, while counting

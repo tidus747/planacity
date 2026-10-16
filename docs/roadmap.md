@@ -328,6 +328,8 @@ Generic availability import is split into the pure preview service
 [#149](https://github.com/tidus747/planacity/issues/149) and the review wizard
 [#150](https://github.com/tidus747/planacity/issues/150), under the parent
 [#148](https://github.com/tidus747/planacity/issues/148).
+The preview foundation was completed in PR #151. The Calendar review wizard
+completes the generic adapter in issue #150 before provider-specific mapping.
 
 ### Later sprint planning and API connectivity
 
