@@ -241,6 +241,17 @@ Status: completed by issue #150. Calendar now owns the UTF-8 file entry point,
 delimiter choice, field and roster-person mapping, configuration-only profiles,
 complete row review, explicit warning inclusion, and atomic confirmation.
 
+## C06 - Canonical sprint model and assignments
+
+Target: v0.5. Tracked by
+[issue #154](https://github.com/tidus747/planacity/issues/154), the first focused
+slice of [#147](https://github.com/tidus747/planacity/issues/147).
+
+Persist first-class sprints and separate leaf-work assignments in schema 13.
+Support optional WorkGroup scope and diagnostics for overlaps, horizon bounds,
+incomplete work dates, and work outside sprint dates. Do not add Calendar UI,
+capacity calculations, Jira mapping, or automatic distribution in this slice.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.

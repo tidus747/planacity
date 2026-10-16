@@ -12,6 +12,7 @@ from planacity.domain.calendar_event import CalendarEvent
 from planacity.domain.estimate_units import EstimatePreferences
 from planacity.domain.horizon import PlanningHorizon as PlanningHorizon
 from planacity.domain.reservations import ReservationRule
+from planacity.domain.sprint import Sprint, SprintAssignment
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
 
 
@@ -239,6 +240,8 @@ class ProgramPlan:
     reservation_rules: tuple[ReservationRule, ...] = ()
     estimate_preferences: EstimatePreferences = field(default_factory=EstimatePreferences)
     allocations: tuple[Allocation, ...] = ()
+    sprints: tuple[Sprint, ...] = ()
+    sprint_assignments: tuple[SprintAssignment, ...] = ()
 
     def __post_init__(self) -> None:
         _require_id(self.id, "Program Plan ID")
@@ -264,6 +267,7 @@ class ProgramPlan:
             {item.id for item in self.work_items},
             {person.id for person in self.people},
         )
+        _validate_sprints(self)
         if not isinstance(self.work_calendars, tuple) or any(
             not isinstance(calendar, WorkCalendar) for calendar in self.work_calendars
         ):
@@ -398,6 +402,40 @@ def _validate_groups_and_relationships(plan: ProgramPlan) -> None:
         if key in seen:
             raise ValueError("Duplicate relationship: these items already have the same link.")
         seen.add(key)
+
+
+def _validate_sprints(plan: ProgramPlan) -> None:
+    if not isinstance(plan.sprints, tuple) or any(
+        not isinstance(sprint, Sprint) for sprint in plan.sprints
+    ):
+        raise ValueError("Program Plan sprints must be a tuple of Sprint objects.")
+    if len({sprint.id for sprint in plan.sprints}) != len(plan.sprints):
+        raise ValueError("Sprint IDs must be unique within a plan.")
+    group_ids = {group.id for group in plan.work_groups}
+    for sprint in plan.sprints:
+        if sprint.work_group_id is not None and sprint.work_group_id not in group_ids:
+            raise ValueError(f"Sprint '{sprint.name}' must reference an existing WorkGroup.")
+    if not isinstance(plan.sprint_assignments, tuple) or any(
+        not isinstance(value, SprintAssignment) for value in plan.sprint_assignments
+    ):
+        raise ValueError("Sprint assignments must be a tuple of SprintAssignment objects.")
+    if len({value.id for value in plan.sprint_assignments}) != len(plan.sprint_assignments):
+        raise ValueError("Sprint assignment IDs must be unique within a plan.")
+    if len({value.work_item_id for value in plan.sprint_assignments}) != len(
+        plan.sprint_assignments
+    ):
+        raise ValueError("A work item can be assigned to at most one sprint.")
+    sprint_ids = {sprint.id for sprint in plan.sprints}
+    work = {item.id: item for item in plan.work_items}
+    parent_ids = {item.parent_id for item in plan.work_items if item.parent_id is not None}
+    for value in plan.sprint_assignments:
+        if value.sprint_id not in sprint_ids:
+            raise ValueError("Sprint assignment must reference an existing Sprint.")
+        item = work.get(value.work_item_id)
+        if item is None:
+            raise ValueError("Sprint assignment must reference an existing work item.")
+        if item.kind == WorkItemType.EPIC or item.id in parent_ids:
+            raise ValueError("Only executable leaf work can be assigned to a sprint.")
 
 
 def _validate_hierarchy(items: tuple[WorkItem, ...]) -> None:

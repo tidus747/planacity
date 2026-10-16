@@ -77,7 +77,8 @@ The fictional `examples/availability-moon-heist.csv` demonstrates the portable
 format without absence reasons or other sensitive HR data.
 
 Schemas 1-3 open without availability; schemas 1-4 open without reservations.
-Saving writes schema 12. Schemas 1-11 open without shared program events. Keep a backup
+Saving writes schema 13. Schemas 1-11 open without shared program events, and
+schema 12 opens without sprints. Keep a backup
 or use Save As if the file must remain readable in an older build.
 
 Screenshots using an explicitly configured example schedule:

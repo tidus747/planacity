@@ -9,7 +9,7 @@ The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
 effort, dated capacity, work-context, priority, ownership, and Jira mapping
-services operate over schema 12 inputs. Critical-path analysis is another pure
+services operate over schema 13 inputs. Critical-path analysis is another pure
 projection over those inputs and adds no persisted state.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,

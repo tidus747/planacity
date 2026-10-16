@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- First-class Sprint and SprintAssignment domain inputs in project schema 13.
+  Sprints have inclusive dates, optional external identity and WorkGroup scope;
+  separate stable assignments connect executable leaf work to at most one
+  sprint. Pure diagnostics retain and report overlaps, horizon bounds, missing
+  work dates, and work outside sprint dates without automatic rescheduling.
 - Jira CSV import accepts the explicit `%d/%b/%y %I:%M %p` date-time format
   used by exports such as `12/Dec/25 12:00 AM`. Parsing is independent of the
   operating-system locale, validates the complete value, and retains only the

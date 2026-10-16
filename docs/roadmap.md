@@ -2,7 +2,7 @@
 
 Revised 2026-10-07 after the assignment-policy review.
 This is the implementation direction, not a list of features already available
-or a release announcement. Current source remains `0.4.0.dev0`, file schema 12.
+or a release announcement. Current source remains `0.4.0.dev0`, file schema 13.
 
 The next useful outcome is: "I can explain whether this plan fits the team,
 where its capacity goes, and which assumptions still need attention."
@@ -338,6 +338,10 @@ Sprint planning is tracked by
 manual sprint model and Calendar/capacity view before any assisted distribution.
 Later automation must produce an explainable proposal and complete diff for
 explicit acceptance; it must never silently move dates or assignments.
+
+The first implementation slice is the canonical sprint and assignment model in
+[#154](https://github.com/tidus747/planacity/issues/154). Calendar projection,
+load calculations, Jira mapping, and assisted distribution remain separate PRs.
 
 Optional REST connectivity is tracked by
 [#146](https://github.com/tidus747/planacity/issues/146). A Jira REST adapter

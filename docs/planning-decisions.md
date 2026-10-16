@@ -6,7 +6,8 @@ breakdowns, persisted work context, compact Overview analysis, and derived Peopl
 WorkGroup associations, canonical work priority, and explicit Jira CSV priority
 mapping are implemented. Work context introduced schema 8, priority schema 9,
 preserved Jira source-priority text schema 10, canonical work ownership schema 11,
-and shared calendar events schema 12. The transactional Plan inspector, Overview
+and shared calendar events schema 12, plus sprint inputs in schema 13. The
+transactional Plan inspector, Overview
 analysis, and People associations require no additional persisted state.
 Later presentation sections remain future behavior.
 See the [roadmap](roadmap.md) for order and acceptance.
@@ -91,6 +92,15 @@ For each person/date, calculate from configured inputs:
     = Remaining capacity
 
 Schema 12 adds shared holidays and program events to the v0.5 calculation input.
+
+Schema 13 adds first-class sprints and separate sprint assignments. Sprint
+periods may overlap, be irregular, or extend beyond the planning horizon; these
+are reviewable findings rather than load-time errors. A sprint may reference a
+WorkGroup as planning scope, while null means the whole roster. Only executable
+leaf work can be assigned, and each leaf has at most one sprint assignment.
+This membership remains independent from hierarchy, dependencies, dates,
+ownership, and allocations so later Calendar and capacity views consume one
+canonical model without Jira terminology.
 They apply to every roster person through that person's calendar. On an affected
 date, the strongest personal or shared unavailable fraction wins; fractions are
 not additive. A zero-impact event remains useful context, and a full-impact event

@@ -208,9 +208,13 @@ def remove_work_item(
             "Explicitly confirm removal of these allocations first."
         )
     memberships = sum(len(removed.intersection(group.epic_ids)) for group in plan.work_groups)
-    if (links or memberships) and not remove_references:
+    sprint_assignments = tuple(
+        value for value in plan.sprint_assignments if value.work_item_id in removed
+    )
+    if (links or memberships or sprint_assignments) and not remove_references:
         raise ValueError(
-            f"Removal affects {len(links)} relationship(s) and {memberships} group membership(s). "
+            f"Removal affects {len(links)} relationship(s), {memberships} group membership(s), "
+            f"and {len(sprint_assignments)} sprint assignment(s). "
             "Unlink them first or explicitly confirm removal of these references."
         )
     return replace(
@@ -228,5 +232,8 @@ def remove_work_item(
                 epic_ids=tuple(epic_id for epic_id in group.epic_ids if epic_id not in removed),
             )
             for group in plan.work_groups
+        ),
+        sprint_assignments=tuple(
+            value for value in plan.sprint_assignments if value.work_item_id not in removed
         ),
     )
