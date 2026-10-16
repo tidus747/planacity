@@ -55,8 +55,17 @@ No account or network connection is needed while planning.
    full share removes each person's nominal calendar hours on affected dates.
    Personal and shared overlaps use the strongest share rather than adding them.
    Events outside the plan horizon are retained and identified explicitly.
+   To import personal availability, choose the CSV delimiter and select
+   **Import availability CSV...**. Map the four required fields, match each
+   source name to an existing roster person, then review the full table. Rows
+   with overlaps or dates outside the horizon start unchecked; include them
+   only after reviewing their status. Confirmation applies the selected valid
+   rows together, while Cancel leaves the plan unchanged. Mapping profiles save
+   field positions and the delimiter, but never names or source HR rows.
    Real Calendar workspace screenshots: [light](images/program-calendar-light.png)
    and [dark](images/program-calendar-dark.png).
+   Real import review screenshots: [light](images/availability-import-light.png)
+   and [dark](images/availability-import-dark.png).
    Overview also summarizes the events that intersect the planning horizon and
    counts retained events outside it. Use **Open Calendar** from that panel to
    edit the canonical records. Real Overview projection screenshots:

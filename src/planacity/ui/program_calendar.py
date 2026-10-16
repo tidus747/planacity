@@ -2,6 +2,7 @@
 
 from datetime import date
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from PySide6.QtCore import Qt
@@ -9,6 +10,8 @@ from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QDialog,
+    QFileDialog,
     QHBoxLayout,
     QLineEdit,
     QMessageBox,
@@ -18,12 +21,14 @@ from PySide6.QtWidgets import (
 )
 
 from planacity.domain import CalendarEvent, CalendarEventKind, PlanningHorizon, ProgramPlan
+from planacity.integrations.availability_csv import read_availability_csv
 from planacity.planning.calendar_events import (
     add_calendar_event,
     calendar_event,
     remove_calendar_event,
     update_calendar_event,
 )
+from planacity.ui.availability_import_wizard import AvailabilityImportWizard
 from planacity.ui.forms import CalendarLineEdit, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.session import Session
@@ -184,6 +189,14 @@ class CalendarPage(WorkspacePage):
         self.delete_button.clicked.connect(self.delete_selected)
         for button in (self.add_button, self.edit_button, self.delete_button):
             actions.addWidget(button)
+        self.delimiter = QComboBox()
+        for name, value in (("Comma", ","), ("Semicolon", ";"), ("Tab", "\t")):
+            self.delimiter.addItem(name, value)
+        self.delimiter.setAccessibleName("Availability CSV delimiter")
+        self.import_button = QPushButton("Import availability CSV...")
+        self.import_button.clicked.connect(self.import_availability)
+        actions.addWidget(self.delimiter)
+        actions.addWidget(self.import_button)
         actions.addStretch()
         self.header.addLayout(actions)
 
@@ -259,6 +272,7 @@ class CalendarPage(WorkspacePage):
             )
         self.table.setVisible(bool(events))
         self.add_button.setEnabled(plan is not None)
+        self.import_button.setEnabled(plan is not None)
         if self.model.rowCount() and not self.table.currentIndex().isValid():
             self.table.setCurrentIndex(self.model.index(0, 0))
         for column in range(self.model.columnCount()):
@@ -272,6 +286,31 @@ class CalendarPage(WorkspacePage):
 
     def add_event(self) -> None:
         edit_calendar_event(self, self.session)
+
+    def import_availability(self) -> None:
+        plan = self.session.document.plan
+        if plan is None:
+            return
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Import availability CSV", "", "CSV (*.csv);;All files (*)"
+        )
+        if not filename:
+            return
+        try:
+            path = Path(filename)
+            table = read_availability_csv(
+                path.read_text(encoding="utf-8-sig"), self.delimiter.currentData()
+            )
+            wizard = AvailabilityImportWizard(
+                plan, table, self.delimiter.currentData(), self
+            )
+            if wizard.exec() == QDialog.DialogCode.Accepted and wizard.candidate is not None:
+                if self.session.document.plan is not plan:
+                    raise ValueError("The plan changed. Review the CSV again.")
+                self.session.apply(wizard.candidate)
+            wizard.deleteLater()
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "Cannot import availability CSV", str(error))
 
     def edit_selected(self, *args: object) -> None:
         event_id = self.selected_event_id()

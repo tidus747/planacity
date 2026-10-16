@@ -57,12 +57,21 @@ fields: person, inclusive start, inclusive end, and unavailable share. Dates use
 are not assumed. Saved mapping profiles contain headers and column positions,
 never people mappings or source HR rows.
 
+The Calendar workspace exposes the import as a three-step review wizard. It
+maps fields, explicitly matches source names to existing roster people, and
+shows the complete row status before confirmation. Invalid, repeated, and exact
+duplicate rows cannot be selected. Ready rows are selected initially, except
+overlaps and entries outside the horizon, which require deliberate inclusion.
+Cancel applies nothing, while confirmation applies the selected rows atomically.
+
 The preview keeps raw cells only in memory and classifies unknown people,
 malformed values, repeated source rows, exact existing duplicates, overlaps, and
 outside-horizon entries. Overlap and outside-horizon entries can be legitimate;
 exact duplicates and invalid rows are not selectable. Only explicitly selected
-candidate IDs are applied, in one immutable update. The Qt mapping and
-confirmation workflow follows separately in issue #150.
+candidate IDs are applied, in one immutable update.
+
+Real review screenshots: [light](images/availability-import-light.png) and
+[dark](images/availability-import-dark.png).
 
 The fictional `examples/availability-moon-heist.csv` demonstrates the portable
 format without absence reasons or other sensitive HR data.
