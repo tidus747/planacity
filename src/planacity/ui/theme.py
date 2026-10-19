@@ -21,6 +21,8 @@ class Colors:
     selected: str
     hover: str
     disabled: str
+    imported_background: str
+    imported_indicator: str
 
 
 COLORS = {
@@ -35,6 +37,8 @@ COLORS = {
         "#dceff7",
         "#eaf2f7",
         "#8491a2",
+        "#fff8e8",
+        "#8a5700",
     ),
     Theme.DARK: Colors(
         "#111923",
@@ -47,6 +51,8 @@ COLORS = {
         "#203e51",
         "#253648",
         "#7e90a6",
+        "#302b20",
+        "#f0b44d",
     ),
 }
 

@@ -1,24 +1,132 @@
 """Qt model invariants and real keyboard editing over a shared document."""
 
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
+import pytest
 from PySide6.QtCore import QDate, QModelIndex, Qt
+from PySide6.QtGui import QColor
 from PySide6.QtTest import QAbstractItemModelTester, QTest
 from PySide6.QtWidgets import QCalendarWidget, QComboBox, QLineEdit, QMessageBox
 
-from planacity.domain import WorkPriority
+from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
+from planacity.domain.models import ImportedWork, ImportSnapshot
+from planacity.persistence.codec import dumps, loads
 from planacity.persistence.project import restore_backup
 from planacity.planning.work_items import move_work_item, remove_work_item
 from planacity.ui.forms import CalendarLineEdit
 from planacity.ui.plan_model import PlanModel
 from planacity.ui.session import Session
+from planacity.ui.theme import COLORS, Theme
 
 
 def example():
     return restore_backup(
         Path(__file__).resolve().parents[1] / "examples" / "aurora.planacity.json"
     )
+
+
+def provenance_plan() -> ProgramPlan:
+    first = WorkItem(title="Repeated title", kind=WorkItemType.TASK)
+    second = WorkItem(title="Second import", kind=WorkItemType.TASK)
+    local = WorkItem(title="Repeated title", kind=WorkItemType.TASK)
+    snapshots = (
+        ImportSnapshot(
+            name="first.csv",
+            headers=("Key", "Summary"),
+            rows=(("JIRA-1", first.title),),
+            records=(ImportedWork(item=first, external_reference="JIRA-1"),),
+        ),
+        ImportSnapshot(
+            name="second.csv",
+            headers=("Key", "Summary"),
+            rows=(("JIRA-2", second.title),),
+            records=(ImportedWork(item=second, external_reference="JIRA-2"),),
+        ),
+    )
+    return ProgramPlan(
+        name="Provenance",
+        horizon=PlanningHorizon(date(2026, 1, 1), date(2026, 12, 31)),
+        work_items=(first, second, local),
+        imports=snapshots,
+    )
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_imported_provenance_uses_identity_and_survives_edit_save_filter_and_removal(
+    app, window, theme
+):
+    plan = provenance_plan()
+    imported_ids = tuple(record.item.id for source in plan.imports for record in source.records)
+    local_id = plan.work_items[-1].id
+    window.set_theme(theme, persist=False)
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    model = window.plan_page.model
+
+    for item_id in imported_ids:
+        index = model.index_for_id(item_id)
+        background = model.data(index, Qt.ItemDataRole.BackgroundRole)
+        assert background.color() == QColor(COLORS[theme].imported_background)
+        assert not model.data(index, Qt.ItemDataRole.DecorationRole).isNull()
+        assert "Imported baseline" in model.data(index, Qt.ItemDataRole.ToolTipRole)
+        assert "read-only or synchronized" in model.data(
+            index, Qt.ItemDataRole.AccessibleDescriptionRole
+        )
+        assert model.flags(index) & Qt.ItemFlag.ItemIsEditable
+
+    local = model.index_for_id(local_id)
+    assert model.data(local, Qt.ItemDataRole.BackgroundRole) is None
+    assert model.data(local, Qt.ItemDataRole.DecorationRole) is None
+
+    edited = model.index_for_id(imported_ids[0])
+    assert model.setData(edited, "Locally edited import")
+    window.session.document.saved_plan = window.session.document.plan
+    window.plan_page.search.setText("Locally edited")
+    app.processEvents()
+    filtered = model.index_for_id(imported_ids[0])
+    assert filtered.isValid()
+    assert model.data(filtered, Qt.ItemDataRole.BackgroundRole) is not None
+
+    reopened = loads(dumps(window.session.document.plan))
+    window.plan_page.search.clear()
+    window.session.apply(reopened)
+    window.session.document.saved_plan = reopened
+    assert (
+        model.data(model.index_for_id(imported_ids[1]), Qt.ItemDataRole.BackgroundRole) is not None
+    )
+
+    without_first = replace(
+        reopened,
+        work_items=tuple(item for item in reopened.work_items if item.id != imported_ids[0]),
+    )
+    window.session.apply(without_first)
+    assert not model.index_for_id(imported_ids[0]).isValid()
+    assert model.index_for_id(imported_ids[1]).isValid()
+    window.session.document.saved_plan = window.session.document.plan
+
+
+def test_imported_ancestor_context_retains_accessible_provenance(app, window):
+    plan = restore_backup(
+        Path(__file__).resolve().parents[1] / "examples" / "moon-heist.planacity.json"
+    )
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    page = window.plan_page
+    page.search.setText("Adjust the optics")
+    app.processEvents()
+
+    imported_epic = plan.imports[0].records[0].item.id
+    context = page.model.index_for_id(imported_epic)
+    tooltip = page.model.data(context, Qt.ItemDataRole.ToolTipRole)
+    assert "Ancestor context" in tooltip
+    assert "Imported baseline" in tooltip
+    window.session.document.saved_plan = window.session.document.plan
 
 
 def test_tree_indexes_edits_and_structural_changes(app):

@@ -1,6 +1,7 @@
 """Qt hierarchy adapter over the canonical immutable plan."""
 
 from datetime import date
+from functools import lru_cache
 from typing import overload
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
+from PySide6.QtGui import QBrush, QColor, QIcon
 from PySide6.QtWidgets import QApplication, QStyle
 
 from planacity.domain import ProgramPlan, WorkItem, WorkPriority
@@ -20,12 +22,19 @@ from planacity.planning.estimate_units import conversion_description, estimate_t
 from planacity.planning.findings import PlanningFinding, findings_for_work, planning_findings
 from planacity.planning.work_context import set_work_priority
 from planacity.planning.work_items import rename_work_item, set_work_dates, set_work_estimate
+from planacity.ui.icons import svg_icon
 from planacity.ui.planning_findings import finding_details, finding_note
 from planacity.ui.priority import priority_icon, priority_label
 from planacity.ui.session import Session
+from planacity.ui.theme import COLORS, Theme
 
 Index = QModelIndex | QPersistentModelIndex
 ROOT = QModelIndex()
+
+
+@lru_cache(maxsize=2)
+def _imported_icon(theme: Theme) -> QIcon:
+    return svg_icon("import.svg", COLORS[theme].imported_indicator)
 
 
 class PlanModel(QAbstractItemModel):
@@ -53,13 +62,25 @@ class PlanModel(QAbstractItemModel):
         super().__init__(session)
         self.session = session
         self.plan = session.document.plan
+        self.theme = Theme.LIGHT
         self.effort: dict[UUID, WorkAllocationSummary] = {}
         self.findings: dict[UUID, tuple[PlanningFinding, ...]] = {}
+        self.imported_references: dict[UUID, str] = {}
         self.tokens: dict[UUID, int] = {}
         self.ids: dict[int, UUID] = {}
         self._refresh_effort()
         self._remember()
         session.changed.connect(self.refresh)
+
+    def set_theme(self, theme: Theme) -> None:
+        if theme == self.theme:
+            return
+        self.theme = theme
+        if self.plan is None:
+            return
+        for item in self.plan.work_items:
+            first = self.index_for_id(item.id)
+            self.dataChanged.emit(first, first.siblingAtColumn(len(self.headers) - 1))
 
     def _remember(self) -> None:
         if self.plan:
@@ -90,9 +111,15 @@ class PlanModel(QAbstractItemModel):
                 item.id: findings_for_work(self.plan, calculated, item.id)
                 for item in self.plan.work_items
             }
+            self.imported_references = {
+                record.item.id: record.external_reference
+                for source in self.plan.imports
+                for record in source.records
+            }
         else:
             self.effort = {}
             self.findings = {}
+            self.imported_references = {}
 
     def item(self, index: Index) -> WorkItem | None:
         if self.plan is None or not index.isValid():
@@ -147,15 +174,8 @@ class PlanModel(QAbstractItemModel):
             d is not None and not self.plan.horizon.start <= d <= self.plan.horizon.end
             for d in (item.start, item.end)
         )
-        reference = next(
-            (
-                r.external_reference
-                for source in self.plan.imports
-                for r in source.records
-                if r.item.id == item.id
-            ),
-            "",
-        )
+        imported = item.id in self.imported_references
+        reference = self.imported_references.get(item.id, "")
         effort = self._effort(item.id)
         estimate = estimate_text(
             self.plan,
@@ -202,6 +222,14 @@ class PlanModel(QAbstractItemModel):
             ):
                 return "Not set"
             return value
+        if role == Qt.ItemDataRole.BackgroundRole and imported:
+            return QBrush(QColor(COLORS[self.theme].imported_background))
+        if (
+            role == Qt.ItemDataRole.DecorationRole
+            and index.column() == self.TITLE_COLUMN
+            and imported
+        ):
+            return _imported_icon(self.theme)
         if role == Qt.ItemDataRole.DecorationRole and index.column() == self.PRIORITY_COLUMN:
             return priority_icon(item.priority)
         if (
@@ -211,9 +239,17 @@ class PlanModel(QAbstractItemModel):
         ):
             return QApplication.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning)
         if role in (Qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleDescriptionRole):
+            provenance = (
+                "Imported baseline. This work remains editable in Planacity; the cue does not "
+                "mean it is read-only or synchronized with its source."
+                if imported
+                else ""
+            )
             if index.column() == self.PRIORITY_COLUMN:
-                return "Explicit planning priority. It does not change dates, effort, or capacity."
-            if index.column() == self.ESTIMATE_COLUMN:
+                details = (
+                    "Explicit planning priority. It does not change dates, effort, or capacity."
+                )
+            elif index.column() == self.ESTIMATE_COLUMN:
                 if effort.is_container:
                     reference = (
                         f"Entered reference estimate: {item.estimate_hours} h. "
@@ -225,21 +261,24 @@ class PlanModel(QAbstractItemModel):
                         if effort.missing_estimate_count
                         else ""
                     )
-                    return (
+                    details = (
                         f"Derived from {effort.leaf_count} leaf item(s): "
                         f"{effort.known_estimate_hours} h known.{missing} {reference}"
                         "Container estimates are read-only. " + conversion_description(self.plan)
                     )
-                return (
-                    f"Stored estimate: {item.estimate_hours} h. "
-                    if item.estimate_hours is not None
-                    else "Estimate is not set. "
-                ) + conversion_description(self.plan)
-            return (
-                (finding_details(item_findings) if item_findings else values[self.NOTES_COLUMN])
-                or "Dates: calendar button or YYYY-MM-DD. Estimates: use the column unit. "
-                "Clear a cell to leave it unset."
-            )
+                else:
+                    details = (
+                        f"Stored estimate: {item.estimate_hours} h. "
+                        if item.estimate_hours is not None
+                        else "Estimate is not set. "
+                    ) + conversion_description(self.plan)
+            else:
+                details = (
+                    (finding_details(item_findings) if item_findings else values[self.NOTES_COLUMN])
+                    or "Dates: calendar button or YYYY-MM-DD. Estimates: use the column unit. "
+                    "Clear a cell to leave it unset."
+                )
+            return "\n\n".join(value for value in (provenance, details) if value)
         return None
 
     def _effort(self, item_id: UUID) -> WorkAllocationSummary:

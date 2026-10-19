@@ -124,9 +124,11 @@ class PlanFilterModel(QSortFilterProxyModel):
                 font.setItalic(True)
                 return font
             if role in (Qt.ItemDataRole.ToolTipRole, Qt.ItemDataRole.AccessibleDescriptionRole):
-                return (
+                context_note = (
                     "Ancestor context, not a filter match. Clear or change filters to edit cells."
                 )
+                original = super().data(index, role)
+                return "\n\n".join(value for value in (context_note, original) if value)
             if role == Qt.ItemDataRole.DisplayRole and index.column() == PlanModel.NOTES_COLUMN:
                 original = super().data(index, role)
                 return "Context only" + (f"; {original}" if original else "")

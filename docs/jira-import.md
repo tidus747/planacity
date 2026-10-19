@@ -80,6 +80,20 @@ reconciliation workflow tracked by issue #139. Unknown parents, invalid
 hierarchy, dates, estimates, and duplicate references within one CSV block the
 complete import.
 
+## Imported work in Plan
+
+Plan derives imported provenance from stable WorkItem IDs preserved in all
+source snapshots. A current row with a baseline uses a subtle theme-aware amber
+tint and an import icon beside its title. The tooltip and accessible description
+explain that the work remains editable and is neither read-only nor synchronized
+with its source. Local edits retain the cue because identity, not title, drives
+it. Manually created work is unchanged, and a removed current item does not
+produce a baseline-only row.
+
+This is a provenance cue, not Jira reconciliation. Changes still compares the
+current item with its immutable baseline, while Jira updates remain the explicit
+future workflow tracked by issue #139.
+
 Seconds are converted to decimal hours with Python's default 28 significant
 digit precision. Original CSV values remain available in the baseline; exports
 restore integral seconds when the difference is only division roundoff.
@@ -111,6 +125,9 @@ The full automated suite passed 197 tests. Website and package builds passed.
 GitHub CI also checks Windows and Linux with Python 3.11 and 3.13.
 
 Real screenshots using only the fictional example:
+
+![Imported provenance in Plan, light mode](images/plan-imported-provenance-light.png)
+![Imported provenance in Plan, dark mode](images/plan-imported-provenance-dark.png)
 
 ![Existing-reference anchor preview in light mode](images/jira-existing-anchors-light.png)
 ![Existing-reference anchor preview in dark mode](images/jira-existing-anchors-dark.png)

@@ -250,6 +250,7 @@ class MainWindow(QMainWindow):
         scheme = Qt.ColorScheme.Dark if theme == Theme.DARK else Qt.ColorScheme.Light
         QGuiApplication.styleHints().setColorScheme(scheme)
         self.setStyleSheet(stylesheet(theme))
+        self.plan_page.source_model.set_theme(theme)
         self.theme_buttons[theme].setChecked(True)
         self.theme_actions[theme].setChecked(True)
         self._refresh_icons()
