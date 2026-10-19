@@ -24,10 +24,12 @@ from planacity.integrations.jira.csv_io import (
     FIELDS,
     IMPORT_DATE_FORMATS,
     CsvTable,
+    ExistingReferenceAnchor,
     Mapping,
     external_people,
     external_priorities,
-    preview_import,
+    importable_rows,
+    preview_additive_import,
 )
 from planacity.integrations.jira.profiles import dump_profile, load_profile
 from planacity.ui.pages import label
@@ -62,6 +64,7 @@ class ImportWizard(QDialog):
         self.plan, self.table, self.source = plan, table, source
         self.project_path = project_path
         self.candidate: ProgramPlan | None = None
+        self.anchors: tuple[ExistingReferenceAnchor, ...] = ()
         self.mapping: Mapping | None = None
         self.columns: dict[str, QComboBox] = {}
         self.person_boxes: dict[str, QComboBox] = {}
@@ -202,9 +205,11 @@ class ImportWizard(QDialog):
                     people[name] = (
                         Person(name=name) if selected == "new" else self.plan.person(selected)
                     )
-                self.candidate = preview_import(
+                result = preview_additive_import(
                     self.plan, self.table, self.mapping, people, self.source
                 )
+                self.candidate = result.candidate
+                self.anchors = result.anchors
                 source = self.candidate.imports[-1]
                 lines = [
                     f"Import {len(source.records)} items from {self.source}.",
@@ -212,6 +217,16 @@ class ImportWizard(QDialog):
                     "Mapped people join the roster; this does not allocate work or capacity.",
                     "Status and external assignees are preserved for export, not edited here.",
                 ]
+                if self.anchors:
+                    anchor_count = len(self.anchors)
+                    references = "reference" if anchor_count == 1 else "references"
+                    anchors = "a hierarchy anchor" if anchor_count == 1 else "hierarchy anchors"
+                    possessive = "Its" if anchor_count == 1 else "Their"
+                    lines.append(
+                        f"Omit {anchor_count} existing {references} as {anchors}. "
+                        f"{possessive} CSV fields are ignored and current Planacity work "
+                        "is unchanged."
+                    )
                 unresolved = sum(
                     1
                     for record in source.records
@@ -226,6 +241,7 @@ class ImportWizard(QDialog):
                 self.preview_model.setHorizontalHeaderLabels(
                     [
                         "Reference",
+                        "Action",
                         "Type",
                         "Title",
                         "Source priority",
@@ -240,6 +256,7 @@ class ImportWizard(QDialog):
                     item = record.item
                     values = (
                         record.external_reference,
+                        "Import new work",
                         item.kind.value.title(),
                         item.title,
                         record.external_priority or "Blank",
@@ -259,7 +276,25 @@ class ImportWizard(QDialog):
                     for cell in row:
                         cell.setEditable(False)
                     self.preview_model.appendRow(row)
-                for column in range(9):
+                for anchor in self.anchors:
+                    item = self.plan.work_item(anchor.item_id)
+                    values = (
+                        anchor.reference,
+                        "Existing anchor - omitted",
+                        item.kind.value.title(),
+                        item.title,
+                        "Ignored",
+                        "Unchanged",
+                        "Unchanged",
+                        "Unchanged",
+                        "Unchanged",
+                        "Unchanged",
+                    )
+                    row = [QStandardItem(value) for value in values]
+                    for cell in row:
+                        cell.setEditable(False)
+                    self.preview_model.appendRow(row)
+                for column in range(10):
                     self.preview_table.resizeColumnToContents(column)
                 self.preview.setPlainText("\n".join(lines))
             else:
@@ -279,9 +314,10 @@ class ImportWizard(QDialog):
         self.type_boxes = {}
         self.person_boxes = {}
         self.priority_boxes = {}
+        rows = importable_rows(self.plan, self.table, self.mapping)
         column = dict(self.mapping.columns)["type"]
-        form.addRow(label("Map every external work type explicitly."))
-        for name in dict.fromkeys(row[column] for row in self.table.rows):
+        form.addRow(label("Map every new external work type explicitly."))
+        for name in dict.fromkeys(row[column] for row in rows):
             box = QComboBox()
             box.addItem("Choose type", "")
             for kind in WorkItemType:
@@ -291,7 +327,7 @@ class ImportWizard(QDialog):
                 box.setCurrentIndex(box.findData(mapped.value))
             self.type_boxes[name] = box
             form.addRow(label(name), box)
-        source_priorities = external_priorities(self.table, self.mapping)
+        source_priorities = external_priorities(self.table, self.mapping, rows)
         if source_priorities:
             form.addRow(
                 label(
@@ -324,7 +360,7 @@ class ImportWizard(QDialog):
             self.priority_boxes[name] = box
             form.addRow(label(name), box)
         form.addRow(label("Map external people. Names are not matched automatically."))
-        for name in external_people(self.table, self.mapping):
+        for name in external_people(self.table, self.mapping, rows):
             box = QComboBox()
             box.addItem("Choose person", "unmapped")
             box.addItem(f"Create roster entry: {name}", "new")
@@ -339,6 +375,7 @@ class ImportWizard(QDialog):
 
     def go_back(self) -> None:
         self.candidate = None
+        self.anchors = ()
         self.pages.setCurrentIndex(max(0, self.pages.currentIndex() - 1))
         self.update_step()
 

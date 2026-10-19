@@ -63,10 +63,22 @@ retained independently from the roster display name.
 JSON backups retain it too. Keep these files local if the imported data is
 sensitive. Baseline person names remain even if a roster entry is later removed.
 
-New CSV sources may be added when their external references are distinct.
-Duplicate references, unknown parents, invalid hierarchy, dates, or estimates
-block the complete import. Re-import reconciliation belongs to v0.8; importing
-the same references again is deliberately rejected.
+New CSV sources may add work while also containing references already present in
+the plan. Review marks those rows as **Existing anchor - omitted**. Planacity
+ignores every field from the repeated row and leaves the current work and its
+original baseline unchanged. The stable existing identity may still resolve a
+new child's Parent. When Parent uses a numeric Row ID, include the existing
+parent row so its temporary ID can be resolved. When Parent contains external
+references, an existing parent does not need to be repeated in the CSV.
+
+Only genuinely new rows are stored in the new source snapshot; the review states
+which anchor rows are intentionally omitted. An anchor whose current WorkItem
+was deleted blocks the import rather than restoring or guessing it. A file with
+no new references also remains blocked. Updating existing Jira work, comparing
+Jira-side changes, and resolving conflicts still belong to the explicit v0.8
+reconciliation workflow tracked by issue #139. Unknown parents, invalid
+hierarchy, dates, estimates, and duplicate references within one CSV block the
+complete import.
 
 Seconds are converted to decimal hours with Python's default 28 significant
 digit precision. Original CSV values remain available in the baseline; exports
@@ -99,6 +111,9 @@ The full automated suite passed 197 tests. Website and package builds passed.
 GitHub CI also checks Windows and Linux with Python 3.11 and 3.13.
 
 Real screenshots using only the fictional example:
+
+![Existing-reference anchor preview in light mode](images/jira-existing-anchors-light.png)
+![Existing-reference anchor preview in dark mode](images/jira-existing-anchors-dark.png)
 
 ![Jira date-time mapping in light mode](images/jira-datetime-light.png)
 ![Jira date-time mapping in dark mode](images/jira-datetime-dark.png)

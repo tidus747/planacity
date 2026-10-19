@@ -55,6 +55,50 @@ def test_wizard_offers_jira_datetime_input_format(app):
     wizard.deleteLater()
 
 
+def test_wizard_previews_existing_anchors_without_mapping_or_mutating_them(app):
+    initial_mapping = Mapping((("reference", 0), ("title", 1), ("type", 2)))
+    plan = preview_import(
+        empty_plan(),
+        read_csv("Key,Summary,Type\nJIRA-1,Canonical epic,Epic\n"),
+        initial_mapping,
+        {},
+        "initial.csv",
+    )
+    table = read_csv(
+        "Issue key,Summary,Issue Type,Parent,Assignee\n"
+        "JIRA-1,Stale title,Story,,Former owner\n"
+        "JIRA-2,New task,Task,JIRA-1,Alex\n"
+    )
+    wizard = ImportWizard(plan, table, "additive.csv")
+    wizard.show()
+
+    wizard.advance()
+
+    assert set(wizard.type_boxes) == {"Task"}
+    assert set(wizard.person_boxes) == {"Alex"}
+    wizard.person_boxes["Alex"].setCurrentIndex(1)
+    wizard.advance()
+
+    assert wizard.pages.currentIndex() == 2
+    assert wizard.candidate is not None
+    assert wizard.candidate.work_items[0] == plan.work_items[0]
+    assert wizard.candidate.work_items[-1].parent_id == plan.work_items[0].id
+    assert wizard.preview_model.rowCount() == 2
+    assert wizard.preview_model.item(0, 0).text() == "JIRA-2"
+    assert wizard.preview_model.item(0, 1).text() == "Import new work"
+    assert wizard.preview_model.item(1, 0).text() == "JIRA-1"
+    assert wizard.preview_model.item(1, 3).text() == "Canonical epic"
+    assert wizard.preview_model.item(1, 1).text() == "Existing anchor - omitted"
+    assert (
+        "Omit 1 existing reference as a hierarchy anchor. Its CSV fields are ignored"
+        in wizard.preview.toPlainText()
+    )
+    assert plan.work_items[0].title == "Canonical epic"
+    wizard.reject()
+    assert len(plan.imports) == 1
+    wizard.deleteLater()
+
+
 def test_bad_mapping_stays_open_and_import_edit_save_reopen(window, app, tmp_path):
     window.session.document.new(empty_plan())
     window.session.changed.emit()
@@ -168,8 +212,8 @@ def test_priority_defaults_unresolved_preview_and_profile_reuse(app, tmp_path, m
     assert wizard.pages.currentIndex() == 2
     assert wizard.candidate.work_items[0].priority == WorkPriority.HIGHEST
     assert wizard.candidate.work_items[1].priority is None
-    assert wizard.preview_model.item(1, 3).text() == "Urgent"
-    assert wizard.preview_model.item(1, 4).text() == "Unresolved -> Unset"
+    assert wizard.preview_model.item(1, 4).text() == "Urgent"
+    assert wizard.preview_model.item(1, 5).text() == "Unresolved -> Unset"
     assert "2 source priority value(s) remain unresolved" in wizard.preview.toPlainText()
 
     wizard.go_back()

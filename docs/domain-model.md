@@ -298,8 +298,12 @@ to the matched roster person. It does not create an Allocation or invent capacit
 hours. The exact external person text and Person snapshot remain provenance.
 
 Baseline references need not exist in current work or the current roster after
-local deletion. The baseline validates its own original hierarchy independently.
-Computed Changes compares that original work with current work by stable UUID.
+local deletion. Additive Jira imports may use an existing external reference as a
+hierarchy anchor without importing or overwriting that row again. The new
+snapshot stores only genuinely new rows, so its items may reference baseline
+parents in earlier snapshots. The complete baseline hierarchy is validated
+across all snapshots. Computed Changes compares that original work with current
+work by stable UUID.
 
 ## Allocations
 

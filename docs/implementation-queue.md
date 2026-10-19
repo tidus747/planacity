@@ -267,6 +267,26 @@ rejecting irregular plans. Preserve stable identities and schema 13.
 Non-goals: sprint capacity, Jira mapping, automatic distribution, velocity, and
 Scrum ceremony management.
 
+## J01 - Additive Jira import with existing-reference anchors
+
+Target: v0.5 usability. Safe prerequisite for v0.8 reconciliation. Tracked by
+[issue #158](https://github.com/tidus747/planacity/issues/158).
+
+Classify repeated external references as explicit omitted anchors during CSV
+review. Never update them, duplicate their baseline, or infer Jira changes. Use
+their stable current WorkItem IDs only to resolve hierarchy for genuinely new
+rows. Store only new rows in the new snapshot and block deleted anchors or files
+with no new work. Full comparison and conflict resolution remain in #139.
+
+## J02 - Imported provenance cue in Plan
+
+Target: v0.5 usability. Tracked by
+[issue #159](https://github.com/tidus747/planacity/issues/159).
+
+Derive an accessible, theme-aware imported-baseline cue from existing snapshots.
+Use a subtle amber tint plus a non-color indicator without locking work or
+implying synchronization. This remains a separate visual PR after J01.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.

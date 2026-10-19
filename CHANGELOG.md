@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Additive Jira CSV import through explicit existing-reference anchors. Repeated
+  references are shown and omitted without changing their current work or
+  baseline, while new children can retain hierarchy links to those stable items.
+  Deleted anchors, ambiguous identities, and files with no new work remain
+  blocked for the later reconciliation workflow.
 - Manual sprint planning in Calendar. Users can create, edit, and delete
   canonical sprints, review date diagnostics, and explicitly assign, reassign,
   or unassign executable leaf work. All actions preserve stable identities,

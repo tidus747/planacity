@@ -154,12 +154,16 @@ unsaved copy; it does not compare it with the original or guarantee feasibility.
 ## Imported source snapshots
 
 Each entry in `imports` contains a UUID, source name, original headers, raw rows,
-and one record per row. Records contain the original WorkItem, external
+and one record per stored row. Records contain the original WorkItem, external
 reference, external person, mapped Person snapshot (or null), original status,
 and exact original priority text. The baseline WorkItem holds the separately
 mapped canonical priority. An unresolved custom source value therefore remains
 recoverable even while its canonical value is null/Unset.
-Headers may repeat; every row must match their width. Baseline work forms its own
+Headers may repeat; every row must match their width. During an additive Jira
+import, rows whose external references already exist are explicit hierarchy
+anchors: they are omitted from the new snapshot and their current Planacity data
+is not overwritten. A new snapshot may therefore contain a child whose baseline
+parent is stored in an earlier snapshot. The union of all baseline work forms the
 validated hierarchy. References and work IDs cannot be duplicated across sources.
 Baseline records remain valid when current work or roster entries are removed.
 The baseline is never rewritten by editing or exporting the current plan.
