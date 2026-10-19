@@ -205,7 +205,8 @@ class MainWindow(QMainWindow):
             "Edit dated availability and review overlaps. "
             "Reserve recurring capacity with a per-person preview. "
             "Review dated capacity, reservations, allocations, and planning findings. "
-            "Manage shared holidays and program events with explicit capacity impact.</p>",
+            "Manage shared holidays and program events with explicit capacity impact. "
+            "Create manual sprints and assign executable work in Calendar.</p>",
         )
 
     def _refresh_document(self) -> None:

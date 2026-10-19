@@ -47,8 +47,10 @@ def test_keyboard_navigation_and_empty_workspaces(app: QApplication, window: Mai
     app.processEvents()
     assert window.pages.currentIndex() == 1
     tables = window.findChildren(QTreeView)
-    assert len(tables) == 6
+    assert len(tables) == 8
     assert all(table.model().rowCount() == 0 for table in tables)
+    assert window.calendar_page.sprint_table in tables
+    assert window.calendar_page.assignment_table in tables
 
 
 def test_entry_point_starts_and_exits() -> None:

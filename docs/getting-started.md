@@ -62,8 +62,16 @@ No account or network connection is needed while planning.
    only after reviewing their status. Confirmation applies the selected valid
    rows together, while Cancel leaves the plan unchanged. Mapping profiles save
    field positions and the delimiter, but never names or source HR rows.
+   The **Sprint planning** section manages manual planning periods with inclusive
+   dates, optional external references, and optional WorkGroup scope. Use
+   **Set sprint...** on executable leaf work to assign or move it; **Unassign**
+   removes only sprint membership. Overlaps, dates outside the horizon,
+   incomplete work dates, and work outside its sprint remain visible findings.
+   Planacity does not move work dates or distribute work automatically.
    Real Calendar workspace screenshots: [light](images/program-calendar-light.png)
    and [dark](images/program-calendar-dark.png).
+   Sprint assignment screenshots: [light](images/calendar-sprints-light.png) and
+   [dark](images/calendar-sprints-dark.png).
    Real import review screenshots: [light](images/availability-import-light.png)
    and [dark](images/availability-import-dark.png).
    Overview also summarizes the events that intersect the planning horizon and
