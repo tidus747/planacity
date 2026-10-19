@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Imported-baseline provenance in Plan. Current work backed by any import
+  snapshot has a subtle theme-aware amber row tint, an import icon, and an
+  accessible explanation while remaining fully editable. The cue follows the
+  stable WorkItem identity through local edits and never implies synchronization.
 - Additive Jira CSV import through explicit existing-reference anchors. Repeated
   references are shown and omitted without changing their current work or
   baseline, while new children can retain hierarchy links to those stable items.

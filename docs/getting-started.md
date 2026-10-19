@@ -153,10 +153,21 @@ saved project. They are temporary view choices and reset when another plan opens
 If a selected WorkGroup is removed, that filter returns to All WorkGroups.
 Plan and Timeline keep independent filter selections.
 
+Rows backed by an imported baseline have a very subtle amber tint and an import
+icon beside the title. Hover the row for the explicit accessible explanation.
+Imported work remains editable; this cue does not mean that the item is locked or
+synchronized with Jira. It stays attached to the stable work identity after a
+local edit, while manually created rows keep their normal appearance.
+
 Actual Plan filters in both appearances:
 
 ![Plan filters in light mode](images/plan-filters-light.png)
 ![Plan filters in dark mode](images/plan-filters-dark.png)
+
+Imported provenance in both appearances:
+
+![Imported provenance in Plan, light mode](images/plan-imported-provenance-light.png)
+![Imported provenance in Plan, dark mode](images/plan-imported-provenance-dark.png)
 
 ## Prioritize work explicitly
 

@@ -306,6 +306,10 @@ Derive an accessible, theme-aware imported-baseline cue from existing snapshots.
 Use a subtle amber tint plus a non-color indicator without locking work or
 implying synchronization. This remains a separate visual PR after J01.
 
+Status: implemented by issue #159. Plan derives provenance from snapshot WorkItem
+IDs, applies a light/dark amber treatment plus an import icon, and explains that
+the work remains editable and unsynchronized. No schema field or lock was added.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.
