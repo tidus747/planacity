@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal, DecimalException
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.domain.models import ImportedWork, ImportSnapshot
@@ -44,6 +44,19 @@ _JIRA_DATE_TIME = re.compile(
 class CsvTable:
     headers: tuple[str, ...]
     rows: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True)
+class ExistingReferenceAnchor:
+    row_number: int
+    reference: str
+    item_id: UUID
+
+
+@dataclass(frozen=True)
+class JiraImportPreview:
+    candidate: ProgramPlan
+    anchors: tuple[ExistingReferenceAnchor, ...]
 
 
 @dataclass(frozen=True)
@@ -137,24 +150,51 @@ def parse_import_date(value: str, date_format: str) -> date:
     return datetime(year, month, int(values["day"]), hour, minute).date()
 
 
-def external_people(table: CsvTable, mapping: Mapping) -> tuple[str, ...]:
+def importable_rows(
+    plan: ProgramPlan, table: CsvTable, mapping: Mapping
+) -> tuple[tuple[str, ...], ...]:
+    """Return rows whose references do not already have a preserved baseline."""
+    validate_columns(table, mapping)
+    reference = dict(mapping.columns).get("reference")
+    assert reference is not None
+    imported = {record.external_reference for source in plan.imports for record in source.records}
+    return tuple(row for row in table.rows if row[reference] not in imported)
+
+
+def external_people(
+    table: CsvTable,
+    mapping: Mapping,
+    rows: tuple[tuple[str, ...], ...] | None = None,
+) -> tuple[str, ...]:
     validate_columns(table, mapping)
     index = dict(mapping.columns).get("person")
     return (
         ()
         if index is None
-        else tuple(dict.fromkeys(row[index] for row in table.rows if row[index].strip()))
+        else tuple(
+            dict.fromkeys(
+                row[index] for row in (table.rows if rows is None else rows) if row[index].strip()
+            )
+        )
     )
 
 
-def external_priorities(table: CsvTable, mapping: Mapping) -> tuple[str, ...]:
+def external_priorities(
+    table: CsvTable,
+    mapping: Mapping,
+    rows: tuple[tuple[str, ...], ...] | None = None,
+) -> tuple[str, ...]:
     """Return distinct nonblank source labels in first-seen order."""
     validate_columns(table, mapping)
     index = dict(mapping.columns).get("priority")
     return (
         ()
         if index is None
-        else tuple(dict.fromkeys(row[index] for row in table.rows if row[index].strip()))
+        else tuple(
+            dict.fromkeys(
+                row[index] for row in (table.rows if rows is None else rows) if row[index].strip()
+            )
+        )
     )
 
 
@@ -173,25 +213,20 @@ def _validate_parent_type(
         raise ValueError(f"Subtask {title!r} requires a Task parent.")
 
 
-def preview_import(
+def preview_additive_import(
     plan: ProgramPlan,
     table: CsvTable,
     mapping: Mapping,
     people: dict[str, Person],
     source_name: str,
-) -> ProgramPlan:
-    """Return a complete candidate; never mutate the current plan or its baseline."""
+) -> JiraImportPreview:
+    """Build an additive candidate while retaining existing references as anchors."""
     validate_columns(table, mapping)
     columns = dict(mapping.columns)
 
     def cell(row: tuple[str, ...], field: str) -> str:
         return row[columns[field]] if field in columns else ""
 
-    missing = set(external_people(table, mapping)) - people.keys()
-    if missing:
-        raise ValueError(
-            "Map these external people before importing: " + ", ".join(sorted(missing))
-        )
     references = [cell(row, "reference") for row in table.rows]
     identities = [
         cell(row, "row_id") if "row_id" in columns else ref
@@ -207,19 +242,70 @@ def preview_import(
             seen.add(value)
     mapped_types = tuple(dict(mapping.types).get(cell(row, "type")) for row in table.rows)
     priority_values = dict(mapping.priorities)
-    types_by_identity = dict(zip(identities, mapped_types, strict=True))
-    imported = {r.external_reference for source in plan.imports for r in source.records}
-    if imported.intersection(references):
+    existing_records = {
+        record.external_reference: record for source in plan.imports for record in source.records
+    }
+    current_work = {item.id: item for item in plan.work_items}
+    existing_items = {
+        reference: current_work.get(record.item.id)
+        for reference, record in existing_records.items()
+    }
+    missing_anchors = sorted(
+        reference
+        for reference in references
+        if reference in existing_items and existing_items[reference] is None
+    )
+    if missing_anchors:
         raise ValueError(
-            "Some references are already imported. Re-import reconciliation is not "
-            "supported yet; use a new plan or a distinct CSV source."
+            "Existing imported references no longer have current work and cannot be used "
+            "as anchors: "
+            + ", ".join(missing_anchors)
+            + ". Restore or reconcile them before this additive import."
         )
-    ids = {key: uuid4() for key in identities}
+    new_rows = tuple(
+        row
+        for row, reference in zip(table.rows, references, strict=True)
+        if reference not in existing_records
+    )
+    if not new_rows:
+        raise ValueError(
+            "The CSV contains no new external references. Existing rows would only be "
+            "omitted; use the future reconciliation workflow to update them."
+        )
+    missing = set(external_people(table, mapping, new_rows)) - people.keys()
+    if missing:
+        raise ValueError(
+            "Map these external people before importing: " + ", ".join(sorted(missing))
+        )
+
+    ids: dict[str, UUID] = {}
+    types_by_identity: dict[str, WorkItemType | None] = {}
+    anchors: list[ExistingReferenceAnchor] = []
+    for number, (key, reference, kind) in enumerate(
+        zip(identities, references, mapped_types, strict=True), 2
+    ):
+        existing = existing_items.get(reference)
+        if existing is None:
+            ids[key] = uuid4()
+            types_by_identity[key] = kind
+        else:
+            ids[key] = existing.id
+            types_by_identity[key] = existing.kind
+            anchors.append(ExistingReferenceAnchor(number, reference, existing.id))
+    if "row_id" not in columns:
+        for reference, item in existing_items.items():
+            if item is not None:
+                ids.setdefault(reference, item.id)
+                types_by_identity.setdefault(reference, item.kind)
+
     records = []
+    source_rows = []
     errors = []
     for number, (row, key, reference, kind) in enumerate(
         zip(table.rows, identities, references, mapped_types, strict=True), 2
     ):
+        if reference in existing_records:
+            continue
         try:
             if kind is None:
                 raise ValueError(f"Map work type {cell(row, 'type')!r} explicitly.")
@@ -272,6 +358,7 @@ def preview_import(
                     external_priority=cell(row, "priority"),
                 )
             )
+            source_rows.append(row)
         except DecimalException:
             errors.append(
                 f"CSV row {number} ({reference}): estimate must be a finite number "
@@ -282,16 +369,30 @@ def preview_import(
     if errors:
         raise ValueError("\n".join(errors))
     snapshot = ImportSnapshot(
-        name=source_name, headers=table.headers, rows=table.rows, records=tuple(records)
+        name=source_name, headers=table.headers, rows=tuple(source_rows), records=tuple(records)
     )
     roster = {person.id: person for person in plan.people}
     for mapped_person in people.values():
         if mapped_person.id in roster and roster[mapped_person.id] != mapped_person:
             raise ValueError("A mapped person differs from the current roster. Review the mapping.")
         roster[mapped_person.id] = mapped_person
-    return replace(
-        plan,
-        work_items=plan.work_items + tuple(r.item for r in records),
-        people=tuple(roster.values()),
-        imports=plan.imports + (snapshot,),
+    return JiraImportPreview(
+        replace(
+            plan,
+            work_items=plan.work_items + tuple(record.item for record in records),
+            people=tuple(roster.values()),
+            imports=plan.imports + (snapshot,),
+        ),
+        tuple(anchors),
     )
+
+
+def preview_import(
+    plan: ProgramPlan,
+    table: CsvTable,
+    mapping: Mapping,
+    people: dict[str, Person],
+    source_name: str,
+) -> ProgramPlan:
+    """Return the candidate plan for callers that do not need preview classifications."""
+    return preview_additive_import(plan, table, mapping, people, source_name).candidate

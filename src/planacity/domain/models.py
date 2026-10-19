@@ -217,7 +217,7 @@ class ImportSnapshot:
             raise ValueError("Every source row requires an imported work record.")
         if len({r.external_reference for r in self.records}) != len(self.records):
             raise ValueError("External references must be unique in a source.")
-        _validate_hierarchy(tuple(r.item for r in self.records))
+        _validate_hierarchy(tuple(r.item for r in self.records), allow_missing_parents=True)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -324,6 +324,7 @@ class ProgramPlan:
             raise ValueError(
                 "External references already imported; reconciliation is not supported."
             )
+        _validate_hierarchy(tuple(record.item for record in records))
 
     def work_group(self, group_id: UUID) -> WorkGroup:
         for group in self.work_groups:
@@ -438,7 +439,9 @@ def _validate_sprints(plan: ProgramPlan) -> None:
             raise ValueError("Only executable leaf work can be assigned to a sprint.")
 
 
-def _validate_hierarchy(items: tuple[WorkItem, ...]) -> None:
+def _validate_hierarchy(
+    items: tuple[WorkItem, ...], *, allow_missing_parents: bool = False
+) -> None:
     """Validate the whole aggregate, including data constructed by a file loader."""
     by_id: dict[UUID, WorkItem] = {}
     for item in items:
@@ -448,7 +451,7 @@ def _validate_hierarchy(items: tuple[WorkItem, ...]) -> None:
             )
         by_id[item.id] = item
     for item in items:
-        if item.parent_id is not None and item.parent_id not in by_id:
+        if item.parent_id is not None and item.parent_id not in by_id and not allow_missing_parents:
             raise ValueError(
                 f"Parent {item.parent_id} of '{item.title}' does not exist in this plan."
             )
@@ -458,7 +461,7 @@ def _validate_hierarchy(items: tuple[WorkItem, ...]) -> None:
     for item in items:
         path: set[UUID] = set()
         current: UUID | None = item.id
-        while current is not None and current not in completed:
+        while current is not None and current in by_id and current not in completed:
             if current in path:
                 raise ValueError(f"Hierarchy contains a cycle at '{by_id[current].title}'.")
             path.add(current)
@@ -472,6 +475,6 @@ def _validate_hierarchy(items: tuple[WorkItem, ...]) -> None:
         if item.kind == WorkItemType.TASK and parent is not None:
             if parent.kind != WorkItemType.EPIC:
                 raise ValueError(f"Task '{item.title}' requires an Epic parent or no parent.")
-        if item.kind == WorkItemType.SUBTASK:
+        if item.kind == WorkItemType.SUBTASK and (parent is not None or not allow_missing_parents):
             if parent is None or parent.kind != WorkItemType.TASK:
                 raise ValueError(f"Subtask '{item.title}' requires a Task parent.")

@@ -369,6 +369,12 @@ baselines. A local Planacity REST service is a separate post-v1.0 decision that
 requires a concrete external consumer and security model. CSV remains the
 default offline interoperability path.
 
+A safe additive CSV prerequisite is tracked by
+[#158](https://github.com/tidus747/planacity/issues/158): repeated references may
+act only as omitted hierarchy anchors for genuinely new work. It does not update
+or reconcile them. The related imported-provenance cue in Plan is isolated in
+[#159](https://github.com/tidus747/planacity/issues/159).
+
 ## Optional external-assistant workflow
 
 The [agent-assisted planning proposal](agent-assisted-planning.md) defines a

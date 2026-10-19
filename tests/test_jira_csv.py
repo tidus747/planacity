@@ -22,6 +22,7 @@ from planacity.integrations.jira.csv_io import (
     Mapping,
     external_priorities,
     parse_import_date,
+    preview_additive_import,
     preview_import,
     read_csv,
 )
@@ -308,13 +309,125 @@ def test_invalid_mapping_rows_never_modify_plan(plan, old, new, message):
     assert not plan.work_items and not plan.imports and not plan.people
 
 
-def test_people_must_be_explicit_and_reimport_cannot_replace_baseline(plan):
+def test_people_must_be_explicit_and_reimport_without_new_work_is_rejected(plan):
     with pytest.raises(ValueError, match="Map these external people"):
         preview_import(plan, read_csv(CSV), MAPPING, {}, "test.csv")
     result = imported(plan)
-    with pytest.raises(ValueError, match="already imported"):
+    with pytest.raises(ValueError, match="no new external references"):
         preview_import(result, read_csv(CSV), MAPPING, {"Alice": result.people[0]}, "test.csv")
     assert not work_changes(result)
+
+
+def test_additive_import_uses_existing_reference_as_parent_without_overwriting_it(plan):
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("parent", 3)))
+    initial = preview_import(
+        plan,
+        read_csv("Key,Summary,Type,Parent\nJIRA-1,Original epic,Epic,\n"),
+        mapping,
+        {},
+        "initial.csv",
+    )
+    before = initial.imports
+    result = preview_additive_import(
+        initial,
+        read_csv(
+            "Key,Summary,Type,Parent\nJIRA-1,Changed in Jira,Task,\nJIRA-2,New child,Task,JIRA-1\n"
+        ),
+        mapping,
+        {},
+        "additive.csv",
+    )
+    candidate = result.candidate
+    existing = initial.work_items[0]
+    added = candidate.work_items[-1]
+
+    assert result.anchors[0].reference == "JIRA-1"
+    assert result.anchors[0].item_id == existing.id
+    assert candidate.work_items[0] == existing
+    assert added.title == "New child" and added.parent_id == existing.id
+    assert candidate.imports[:1] == before
+    assert candidate.imports[1].rows == (("JIRA-2", "New child", "Task", "JIRA-1"),)
+    assert tuple(record.external_reference for record in candidate.imports[1].records) == (
+        "JIRA-2",
+    )
+    assert not work_changes(candidate)
+    assert loads(dumps(candidate)) == candidate
+
+
+def test_additive_import_resolves_numeric_parent_through_included_anchor_row(plan):
+    basic = Mapping((("reference", 0), ("title", 1), ("type", 2)))
+    initial = preview_import(
+        plan,
+        read_csv("Key,Summary,Type\nJIRA-1,Epic,Epic\n"),
+        basic,
+        {},
+        "initial.csv",
+    )
+    mapping = Mapping(
+        (
+            ("reference", 0),
+            ("row_id", 1),
+            ("title", 2),
+            ("type", 3),
+            ("parent", 4),
+        )
+    )
+    result = preview_additive_import(
+        initial,
+        read_csv(
+            "Key,ID,Summary,Type,Parent\n"
+            "JIRA-1,100,Stale epic data,Story,\n"
+            "JIRA-2,200,New child,Task,100\n"
+        ),
+        mapping,
+        {},
+        "numeric.csv",
+    )
+
+    assert result.candidate.work_items[-1].parent_id == initial.work_items[0].id
+    assert result.candidate.work_items[0] == initial.work_items[0]
+
+
+def test_additive_import_can_reference_existing_parent_omitted_from_csv(plan):
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("parent", 3)))
+    initial = preview_import(
+        plan,
+        read_csv("Key,Summary,Type,Parent\nJIRA-1,Epic,Epic,\n"),
+        mapping,
+        {},
+        "initial.csv",
+    )
+    result = preview_additive_import(
+        initial,
+        read_csv("Key,Summary,Type,Parent\nJIRA-2,New child,Task,JIRA-1\n"),
+        mapping,
+        {},
+        "child.csv",
+    )
+
+    assert result.anchors == ()
+    assert result.candidate.work_items[-1].parent_id == initial.work_items[0].id
+
+
+def test_additive_import_rejects_an_anchor_removed_from_current_plan(plan):
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("parent", 3)))
+    initial = preview_import(
+        plan,
+        read_csv("Key,Summary,Type,Parent\nJIRA-1,Epic,Epic,\n"),
+        mapping,
+        {},
+        "initial.csv",
+    )
+    removed = replace(initial, work_items=())
+
+    with pytest.raises(ValueError, match="no longer have current work"):
+        preview_additive_import(
+            removed,
+            read_csv("Key,Summary,Type,Parent\nJIRA-1,Epic,Epic,\nJIRA-2,New child,Task,JIRA-1\n"),
+            mapping,
+            {},
+            "blocked.csv",
+        )
 
 
 def test_changes_include_added_and_removed_and_remain_computed(plan):
