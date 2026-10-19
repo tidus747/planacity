@@ -342,6 +342,9 @@ explicit acceptance; it must never silently move dates or assignments.
 The first implementation slice is the canonical sprint and assignment model in
 [#154](https://github.com/tidus747/planacity/issues/154). Calendar projection,
 load calculations, Jira mapping, and assisted distribution remain separate PRs.
+Manual sprint editing and explicit leaf-work assignment are the focused second
+slice in [#156](https://github.com/tidus747/planacity/issues/156). Sprint load
+and capacity comparison remain a later slice.
 
 Optional REST connectivity is tracked by
 [#146](https://github.com/tidus747/planacity/issues/146). A Jira REST adapter

@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Manual sprint planning in Calendar. Users can create, edit, and delete
+  canonical sprints, review date diagnostics, and explicitly assign, reassign,
+  or unassign executable leaf work. All actions preserve stable identities,
+  remain transactional, and use the existing schema 13 project data.
 - First-class Sprint and SprintAssignment domain inputs in project schema 13.
   Sprints have inclusive dates, optional external identity and WorkGroup scope;
   separate stable assignments connect executable leaf work to at most one

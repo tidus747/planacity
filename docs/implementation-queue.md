@@ -252,6 +252,21 @@ Support optional WorkGroup scope and diagnostics for overlaps, horizon bounds,
 incomplete work dates, and work outside sprint dates. Do not add Calendar UI,
 capacity calculations, Jira mapping, or automatic distribution in this slice.
 
+Status: completed by issue #154 and PR #155.
+
+## C07 - Manual sprint planning in Calendar
+
+Target: v0.5. Depends on C06. Tracked by
+[issue #156](https://github.com/tidus747/planacity/issues/156).
+
+Expose the canonical sprint model in Calendar with transactional create/edit/
+delete actions and explicit assignment, reassignment, and unassignment for
+executable leaf work. Show scope and date diagnostics without changing dates or
+rejecting irregular plans. Preserve stable identities and schema 13.
+
+Non-goals: sprint capacity, Jira mapping, automatic distribution, velocity, and
+Scrum ceremony management.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.
