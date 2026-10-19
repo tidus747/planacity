@@ -318,3 +318,21 @@ When allocated leaf work gains its first child, the user must move its entered
 estimate and allocations to a leaf or cancel. `resolve_container_effort` offers
 the same explicit repair for existing container allocations.
 See [work allocations](allocation-model.md) for summary rules and desktop editing.
+
+## Reservation coverage foundation
+
+`ReservationCoverage` is an immutable, explicit link from one Allocation to one
+ReservationRule. It has its own stable ID and stores only the two canonical IDs.
+The link is never inferred from a Jira reference, title, label, work type,
+assignee, or reservation name.
+
+The domain validator accepts complete candidate tuples. Coverage IDs must be
+unique, one allocation can select at most one covering rule, both references
+must exist, and the allocated person must belong to that rule. A zero-hour
+allocation may retain a link because zero hours are an explicit planning state.
+Validation does not change its inputs.
+
+Issue #164 establishes only this domain contract. ReservationCoverage is not yet
+owned or persisted by ProgramPlan and does not change capacity totals. Follow-up
+slices of issue #161 will add persistence and lifecycle rules before integrating
+exact covered, excess, and unused hours into the shared capacity calculation.
