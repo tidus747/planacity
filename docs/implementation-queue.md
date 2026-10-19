@@ -241,6 +241,25 @@ Status: completed by issue #150. Calendar now owns the UTF-8 file entry point,
 delimiter choice, field and roster-person mapping, configuration-only profiles,
 complete row review, explicit warning inclusion, and atomic confirmation.
 
+## CJ01 - Reconcile Jira duty work with reserved capacity
+
+Priority: high. Target: after the v0.5 Calendar foundation and before v0.8 Jira
+reconciliation. Tracked by
+[issue #161](https://github.com/tidus747/planacity/issues/161).
+
+Prevent imported Meetings, Front Office, support, or similar Jira work from being
+deducted both as a recurring reservation and as ordinary allocated work. Add an
+explicit reservation-coverage link at Allocation level; never infer one from Jira
+names, labels, types, or assignees. Preserve WorkItem and ReservationRule as
+separate canonical entities.
+
+Deliver this as focused slices: domain/calculation contract, persistence and
+lifecycle rules, manual Plan/People editing, optional explicit Jira CSV mapping,
+then shared breakdowns and findings. Report compatible covered hours, excess
+work, unused reserved capacity, missing dates, non-overlapping periods, and
+person/rule mismatches without silently changing estimates, dates, allocations,
+reservations, or imported baselines.
+
 ## C06 - Canonical sprint model and assignments
 
 Target: v0.5. Tracked by

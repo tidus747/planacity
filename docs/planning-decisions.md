@@ -139,6 +139,29 @@ Example: 80 nominal hours - 8 unavailable - 6 meetings - 10 front office leaves
 tasks must be summed per day even if each fits its whole window on its own.
 Non-overlapping tasks are not falsely reported as simultaneous overload.
 
+### Reservation-backed work must not be counted twice
+
+Jira may contain normal work items for duties such as Meetings or Front Office
+that Planacity already models as recurring reservations. Importing and allocating
+those items must not subtract the same demand once as reserved capacity and again
+as ordinary delivery work.
+
+Keep each concept canonical and separate. A ReservationRule protects capacity;
+a WorkItem preserves the planned activity and Jira provenance; an Allocation
+identifies the person and hours. A future reservation-coverage entity should
+explicitly connect one Allocation to one ReservationRule. Link at Allocation
+level because reservation capacity is person-specific. Never infer coverage from
+names, labels, issue types, or assignees.
+
+Covered work remains visible in Plan, People, Timeline, and Jira roundtrip. The
+portion supported by compatible reserved hours does not consume ordinary planning
+capacity again. Excess work, unused reserved hours, missing dates, non-overlapping
+periods, and person/rule mismatches remain explicit findings; no hours are silently
+discarded or moved. Imported raw rows, baselines, estimates, and reservations are
+not rewritten. [Issue #161](https://github.com/tidus747/planacity/issues/161)
+tracks the domain, persistence, editing, calculation, and optional CSV-mapping
+slices.
+
 ## 5. Findings, data coverage, and edit boundaries
 
 Capacity findings are advisory, not hard limits on saving a plan. A user must be
