@@ -331,6 +331,22 @@ Generic availability import is split into the pure preview service
 The preview foundation was completed in PR #151. The Calendar review wizard
 completes the generic adapter in issue #150 before provider-specific mapping.
 
+### Important capacity and Jira integration
+
+Jira may already track Meetings, Front Office, support, and similar duties as
+normal issues while Planacity protects the same time through recurring capacity
+reservations. Counting both independently would understate remaining capacity.
+This is a high-priority integrity gap tracked by
+[#161](https://github.com/tidus747/planacity/issues/161).
+
+The preferred model keeps work, allocations, and reservations separate and adds
+an explicit link from an Allocation to its covering ReservationRule. Covered work
+remains visible and exportable, but compatible reserved hours are not deducted a
+second time. Excess work and unused reservation capacity stay visible. Manual
+linking and calculation rules come first; optional Jira CSV field mapping follows
+without guessing from names or labels. Implement this after the core v0.5 Calendar
+foundation and before claiming complete Jira reconciliation in v0.8.
+
 ### Later sprint planning and API connectivity
 
 Sprint planning is tracked by
