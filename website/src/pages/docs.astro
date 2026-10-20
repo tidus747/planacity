@@ -88,6 +88,11 @@ const linux =
               There is no assumed 8-hour day.
             </li>
             <li>
+              <strong>Add program context.</strong> In Calendar, record shared
+              events, review an availability CSV before importing it, define
+              sprints, and assign executable leaf work explicitly.
+            </li>
+            <li>
               <strong>Reserve and allocate.</strong> Use Planning -&gt; Reserve
               capacity... for recurring duties. In Plan, assign each executable
               leaf to one person with optional explicit capacity hours.
@@ -148,17 +153,25 @@ const linux =
             capacity calculation across findings, People, and Overview.
           </p>
           <p>
-            Projects save in schema 12. Schemas 1-11 remain readable; keep a
+            Projects save in schema 13. Schemas 1-12 remain readable; keep a
             backup or use Save As if an older build must still open your
             original file.
           </p>
           <p>
             Shared holidays and program events affect capacity, are editable in
             Calendar, appear in Overview, and can be enabled as aligned Timeline
-            lanes. Next: add reviewed generic CSV and Factorial exported-file
-            imports.{" "}
+            lanes. Calendar also reviews generic availability CSV files and
+            supports manual sprint planning. Next: reconcile reservation-backed
+            Jira work explicitly, add sprint load views, and adapt provider
+            exports without guessing.{" "}
             <a href={`${base}/roadmap/`}>See the roadmap</a>, or{" "}
             <a href={`${repo}/issues`}>report what you find</a>.
+          </p>
+          <p>
+            Additive Jira imports can retain existing references as hierarchy
+            anchors, and Plan marks imported-baseline rows. This is not Jira
+            synchronization or re-import reconciliation; review every CSV and
+            export explicitly.
           </p>
         </section>
       </div>

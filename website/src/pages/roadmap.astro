@@ -52,7 +52,7 @@ const later = [
         <p>In this roadmap</p>
         <a href="#available">Available today</a>
         <a href="#current">v0.5 / Current focus</a>
-        <a href="#next">v0.5 / File imports</a>
+        <a href="#next">v0.5 / Next slices</a>
         <a href="#later">Beyond the preview</a>
         <a href={`${repo}/issues`}>Track GitHub issues</a>
       </aside>
@@ -74,7 +74,8 @@ const later = [
             </li>
             <li>
               Jira CSV import/export, field mappings, and imported baseline
-              comparison.
+              comparison. Additive imports can use existing references as
+              hierarchy anchors, and Plan identifies baseline-backed work.
             </li>
             <li>
               Timeline scales, grouping, filters, dependency arrows, Team mode,
@@ -85,18 +86,26 @@ const later = [
               one-person executable-work assignments, and exact capacity views.
             </li>
             <li>
+              Shared program events in Calendar, Overview, and Timeline, plus a
+              reviewed generic availability CSV import workflow.
+            </li>
+            <li>
+              First-class sprints with manual Calendar editing and explicit
+              assignment of executable leaf work.
+            </li>
+            <li>
               Estimate units in hours, days, or weeks, with calendar setup in
               the same dialog.
             </li>
           </ul>
           <p>
-            These foundations are implemented. Shared holidays and program
-            events now participate in capacity calculations and have a dedicated
-            editor; visual projection is the active work.
+            These foundations are implemented in the source preview. Jira
+            re-import reconciliation, automatic sprint distribution, and a
+            stable installer are not yet available.
           </p>
         </section>
         <section id="current">
-          <h2>Now: put program events in context.</h2>
+          <h2>Now: keep capacity and Jira traceability consistent.</h2>
           <p>
             Development proceeds through focused issues, one at a time. The
             source version remains 0.4.0.dev0 until a release change is
@@ -118,47 +127,72 @@ const later = [
           <article class="release">
             <span class="release-tag">v0.5 B</span>
             <div>
-              <h3>Program Calendar - in progress</h3>
+              <h3>Program Calendar - complete in source</h3>
               <p>
-                The shared-event domain, schema 12 persistence, capacity
-                effects, Calendar editor, Overview summary, and optional
-                Timeline lanes are complete. Generic CSV import comes next,
-                without turning duties into fictitious appointments.
+                The shared-event domain and persistence introduced in schema
+                12, capacity effects, Calendar editor, Overview summary, and
+                optional Timeline lanes are complete. Generic availability CSV
+                import is reviewed in Calendar before it changes the plan.
               </p>
             </div>
           </article>
           <article class="release">
-            <span class="release-tag">v0.4</span>
+            <span class="release-tag">v0.5 C</span>
             <div>
-              <h3>Team &amp; Capacity - complete in source</h3>
+              <h3>Manual sprint planning - foundation complete</h3>
               <p>
-                Capacity findings, People breakdowns, Overview analysis, work
-                context, priorities, and single-person assignments are
-                available.
+                Schema 13 stores first-class sprints and leaf assignments.
+                Calendar supports explicit creation, editing, assignment,
+                reassignment, and diagnostics without moving work dates.
               </p>
+            </div>
+          </article>
+          <article class="release">
+            <span class="release-tag">ACTIVE</span>
+            <div>
+              <h3>Reservation-backed Jira work</h3>
+              <p>
+                The explicit allocation-to-reservation domain link is in place.
+                Persistence, editing, and exact covered/excess/unused capacity
+                remain focused slices of issue #161.
+              </p>
+              <a href={`${repo}/issues/161`}>Follow issue #161</a>
             </div>
           </article>
         </section>
         <section id="next">
-          <h2>Then: import availability safely.</h2>
+          <h2>Next: deepen the v0.5 planning loop.</h2>
           <article class="release">
-            <span class="release-tag">v0.5 C</span>
+            <span class="release-tag">SPRINTS</span>
             <div>
-              <h3>Generic availability CSV</h3>
+              <h3>Sprint capacity and load</h3>
               <p>
-                Preview mappings, match people explicitly, identify duplicates,
-                and retain ambiguous rows for correction instead of guessing.
+                Compare assigned sprint demand with group capacity and preserve
+                work outside sprints or crossing their boundaries as explicit
+                findings. Automatic distribution remains a later reviewed
+                proposal, not a silent mutation.
               </p>
+              <a href={`${repo}/issues/147`}>Follow issue #147</a>
             </div>
           </article>
           <article class="release">
-            <span class="release-tag">v0.5 D</span>
+            <span class="release-tag">IMPORTS</span>
             <div>
               <h3>Factorial exported files</h3>
               <p>
                 Adapt exported files to the same reviewed import workflow. Keep
                 provider terminology outside the canonical planning model and
                 avoid storing unnecessary HR detail.
+              </p>
+            </div>
+          </article>
+          <article class="release">
+            <span class="release-tag">GUIDE</span>
+            <div>
+              <h3>Offline planning-assistant guide</h3>
+              <p>
+                Package the versioned schema guidance and expose it through Help
+                without accounts, automatic uploads, or a provider dependency.
               </p>
             </div>
           </article>

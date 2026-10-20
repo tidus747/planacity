@@ -210,6 +210,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Changed
 
+- Refresh the public website to match the schema 13 source preview, completed
+  Calendar and availability-import work, manual sprint planning, recent Jira
+  usability, and the remaining v0.5 focus without announcing a new release.
 - The public website now distinguishes the `0.4.0.dev0` source version from the
   active v0.5 Program Calendar milestone. Its Home, Roadmap, and getting-started
   status now reflect implemented capacity, Team Timeline, dependency, ownership,
