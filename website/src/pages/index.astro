@@ -1,8 +1,8 @@
 ---
 import Page from "../layouts/Page.astro";
 import AppScreenshot from "../components/AppScreenshot.astro";
-import planLight from "../../../docs/images/moon-heist-plan-light.png";
-import planDark from "../../../docs/images/moon-heist-plan-dark.png";
+import planLight from "../../../docs/images/plan-imported-provenance-light.png";
+import planDark from "../../../docs/images/plan-imported-provenance-dark.png";
 import timelineLight from "../../../docs/images/moon-heist-timeline-light.png";
 import timelineDark from "../../../docs/images/moon-heist-timeline-dark.png";
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -22,7 +22,7 @@ const features = [
   [
     "03",
     "Bring the team into the plan.",
-    "Define work calendars and availability. Reserve recurring duties and assign executable work to one person with explicit capacity hours.",
+    "Define calendars, availability, and program events. Reserve recurring duties, assign executable work to one person, and plan it into sprints.",
     "Prepare capacity",
   ],
 ];
@@ -99,9 +99,10 @@ const features = [
     </div>
     <p class="scope-note">
       Capacity is explainable today across calendars, availability, recurring
-      duties, dated work, and shared program events managed in Calendar. The
-      active v0.5 work projects those events into planning views and adds
-      file-based availability imports.{" "}
+      duties, dated work, and shared program events. Calendar now supports
+      reviewed availability CSV imports and manual sprint planning. Active v0.5
+      work is making reservation-backed Jira work explicit before adding deeper
+      sprint load and provider-specific imports.{" "}
       <a href={`${base}/roadmap/`}>Read the roadmap</a>.
     </p>
   </section>
@@ -158,8 +159,9 @@ const features = [
       </li>
     </ol>
     <p class="muted">
-      Automated load checks and shareable reports are planned. The preview
-      already supports manual planning and Jira CSV roundtrip.
+      Planning proposals and shareable reports are planned. The preview already
+      supports capacity findings, manual sprint planning, and reviewed Jira CSV
+      roundtrip.
     </p>
   </section>
   <section class="section shell">
