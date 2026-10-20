@@ -1,6 +1,6 @@
 {
   "format": "planacity",
-  "schema_version": 13,
+  "schema_version": 14,
   "plan": {
     "name": "Operation Moon Heist",
     "horizon": {
@@ -888,6 +888,7 @@
         "id": "9eccc723-b8ee-51c3-ad22-578d146b84a1"
       }
     ],
+    "reservation_coverages": [],
     "sprints": [],
     "sprint_assignments": []
   }

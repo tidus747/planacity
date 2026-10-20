@@ -268,13 +268,13 @@ def test_schema_thirteen_json_and_sqlite_roundtrip(tmp_path):
     path = tmp_path / "calendar.planacity"
     save_project(plan, path)
 
-    assert data["schema_version"] == SCHEMA_VERSION == 13
+    assert data["schema_version"] == SCHEMA_VERSION == 14
     assert data["plan"]["calendar_events"][0]["unavailable_fraction"] == (
         "0.333333333333333333333333333333"
     )
     assert loads(json.dumps(data)) == load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 14
 
 
 def test_schema_eleven_loads_without_events_and_upgrades_only_on_save(tmp_path):
@@ -284,6 +284,7 @@ def test_schema_eleven_loads_without_events_and_upgrades_only_on_save(tmp_path):
     data["plan"].pop("calendar_events")
     data["plan"].pop("sprints")
     data["plan"].pop("sprint_assignments")
+    data["plan"].pop("reservation_coverages")
     payload = json.dumps(data)
     path = tmp_path / "schema-11.planacity"
     connection = sqlite3.connect(path)
@@ -301,7 +302,7 @@ def test_schema_eleven_loads_without_events_and_upgrades_only_on_save(tmp_path):
     save_project(plan, path)
     assert load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 14
 
 
 @pytest.mark.parametrize(

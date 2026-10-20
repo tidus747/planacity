@@ -2,7 +2,7 @@
 
 Revised 2026-10-07 after the assignment-policy review.
 This is the implementation direction, not a list of features already available
-or a release announcement. Current source remains `0.4.0.dev0`, file schema 13.
+or a release announcement. Current source remains `0.4.0.dev0`, file schema 14.
 
 The next useful outcome is: "I can explain whether this plan fits the team,
 where its capacity goes, and which assumptions still need attention."

@@ -76,10 +76,27 @@ def update_allocation(plan: ProgramPlan, allocation: Allocation) -> ProgramPlan:
     return candidate
 
 
-def remove_allocation(plan: ProgramPlan, allocation_id: UUID) -> ProgramPlan:
+def remove_allocation(
+    plan: ProgramPlan, allocation_id: UUID, *, remove_coverage: bool = False
+) -> ProgramPlan:
+    if type(remove_coverage) is not bool:
+        raise ValueError("Confirming reservation coverage removal requires an explicit boolean.")
     allocation_by_id(plan, allocation_id)
+    coverages = tuple(
+        coverage
+        for coverage in plan.reservation_coverages
+        if coverage.allocation_id == allocation_id
+    )
+    if coverages and not remove_coverage:
+        raise ValueError("Confirm removing this allocation's reservation coverage first.")
     candidate = replace(
-        plan, allocations=tuple(a for a in plan.allocations if a.id != allocation_id)
+        plan,
+        allocations=tuple(a for a in plan.allocations if a.id != allocation_id),
+        reservation_coverages=tuple(
+            coverage
+            for coverage in plan.reservation_coverages
+            if coverage.allocation_id != allocation_id
+        ),
     )
     validate_assignment_transition(plan, candidate)
     return candidate

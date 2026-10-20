@@ -9,7 +9,7 @@ The sections below record implemented behavior and its evolution. The next
 implementation contract is in [planning decisions](planning-decisions.md), with
 sequencing in the [roadmap](roadmap.md). Dependency enforcement, hierarchy
 effort, dated capacity, work-context, priority, ownership, and Jira mapping
-services operate over schema 13 inputs. Critical-path analysis is another pure
+services operate over schema 14 inputs. Critical-path analysis is another pure
 projection over those inputs and adds no persisted state.
 
 The v0.1 application edits and persists a canonical plan, horizon, hierarchy,
@@ -304,6 +304,14 @@ New allocations target leaf work. A legacy direct container allocation stays
 visible and counted until the user moves it to a newly named leaf or removes it.
 The move preserves allocation IDs/hours and does not alter dates, groups,
 relationships, imported baselines, or unrelated descendants.
+
+ProgramPlan also owns explicit ReservationCoverage links in schema 14. Each link
+connects one Allocation to one compatible ReservationRule and is validated as
+part of the complete immutable snapshot. Lifecycle services preserve compatible
+links, reject dangling or person-incompatible candidates, and require deliberate
+cleanup before directly deleting a linked allocation or rule. Confirmed person
+and work-subtree deletion removes only links whose allocations are removed.
+Capacity calculations do not consume these links yet.
 
 `planning/assignment_policy.py` detects multi-person leaves independently from
 structural decoding. Allocation lifecycle services reject new or worsened

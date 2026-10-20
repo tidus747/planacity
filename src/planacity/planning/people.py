@@ -45,6 +45,9 @@ def remove_person(
         raise ValueError("Confirm removing this person's availability entries first.")
     if not remove_reservations and any(person_id in r.person_ids for r in plan.reservation_rules):
         raise ValueError("Confirm removing this person from their reservation rules first.")
+    removed_allocation_ids = {
+        allocation.id for allocation in plan.allocations if allocation.person_id == person_id
+    }
     return replace(
         plan,
         people=tuple(person for person in plan.people if person.id != person_id),
@@ -53,6 +56,11 @@ def remove_person(
             for item in plan.work_items
         ),
         allocations=tuple(a for a in plan.allocations if a.person_id != person_id),
+        reservation_coverages=tuple(
+            coverage
+            for coverage in plan.reservation_coverages
+            if coverage.allocation_id not in removed_allocation_ids
+        ),
         person_calendars=tuple(
             value for value in plan.person_calendars if value.person_id != person_id
         ),

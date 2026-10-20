@@ -262,9 +262,10 @@ reservations, or imported baselines.
 
 Domain-link status: implemented by issue #164. ReservationCoverage explicitly
 connects one allocation to one compatible reservation rule and validates stable
-identity, uniqueness, references, and person membership without inference. It is
-not yet part of ProgramPlan persistence or capacity totals; those remain focused
-follow-up slices of issue #161.
+identity, uniqueness, references, and person membership without inference.
+Persistence and lifecycle are implemented by issue #168 in schema 14. Capacity
+totals still do not consume the links; exact covered, excess, and unused hours
+remain the next focused slice of issue #161.
 
 ## C06 - Canonical sprint model and assignments
 

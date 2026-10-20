@@ -1,4 +1,4 @@
-# Project files and JSON backups (schema 13)
+# Project files and JSON backups (schema 14)
 
 Planacity stores each Program Plan in a local `.planacity` SQLite file. No server
 or external database is involved. The application validates the entire document
@@ -7,7 +7,7 @@ before making it editable. File extensions are a convenience, not validation.
 ## SQLite container
 
 - `PRAGMA application_id = 0x504C414E` identifies Planacity.
-- `PRAGMA user_version = 13` is the schema version.
+- `PRAGMA user_version = 14` is the schema version.
 - The only application table is `document` with `id INTEGER PRIMARY KEY
   CHECK(id=1)` and `payload TEXT NOT NULL`.
 - Exactly one row, ID 1, contains the complete versioned JSON document below.
@@ -26,12 +26,13 @@ foreign, corrupt, and unsupported-version files are not overwritten.
 
 ## JSON document
 
-Top-level fields: `format` (`"planacity"`), `schema_version` (`13`), and `plan`.
+Top-level fields: `format` (`"planacity"`), `schema_version` (`14`), and `plan`.
 
 `plan` contains `id`, `name`, `description`, `horizon`, `work_items`, `people`,
 `work_groups`, `relationships`, `imports`, `work_calendars`, `person_calendars`,
 `availability_events`, `calendar_events`, `reservation_rules`,
-`estimate_preferences`, `allocations`, `sprints`, and `sprint_assignments`.
+`estimate_preferences`, `allocations`, `reservation_coverages`, `sprints`, and
+`sprint_assignments`.
 Fields match [the domain model](domain-model.md).
 
 Each work item stores its existing identity, hierarchy, estimate, and dates plus
@@ -85,6 +86,12 @@ finite non-negative Decimal string. References must exist in current work and
 the roster. IDs and work/person pairs must be unique. Order and precision survive
 save and restore. No computed totals or inferred Jira assignments are stored.
 
+Each reservation coverage stores `id`, `allocation_id`, and
+`reservation_rule_id`. Both references must exist, the Allocation's person must
+belong to the ReservationRule, and one Allocation can have at most one covering
+rule. Links are explicit and ordered; no Jira or naming convention creates one.
+Calculated covered, excess, and unused hours are not persisted.
+
 Each sprint stores `id`, `name`, an inclusive `period`, nullable
 `external_reference`, and nullable `work_group_id`. A null WorkGroup scope means
 the whole roster. Each sprint assignment has its own stable `id` and connects one
@@ -137,8 +144,9 @@ Existing Allocations are preserved exactly and may provide a visible legacy
 ownership fallback; no assignee or external identity is guessed during migration.
 Schemas 1-11 open with an empty shared calendar-event collection because earlier
 files did not store this input. Schema 12 opens with empty sprint and sprint
-assignment collections. Saving writes schema 13; older builds cannot open the
-upgraded file. Keep a
+assignment collections. Schema 13 opens with an empty reservation coverage
+collection; no link is inferred. Saving writes schema 14; older builds cannot
+open the upgraded file. Keep a
 backup or use Save As before upgrading.
 Unsupported versions require a compatible application; do not edit version fields
 to bypass validation. Concurrent editing of one project is not supported.

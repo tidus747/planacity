@@ -8,7 +8,7 @@ Planacity screenshots rather than film stills or mock application images.
 
 Restore `examples/moon-heist.planacity.json` to open an unsaved copy. Save that
 copy under a new name before trying the exercises. The supplied backup uses
-schema 13 and stable UUIDv5 identities. `examples/jira-moon-heist.csv` reproduces
+schema 14 and stable UUIDv5 identities. `examples/jira-moon-heist.csv` reproduces
 the six imported shrink-technology rows kept in the saved baseline.
 
 ## Cast and structure
