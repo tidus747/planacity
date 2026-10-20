@@ -260,6 +260,12 @@ work, unused reserved capacity, missing dates, non-overlapping periods, and
 person/rule mismatches without silently changing estimates, dates, allocations,
 reservations, or imported baselines.
 
+Domain-link status: implemented by issue #164. ReservationCoverage explicitly
+connects one allocation to one compatible reservation rule and validates stable
+identity, uniqueness, references, and person membership without inference. It is
+not yet part of ProgramPlan persistence or capacity totals; those remain focused
+follow-up slices of issue #161.
+
 ## C06 - Canonical sprint model and assignments
 
 Target: v0.5. Tracked by

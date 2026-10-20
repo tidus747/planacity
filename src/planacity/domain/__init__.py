@@ -14,6 +14,10 @@ from planacity.domain.models import (
     WorkItemType,
     WorkPriority,
 )
+from planacity.domain.reservation_coverage import (
+    ReservationCoverage,
+    validate_reservation_coverage_references,
+)
 from planacity.domain.reservations import ReservationRule
 from planacity.domain.sprint import Sprint, SprintAssignment
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
@@ -21,6 +25,7 @@ from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
 __all__ = [
     "Allocation",
     "ReservationRule",
+    "ReservationCoverage",
     "Sprint",
     "SprintAssignment",
     "AvailabilityEvent",
@@ -37,4 +42,5 @@ __all__ = [
     "WorkItem",
     "WorkPriority",
     "WorkItemType",
+    "validate_reservation_coverage_references",
 ]
