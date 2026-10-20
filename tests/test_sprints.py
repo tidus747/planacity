@@ -140,15 +140,16 @@ def test_schema_thirteen_roundtrip_and_schema_twelve_migration(tmp_path):
     path = tmp_path / "sprints.planacity"
     save_project(plan, path)
 
-    assert data["schema_version"] == SCHEMA_VERSION == 13
+    assert data["schema_version"] == SCHEMA_VERSION == 14
     assert data["plan"]["sprints"][0]["external_reference"] == "board-42:1"
     assert loads(payload) == load_project(path) == plan
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 13
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 14
 
     data["schema_version"] = 12
     data["plan"].pop("sprints")
     data["plan"].pop("sprint_assignments")
+    data["plan"].pop("reservation_coverages")
     old_payload = json.dumps(data)
     old_path = tmp_path / "schema-12.planacity"
     with sqlite3.connect(old_path) as connection:

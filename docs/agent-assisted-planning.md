@@ -22,7 +22,7 @@ personal configuration, credentials, or repository automation instructions.
 
 ## Existing foundations and limits
 
-The current format is schema 13. The canonical format is defined by
+The current format is schema 14. The canonical format is defined by
 `persistence/codec.py` and described in [project files](project-file-format.md).
 `.planacity` is a SQLite container, not a text file for an assistant to rewrite.
 JSON backups are the interchange boundary. The strict decoder rejects unknown
@@ -58,9 +58,10 @@ share a schema while having different findings or editing behavior.
 Review guide compatibility on every release, including patches. Update field
 tables, examples and restrictions when the codec or domain behavior changes.
 Do not advertise fields from the roadmap until the installed build supports them.
-In particular, schema 13 retains work descriptions, labels, primary groups,
+In particular, schema 14 retains work descriptions, labels, primary groups,
 optional canonical priority and assignee, preserved Jira source identity/priority
-text, and shared calendar events. It does not yet have first-class deliveries.
+text, shared calendar events, sprints, and explicit reservation coverage links.
+It does not yet have first-class deliveries.
 
 ## Planning kit and task instructions
 

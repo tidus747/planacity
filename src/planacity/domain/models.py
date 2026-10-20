@@ -11,6 +11,10 @@ from planacity.domain.availability import AvailabilityEvent
 from planacity.domain.calendar_event import CalendarEvent
 from planacity.domain.estimate_units import EstimatePreferences
 from planacity.domain.horizon import PlanningHorizon as PlanningHorizon
+from planacity.domain.reservation_coverage import (
+    ReservationCoverage,
+    validate_reservation_coverage_references,
+)
 from planacity.domain.reservations import ReservationRule
 from planacity.domain.sprint import Sprint, SprintAssignment
 from planacity.domain.work_calendar import PersonCalendar, WorkCalendar
@@ -240,6 +244,7 @@ class ProgramPlan:
     reservation_rules: tuple[ReservationRule, ...] = ()
     estimate_preferences: EstimatePreferences = field(default_factory=EstimatePreferences)
     allocations: tuple[Allocation, ...] = ()
+    reservation_coverages: tuple[ReservationCoverage, ...] = ()
     sprints: tuple[Sprint, ...] = ()
     sprint_assignments: tuple[SprintAssignment, ...] = ()
 
@@ -311,6 +316,11 @@ class ProgramPlan:
         for rule in self.reservation_rules:
             for person_id in rule.person_ids:
                 self.person(person_id)
+        validate_reservation_coverage_references(
+            self.reservation_coverages,
+            self.allocations,
+            self.reservation_rules,
+        )
         if not isinstance(self.imports, tuple) or any(
             not isinstance(source, ImportSnapshot) for source in self.imports
         ):

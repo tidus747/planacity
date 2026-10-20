@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Persisted reservation coverage links in project schema 14. Explicit links
+  between Allocations and compatible ReservationRules now survive project and
+  backup roundtrips, provide immutable lifecycle services, and require deliberate
+  cleanup when a linked allocation or rule is removed. Older projects load with
+  no inferred links.
 - Imported-baseline provenance in Plan. Current work backed by any import
   snapshot has a subtle theme-aware amber row tint, an import icon, and an
   accessible explanation while remaining fully editable. The cue follows the

@@ -44,6 +44,7 @@ def strip_work_assignee(data: dict) -> None:
 
 
 def strip_sprints(data: dict) -> None:
-    """Remove sprint fields introduced by schema 13."""
+    """Remove schema 13 and later planning fields from legacy fixtures."""
     data["plan"].pop("sprints", None)
     data["plan"].pop("sprint_assignments", None)
+    data["plan"].pop("reservation_coverages", None)

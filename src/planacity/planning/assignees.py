@@ -124,6 +124,11 @@ def set_work_assignment(
 
     updated_item = replace(item, assignee_id=person_id)
     if person_id is None or hours is None:
+        direct_ids = {allocation.id for allocation in direct}
+        if any(coverage.allocation_id in direct_ids for coverage in plan.reservation_coverages):
+            raise ValueError(
+                "Remove this assignment's reservation coverage before clearing its Allocation."
+            )
         allocations = tuple(
             allocation for allocation in plan.allocations if allocation.work_item_id != item_id
         )

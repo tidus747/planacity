@@ -18,6 +18,7 @@ from planacity.domain import (
     ProgramPlan,
     Relationship,
     RelationshipType,
+    ReservationCoverage,
     ReservationRule,
     Sprint,
     SprintAssignment,
@@ -31,7 +32,7 @@ from planacity.domain.estimate_units import EstimatePreferences, EstimateUnit
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FORMAT = "planacity"
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 SUPPORTED_SCHEMA_VERSIONS = tuple(range(1, SCHEMA_VERSION + 1))
 
 
@@ -134,7 +135,8 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
             + (" estimate_preferences" if schema_version >= 6 else "")
             + (" allocations" if schema_version >= 7 else "")
             + (" calendar_events" if schema_version >= 12 else "")
-            + (" sprints sprint_assignments" if schema_version >= 13 else ""),
+            + (" sprints sprint_assignments" if schema_version >= 13 else "")
+            + (" reservation_coverages" if schema_version >= 14 else ""),
         )
         h = _object(p["horizon"], "start end")
         people = []
@@ -187,6 +189,9 @@ def loads(text: str, *, expected_schema_version: int | None = None) -> ProgramPl
                 _reservation(value) for value in _rows(p.get("reservation_rules", []))
             ),
             allocations=tuple(_allocation(value) for value in _rows(p.get("allocations", []))),
+            reservation_coverages=tuple(
+                _reservation_coverage(value) for value in _rows(p.get("reservation_coverages", []))
+            ),
             sprints=tuple(_sprint(value) for value in _rows(p.get("sprints", []))),
             sprint_assignments=tuple(
                 _sprint_assignment(value) for value in _rows(p.get("sprint_assignments", []))
@@ -208,6 +213,15 @@ def _allocation(value: object) -> Allocation:
         work_item_id=_id(row["work_item_id"]),
         person_id=_id(row["person_id"]),
         hours=Decimal(_text(row["hours"])),
+    )
+
+
+def _reservation_coverage(value: object) -> ReservationCoverage:
+    row = _object(value, "id allocation_id reservation_rule_id")
+    return ReservationCoverage(
+        id=_id(row["id"]),
+        allocation_id=_id(row["allocation_id"]),
+        reservation_rule_id=_id(row["reservation_rule_id"]),
     )
 
 

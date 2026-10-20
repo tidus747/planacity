@@ -28,10 +28,27 @@ def update_reservation(plan: ProgramPlan, rule: ReservationRule) -> ProgramPlan:
     )
 
 
-def remove_reservation(plan: ProgramPlan, rule_id: UUID) -> ProgramPlan:
+def remove_reservation(
+    plan: ProgramPlan, rule_id: UUID, *, remove_coverages: bool = False
+) -> ProgramPlan:
+    if type(remove_coverages) is not bool:
+        raise ValueError("Confirming reservation coverage removal requires an explicit boolean.")
     reservation_rule(plan, rule_id)
+    coverages = tuple(
+        coverage
+        for coverage in plan.reservation_coverages
+        if coverage.reservation_rule_id == rule_id
+    )
+    if coverages and not remove_coverages:
+        raise ValueError("Confirm removing this reservation rule's coverage links first.")
     return replace(
-        plan, reservation_rules=tuple(rule for rule in plan.reservation_rules if rule.id != rule_id)
+        plan,
+        reservation_rules=tuple(rule for rule in plan.reservation_rules if rule.id != rule_id),
+        reservation_coverages=tuple(
+            coverage
+            for coverage in plan.reservation_coverages
+            if coverage.reservation_rule_id != rule_id
+        ),
     )
 
 

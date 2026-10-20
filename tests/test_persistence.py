@@ -79,7 +79,7 @@ def test_schema_eleven_preserves_context_priority_assignee_and_imported_source(p
     )
     data = json.loads(dumps(contextual))
 
-    assert data["schema_version"] == 13
+    assert data["schema_version"] == 14
     assert data["plan"]["work_items"][0]["description"] == current.description
     assert data["plan"]["work_items"][0]["labels"] == list(current.labels)
     assert data["plan"]["work_items"][0]["primary_group_id"] == str(group.id)

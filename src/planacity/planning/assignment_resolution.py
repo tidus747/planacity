@@ -78,6 +78,13 @@ def preview_assignment_consolidation(
     removed = tuple(
         sorted((allocation.id for allocation in direct if allocation.id != survivor.id), key=str)
     )
+    covered_removed = tuple(
+        coverage for coverage in plan.reservation_coverages if coverage.allocation_id in removed
+    )
+    if covered_removed:
+        raise ValueError(
+            "Remove reservation coverage from the discarded Allocations before consolidating."
+        )
     assigned_item = replace(item, assignee_id=survivor.person_id)
     candidate = replace(
         plan,

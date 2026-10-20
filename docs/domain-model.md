@@ -332,7 +332,9 @@ must exist, and the allocated person must belong to that rule. A zero-hour
 allocation may retain a link because zero hours are an explicit planning state.
 Validation does not change its inputs.
 
-Issue #164 establishes only this domain contract. ReservationCoverage is not yet
-owned or persisted by ProgramPlan and does not change capacity totals. Follow-up
-slices of issue #161 will add persistence and lifecycle rules before integrating
-exact covered, excess, and unused hours into the shared capacity calculation.
+Issue #164 established the domain contract. Issue #168 adds the immutable
+ProgramPlan collection, schema 14 persistence, and lifecycle services. Compatible
+edits preserve links; direct deletion of a linked Allocation or ReservationRule
+requires explicit cleanup. Confirmed person and work-subtree deletions remove
+only links belonging to removed allocations. Capacity totals do not consume the
+links yet; that remains the next focused slice of issue #161.

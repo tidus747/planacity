@@ -217,10 +217,16 @@ def remove_work_item(
             f"and {len(sprint_assignments)} sprint assignment(s). "
             "Unlink them first or explicitly confirm removal of these references."
         )
+    removed_allocation_ids = {allocation.id for allocation in allocations}
     return replace(
         plan,
         work_items=tuple(item for item in plan.work_items if item.id not in removed),
         allocations=tuple(a for a in plan.allocations if a.work_item_id not in removed),
+        reservation_coverages=tuple(
+            coverage
+            for coverage in plan.reservation_coverages
+            if coverage.allocation_id not in removed_allocation_ids
+        ),
         relationships=tuple(
             link
             for link in plan.relationships
