@@ -7,7 +7,7 @@ from enum import StrEnum
 from fractions import Fraction
 from uuid import UUID
 
-from planacity.domain import PlanningHorizon, ProgramPlan
+from planacity.domain import Allocation, PlanningHorizon, ProgramPlan, WorkItem
 from planacity.planning.availability import availability_capacity
 from planacity.planning.reservations import (
     CapacityDay,
@@ -26,6 +26,7 @@ class CapacityGapKind(StrEnum):
     MISSING_CALENDAR = "missing_calendar"
     MISSING_WORK_DATES = "missing_work_dates"
     NO_PLANNING_CAPACITY = "no_planning_capacity"
+    NON_OVERLAPPING_COVERAGE = "non_overlapping_coverage"
     UNRESOLVED_RESERVATION = "unresolved_reservation"
     QUERY_LIMIT = "query_limit"
 
@@ -45,6 +46,11 @@ class CapacityGap:
 class ReservationHours:
     rule_id: UUID
     hours: Fraction
+    covered_hours: Fraction = Fraction()
+
+    @property
+    def unused_hours(self) -> Fraction:
+        return self.hours - self.covered_hours
 
 
 @dataclass(frozen=True)
@@ -52,6 +58,11 @@ class AllocationHours:
     allocation_id: UUID
     work_item_id: UUID
     hours: Fraction
+    covered_hours: Fraction = Fraction()
+
+    @property
+    def excess_hours(self) -> Fraction:
+        return self.hours - self.covered_hours
 
 
 @dataclass(frozen=True)
@@ -66,6 +77,18 @@ class DatedCapacityDay:
     remaining_hours: Fraction
     reservations: tuple[ReservationHours, ...]
     allocations: tuple[AllocationHours, ...]
+
+    @property
+    def covered_hours(self) -> Fraction:
+        return sum((entry.covered_hours for entry in self.allocations), Fraction())
+
+    @property
+    def excess_hours(self) -> Fraction:
+        return sum((entry.excess_hours for entry in self.allocations), Fraction())
+
+    @property
+    def unused_reserved_hours(self) -> Fraction:
+        return sum((entry.unused_hours for entry in self.reservations), Fraction())
 
 
 def _sum_days(days: tuple[DatedCapacityDay, ...], attribute: str) -> Fraction:
@@ -120,26 +143,53 @@ class PersonDatedCapacity:
         return self._known_total("remaining_hours")
 
     @property
+    def covered_hours(self) -> Fraction | None:
+        return self._known_total("covered_hours")
+
+    @property
+    def excess_hours(self) -> Fraction | None:
+        return self._known_total("excess_hours")
+
+    @property
+    def unused_reserved_hours(self) -> Fraction | None:
+        return self._known_total("unused_reserved_hours")
+
+    @property
     def unplaced_hours(self) -> Fraction:
-        return sum((gap.hours for gap in self.gaps if gap.hours is not None), Fraction())
+        unplaced_kinds = {
+            CapacityGapKind.MISSING_CALENDAR,
+            CapacityGapKind.MISSING_WORK_DATES,
+            CapacityGapKind.NO_PLANNING_CAPACITY,
+            CapacityGapKind.UNRESOLVED_RESERVATION,
+        }
+        return sum(
+            (
+                gap.hours
+                for gap in self.gaps
+                if gap.kind in unplaced_kinds and gap.hours is not None
+            ),
+            Fraction(),
+        )
 
     @property
     def reservation_breakdown(self) -> tuple[ReservationHours, ...]:
-        totals: dict[UUID, Fraction] = {}
+        totals: dict[UUID, tuple[Fraction, Fraction]] = {}
         for day in self.days:
             for entry in day.reservations:
-                totals[entry.rule_id] = totals.get(entry.rule_id, Fraction()) + entry.hours
-        return tuple(ReservationHours(key, totals[key]) for key in sorted(totals, key=str))
+                hours, covered = totals.get(entry.rule_id, (Fraction(), Fraction()))
+                totals[entry.rule_id] = hours + entry.hours, covered + entry.covered_hours
+        return tuple(ReservationHours(key, *totals[key]) for key in sorted(totals, key=str))
 
     @property
     def allocation_breakdown(self) -> tuple[AllocationHours, ...]:
-        totals: dict[tuple[UUID, UUID], Fraction] = {}
+        totals: dict[tuple[UUID, UUID], tuple[Fraction, Fraction]] = {}
         for day in self.days:
             for entry in day.allocations:
                 key = (entry.allocation_id, entry.work_item_id)
-                totals[key] = totals.get(key, Fraction()) + entry.hours
+                hours, covered = totals.get(key, (Fraction(), Fraction()))
+                totals[key] = hours + entry.hours, covered + entry.covered_hours
         return tuple(
-            AllocationHours(allocation_id, work_item_id, totals[(allocation_id, work_item_id)])
+            AllocationHours(allocation_id, work_item_id, *totals[(allocation_id, work_item_id)])
             for allocation_id, work_item_id in sorted(totals, key=lambda key: str(key[0]))
         )
 
@@ -394,10 +444,19 @@ def _allocation_load(
     period: PlanningHorizon,
     base: dict[int, _BaseDay],
     reservations: dict[int, dict[UUID, Fraction]],
-) -> tuple[dict[int, dict[tuple[UUID, UUID], Fraction]], tuple[CapacityGap, ...]]:
+) -> tuple[
+    dict[int, dict[tuple[UUID, UUID], tuple[Fraction, Fraction]]],
+    dict[int, dict[UUID, Fraction]],
+    tuple[CapacityGap, ...],
+]:
     items = {item.id: item for item in plan.work_items}
-    by_day: dict[int, dict[tuple[UUID, UUID], Fraction]] = {}
-    gaps = []
+    rules = {rule.id: rule for rule in plan.reservation_rules}
+    coverage_rules = {
+        coverage.allocation_id: coverage.reservation_rule_id
+        for coverage in plan.reservation_coverages
+    }
+    candidates: list[tuple[Allocation, WorkItem, PlanningHorizon]] = []
+    gaps: list[CapacityGap] = []
     for allocation in sorted(plan.allocations, key=lambda value: str(value.id)):
         if allocation.person_id != person_id or allocation.hours == 0:
             continue
@@ -417,6 +476,69 @@ def _allocation_load(
         work_period = PlanningHorizon(item.start, item.end)
         if not _intersects(work_period, period):
             continue
+        candidates.append((allocation, item, work_period))
+
+    covered_by_day: dict[int, dict[tuple[UUID, UUID], Fraction]] = {}
+    used_by_day: dict[int, dict[UUID, Fraction]] = {}
+    remaining = {allocation.id: Fraction(allocation.hours) for allocation, _, _ in candidates}
+    by_rule: dict[UUID, list[tuple[Allocation, WorkItem, PlanningHorizon]]] = {}
+    for allocation, item, work_period in candidates:
+        rule_id = coverage_rules.get(allocation.id)
+        if rule_id is None:
+            continue
+        by_rule.setdefault(rule_id, []).append((allocation, item, work_period))
+        rule = rules[rule_id]
+        if not _intersects(work_period, rule.effective):
+            gaps.append(
+                CapacityGap(
+                    CapacityGapKind.NON_OVERLAPPING_COVERAGE,
+                    f"'{item.title}' does not overlap the effective dates of "
+                    f"reservation '{rule.name}'. Its allocation remains ordinary demand. "
+                    "Change the work dates, reservation dates, or explicit coverage link.",
+                    person_id=person_id,
+                    source_id=allocation.id,
+                    work_item_id=item.id,
+                    period=work_period,
+                    hours=Fraction(allocation.hours),
+                )
+            )
+
+    for rule_id, linked in sorted(by_rule.items(), key=lambda value: str(value[0])):
+        for ordinal in sorted(reservations):
+            supply = reservations[ordinal].get(rule_id, Fraction())
+            if supply <= 0:
+                continue
+            active = sorted(
+                (
+                    entry
+                    for entry in linked
+                    if entry[2].start.toordinal() <= ordinal <= entry[2].end.toordinal()
+                    and remaining[entry[0].id] > 0
+                ),
+                key=lambda entry: (entry[2].end, entry[2].start, str(entry[0].id)),
+            )
+            for allocation, item, _ in active:
+                used = min(supply, remaining[allocation.id])
+                if used <= 0:
+                    continue
+                key = (allocation.id, item.id)
+                covered_by_day.setdefault(ordinal, {})[key] = used
+                used_by_day.setdefault(ordinal, {})[rule_id] = (
+                    used_by_day.get(ordinal, {}).get(rule_id, Fraction()) + used
+                )
+                remaining[allocation.id] -= used
+                supply -= used
+                if supply == 0:
+                    break
+
+    by_day: dict[int, dict[tuple[UUID, UUID], tuple[Fraction, Fraction]]] = {}
+    for ordinal, entries in covered_by_day.items():
+        by_day[ordinal] = {key: (hours, hours) for key, hours in entries.items()}
+
+    for allocation, item, work_period in candidates:
+        demand = remaining[allocation.id]
+        if demand == 0:
+            continue
         weights = {
             ordinal: max(
                 base[ordinal].available - sum(reservations.get(ordinal, {}).values(), Fraction()),
@@ -426,25 +548,38 @@ def _allocation_load(
         }
         total_weight = sum(weights.values(), Fraction())
         if total_weight == 0:
+            if allocation.id in coverage_rules:
+                message = (
+                    f"'{item.title}' has {demand} h beyond its selected reservation for "
+                    f"'{person_name}', but its complete date window has no positive planning "
+                    "capacity."
+                )
+            else:
+                message = (
+                    f"'{item.title}' has {demand} h allocated to '{person_name}', "
+                    "but its complete date window has no positive planning capacity."
+                )
             gaps.append(
                 CapacityGap(
                     CapacityGapKind.NO_PLANNING_CAPACITY,
-                    f"'{item.title}' has {allocation.hours} h allocated to '{person_name}', "
-                    "but its complete date window has no positive planning capacity.",
+                    message,
                     person_id=person_id,
                     source_id=allocation.id,
                     work_item_id=item.id,
                     period=work_period,
-                    hours=Fraction(allocation.hours),
+                    hours=demand,
                 )
             )
             continue
-        demand = Fraction(allocation.hours)
         key = (allocation.id, item.id)
         for ordinal, weight in weights.items():
             if weight > 0:
-                by_day.setdefault(ordinal, {})[key] = demand * weight / total_weight
-    return by_day, tuple(gaps)
+                hours = demand * weight / total_weight
+                previous, covered = by_day.setdefault(ordinal, {}).get(
+                    key, (Fraction(), Fraction())
+                )
+                by_day[ordinal][key] = previous + hours, covered
+    return by_day, used_by_day, tuple(gaps)
 
 
 def calculate_dated_capacity(plan: ProgramPlan, period: PlanningHorizon) -> DatedCapacity:
@@ -486,26 +621,31 @@ def calculate_dated_capacity(plan: ProgramPlan, period: PlanningHorizon) -> Date
         reservations, reservation_gaps = _reservation_load(
             plan, person.id, person.name, targets, base
         )
-        allocations, allocation_gaps = _allocation_load(
+        allocations, covered_reservations, allocation_gaps = _allocation_load(
             plan, person.id, person.name, period, base, reservations
         )
         days = []
         for ordinal in _ordinals(period):
             source = base[ordinal]
             reservation_entries = tuple(
-                ReservationHours(rule_id, hours)
+                ReservationHours(
+                    rule_id,
+                    hours,
+                    covered_reservations.get(ordinal, {}).get(rule_id, Fraction()),
+                )
                 for rule_id, hours in sorted(
                     reservations.get(ordinal, {}).items(), key=lambda value: str(value[0])
                 )
             )
             allocation_entries = tuple(
-                AllocationHours(allocation_id, work_item_id, hours)
-                for (allocation_id, work_item_id), hours in sorted(
+                AllocationHours(allocation_id, work_item_id, hours, covered)
+                for (allocation_id, work_item_id), (hours, covered) in sorted(
                     allocations.get(ordinal, {}).items(), key=lambda value: str(value[0][0])
                 )
             )
             reserved = sum((entry.hours for entry in reservation_entries), Fraction())
             allocated = sum((entry.hours for entry in allocation_entries), Fraction())
+            excess = sum((entry.excess_hours for entry in allocation_entries), Fraction())
             planning = source.available - reserved
             days.append(
                 DatedCapacityDay(
@@ -516,7 +656,7 @@ def calculate_dated_capacity(plan: ProgramPlan, period: PlanningHorizon) -> Date
                     reserved,
                     planning,
                     allocated,
-                    planning - allocated,
+                    planning - excess,
                     reservation_entries,
                     allocation_entries,
                 )

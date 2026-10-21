@@ -14,6 +14,7 @@ from planacity.domain import (
     PersonCalendar,
     PlanningHorizon,
     ProgramPlan,
+    ReservationCoverage,
     ReservationRule,
     WorkCalendar,
     WorkItem,
@@ -106,6 +107,29 @@ def test_buckets_conserve_totals_and_source_ids(scale):
         plan.allocations[1].id,
     }
     assert result.capacity.people[0].remaining_hours == alex.remaining_hours
+
+
+def test_breakdown_exposes_covered_excess_and_unused_hours_without_double_deduction():
+    plan = plan_with_capacity()
+    plan = replace(
+        plan,
+        reservation_coverages=(
+            ReservationCoverage(
+                allocation_id=plan.allocations[0].id,
+                reservation_rule_id=plan.reservation_rules[0].id,
+            ),
+        ),
+    )
+
+    alex = calculate_capacity_breakdown(plan, WEEK, CapacityBucketScale.PERIOD).people[0]
+    bucket = alex.buckets[0]
+
+    assert alex.allocated_hours == 28
+    assert alex.covered_hours == bucket.covered_hours == 5
+    assert alex.excess_hours == bucket.excess_hours == 23
+    assert alex.unused_reserved_hours == bucket.unused_reserved_hours == 0
+    assert alex.remaining_hours == bucket.remaining_hours == 12
+    assert bucket.load_fraction == Fraction(23, 35)
 
 
 def test_day_heatmap_retains_concurrent_overload_and_exact_text_inputs():

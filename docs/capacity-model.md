@@ -155,15 +155,15 @@ inputs for any inclusive query period:
     = Available hours
     - Recurring reservations
     = Planning capacity
-    - Scheduled allocated work
+    - Scheduled allocated work not covered by its selected reservation
     = Remaining capacity
 
 The result provides one `DatedCapacityDay` per queried date and person. Each day
 retains exact nominal, unavailable, available, reserved, planning, allocated,
-and signed remaining hours. Reservation and allocation breakdowns keep their
-source UUIDs so later views can explain which duty or work item consumed the
-hours. Negative planning or remaining hours are retained as overload, never
-clamped to zero.
+covered, excess, unused-reservation, and signed remaining hours. Reservation
+and allocation breakdowns keep their source UUIDs so later views can explain
+which duty or work item consumed the hours. Negative planning or remaining
+hours are retained as overload, never clamped to zero.
 
 An allocation is distributed over its WorkItem's complete start/end window in
 proportion to that person's positive planning capacity after reservations. The
@@ -172,6 +172,15 @@ only then is the result clipped to the query. Concurrent allocations are summed
 after distribution, so one allocation never silently moves because another uses
 the same dates. Stored allocations, dates, estimates, and project files are not
 changed.
+
+An explicit ReservationCoverage link changes that distribution without changing
+the stored Allocation. The linked demand first consumes only the selected rule's
+reserved hours on dates inside the WorkItem window. Competing links use earliest
+ending work first, then stable IDs, and no reserved hour is consumed twice. Any
+remaining demand is excess and uses ordinary planning capacity. A link outside
+the rule's effective dates produces an explicit gap; missing dates and excess
+without positive planning capacity remain unplaced. Unused reservation capacity
+stays visible. Names, labels, Jira fields, and assignees never infer coverage.
 
 Missing calendars, incomplete work dates, zero-capacity work windows, and
 reservation occurrences without eligible days produce explicit `CapacityGap`

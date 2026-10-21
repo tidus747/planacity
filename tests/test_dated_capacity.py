@@ -13,6 +13,7 @@ from planacity.domain import (
     PersonCalendar,
     PlanningHorizon,
     ProgramPlan,
+    ReservationCoverage,
     ReservationRule,
     WorkCalendar,
     WorkItem,
@@ -41,6 +42,7 @@ def capacity_plan(
     allocations: tuple[Allocation, ...] = (),
     availability: tuple[AvailabilityEvent, ...] = (),
     reservations: tuple[ReservationRule, ...] = (),
+    coverages: tuple[ReservationCoverage, ...] = (),
     horizon: PlanningHorizon = FULL_WEEK,
 ) -> ProgramPlan:
     person = Person(name="Alex")
@@ -58,6 +60,7 @@ def capacity_plan(
         availability_events=translated_availability,
         reservation_rules=translated_reservations,
         allocations=translated_allocations,
+        reservation_coverages=coverages,
     )
 
 
@@ -83,6 +86,10 @@ def reservation(hours: str = "4") -> ReservationRule:
         interval_weeks=1,
         effective=FULL_WEEK,
     )
+
+
+def coverage(allocation: Allocation, rule: ReservationRule) -> ReservationCoverage:
+    return ReservationCoverage(allocation_id=allocation.id, reservation_rule_id=rule.id)
 
 
 def absence(fraction: str) -> AvailabilityEvent:
@@ -121,6 +128,163 @@ def test_calculation_reconciles_calendar_availability_reservations_and_work():
     assert person.days[1].remaining_hours == 2
     assert person.reservation_breakdown[0].hours == 4
     assert person.allocation_breakdown[0].hours == 20
+
+
+def test_fully_covered_allocation_does_not_reduce_planning_capacity_twice():
+    work = task("Meetings")
+    duty = reservation("4")
+    assigned = allocation(work, "4")
+    plan = capacity_plan(
+        items=(work,),
+        allocations=(assigned,),
+        reservations=(duty,),
+        coverages=(coverage(assigned, duty),),
+    )
+
+    result = calculate_dated_capacity(plan, FULL_WEEK).people[0]
+
+    assert result.reserved_hours == 4
+    assert result.allocated_hours == 4
+    assert result.covered_hours == 4
+    assert result.excess_hours == 0
+    assert result.unused_reserved_hours == 0
+    assert result.planning_hours == 36
+    assert result.remaining_hours == 36
+    assert result.allocation_breakdown[0].covered_hours == 4
+    assert result.reservation_breakdown[0].unused_hours == 0
+
+
+def test_partial_coverage_exposes_excess_and_unused_reservation_exactly():
+    work = task("Front office")
+    duty = reservation("4")
+    assigned = allocation(work, "10")
+    plan = capacity_plan(
+        items=(work,),
+        allocations=(assigned,),
+        reservations=(duty,),
+        coverages=(coverage(assigned, duty),),
+    )
+
+    result = calculate_dated_capacity(plan, FULL_WEEK).people[0]
+
+    assert result.allocated_hours == 10
+    assert result.covered_hours == 4
+    assert result.excess_hours == 6
+    assert result.unused_reserved_hours == 0
+    assert result.remaining_hours == 30
+
+    smaller = replace(plan, allocations=(replace(plan.allocations[0], hours=Decimal("2")),))
+    result = calculate_dated_capacity(smaller, FULL_WEEK).people[0]
+
+    assert result.allocated_hours == 2
+    assert result.covered_hours == 2
+    assert result.excess_hours == 0
+    assert result.unused_reserved_hours == 2
+    assert result.remaining_hours == 36
+
+
+def test_covered_work_can_be_placed_when_reservation_uses_all_capacity():
+    work = task("Duty")
+    duty = reservation("5")
+    assigned = allocation(work, "7")
+    plan = capacity_plan(
+        plan_calendar=calendar("1", "1", "1", "1", "1", "0", "0"),
+        items=(work,),
+        allocations=(assigned,),
+        reservations=(duty,),
+        coverages=(coverage(assigned, duty),),
+    )
+
+    result = calculate_dated_capacity(plan, FULL_WEEK).people[0]
+
+    assert result.covered_hours == 5
+    assert result.allocated_hours == 5
+    assert result.excess_hours == 0
+    assert result.remaining_hours == 0
+    assert result.unplaced_hours == 2
+    gap = next(gap for gap in result.gaps if gap.kind == CapacityGapKind.NO_PLANNING_CAPACITY)
+    assert gap.hours == 2
+
+
+def test_competing_coverages_use_each_reserved_hour_once_in_stable_order():
+    early = task("Early", PlanningHorizon(MONDAY, date(2026, 1, 8)))
+    wide = task("Wide")
+    duty = reservation("4")
+    early_allocation = allocation(early, "3")
+    wide_allocation = allocation(wide, "3")
+    links = (coverage(early_allocation, duty), coverage(wide_allocation, duty))
+    plan = capacity_plan(
+        items=(early, wide),
+        allocations=(wide_allocation, early_allocation),
+        reservations=(duty,),
+        coverages=tuple(reversed(links)),
+    )
+
+    first = calculate_dated_capacity(plan, FULL_WEEK).people[0]
+    reordered = calculate_dated_capacity(
+        replace(
+            plan,
+            allocations=tuple(reversed(plan.allocations)),
+            reservation_coverages=tuple(reversed(plan.reservation_coverages)),
+        ),
+        FULL_WEEK,
+    ).people[0]
+
+    assert first.covered_hours == reordered.covered_hours == 4
+    assert first.excess_hours == reordered.excess_hours == 2
+    assert first.unused_reserved_hours == reordered.unused_reserved_hours == 0
+    assert {entry.allocation_id: entry.covered_hours for entry in first.allocation_breakdown} == {
+        entry.allocation_id: entry.covered_hours for entry in reordered.allocation_breakdown
+    }
+    covered = {entry.allocation_id: entry.covered_hours for entry in first.allocation_breakdown}
+    assert covered[early_allocation.id] == 3
+    assert covered[wide_allocation.id] == 1
+
+
+def test_non_overlapping_coverage_keeps_demand_ordinary_and_reports_gap():
+    next_monday = date(2026, 1, 12)
+    work = task("Later duty", PlanningHorizon(next_monday, date(2026, 1, 16)))
+    duty = reservation("4")
+    assigned = allocation(work, "4")
+    horizon = PlanningHorizon(MONDAY, date(2026, 1, 18))
+    plan = capacity_plan(
+        items=(work,),
+        allocations=(assigned,),
+        reservations=(duty,),
+        coverages=(coverage(assigned, duty),),
+        horizon=horizon,
+    )
+
+    result = calculate_dated_capacity(plan, horizon).people[0]
+
+    assert result.covered_hours == 0
+    assert result.excess_hours == 4
+    assert result.unused_reserved_hours == 4
+    assert result.remaining_hours == 72
+    assert result.unplaced_hours == 0
+    gap = next(gap for gap in result.gaps if gap.kind == CapacityGapKind.NON_OVERLAPPING_COVERAGE)
+    assert gap.hours == 4
+
+
+def test_covered_allocation_uses_complete_window_before_query_clipping():
+    work = task("Duty")
+    duty = reservation("10")
+    assigned = allocation(work, "10")
+    plan = capacity_plan(
+        items=(work,),
+        allocations=(assigned,),
+        reservations=(duty,),
+        coverages=(coverage(assigned, duty),),
+    )
+
+    one_day = calculate_dated_capacity(
+        plan, PlanningHorizon(date(2026, 1, 7), date(2026, 1, 7))
+    ).people[0]
+
+    assert one_day.reserved_hours == 2
+    assert one_day.allocated_hours == 2
+    assert one_day.covered_hours == 2
+    assert one_day.unused_reserved_hours == 0
 
 
 def test_allocation_uses_complete_window_before_clipping_query():
