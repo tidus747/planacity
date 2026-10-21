@@ -266,8 +266,10 @@ identity, uniqueness, references, and person membership without inference.
 Persistence and lifecycle are implemented by issue #168 in schema 14. Capacity
 reconciliation is implemented by issue #170: exact covered work consumes only
 the selected rule's dated reservation, excess uses ordinary planning capacity,
-and unused reserved hours remain visible. Manual Plan/People editing is the next
-focused slice of issue #161.
+and unused reserved hours remain visible. Manual Plan/People editing is
+implemented by issue #172 with one explicit, person-compatible selector shared
+by the allocation dialog and compact Plan inspector. Optional Jira CSV mapping,
+then shared visual breakdowns and findings, remain focused slices of issue #161.
 
 ## C06 - Canonical sprint model and assignments
 

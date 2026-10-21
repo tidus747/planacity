@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Manual reservation coverage editing in Plan and People. Allocation drafts and
+  the compact Plan inspector now select, change, or clear one compatible saved
+  reservation explicitly while preserving allocation and coverage identities.
+  Person, hours, and coverage changes apply atomically; cancellation changes
+  nothing and no rule is inferred from work or Jira fields.
 - Exact reservation-backed allocation reconciliation. Explicit coverage links
   now consume only compatible dated reservation hours; covered work remains
   visible without a second capacity deduction, while excess work, unused

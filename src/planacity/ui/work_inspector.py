@@ -20,13 +20,16 @@ from planacity.domain import ProgramPlan, WorkItem, WorkItemType, WorkPriority
 from planacity.planning.allocations import summarize_allocations
 from planacity.planning.assignees import (
     effective_assignee_id,
-    set_work_assignment,
     work_contributors,
 )
 from planacity.planning.assignment_policy import assignment_policy_conflicts
 from planacity.planning.estimate_units import estimate_text, parse_estimate
+from planacity.planning.reservation_coverage_settings import (
+    coverage_for_allocation,
+    set_work_assignment_coverage,
+)
 from planacity.planning.work_context import resolve_topic, update_work_details
-from planacity.ui.allocations import allocation_summary_text
+from planacity.ui.allocations import allocation_summary_text, populate_coverage_rules
 from planacity.ui.forms import CalendarLineEdit
 from planacity.ui.pages import label
 from planacity.ui.priority import PRIORITY_ORDER, priority_icon, priority_label
@@ -65,7 +68,7 @@ class WorkInspector(QWidget):
         self.dirty = False
         self._loading = False
         self._loaded_values: tuple[str, ...] = ()
-        self._loaded_assignment_values: tuple[str, str] = ("", "")
+        self._loaded_assignment_values: tuple[str, str, str] = ("", "", "")
         self._assignment_editable = False
 
         layout = QVBoxLayout(self)
@@ -111,6 +114,9 @@ class WorkInspector(QWidget):
         self.assignment_hours.setObjectName("workInspectorAllocationHours")
         self.assignment_hours.setAccessibleName("Allocated hours")
         self.assignment_hours.setPlaceholderText("Optional explicit hours")
+        self.assignment_coverage = QComboBox()
+        self.assignment_coverage.setObjectName("workInspectorReservationCoverage")
+        self.assignment_coverage.setAccessibleName("Reservation coverage")
         self.assignment_note = label("")
         self.assignment_note.setAccessibleName("Assignment guidance")
         self.start = CalendarLineEdit()
@@ -131,6 +137,7 @@ class WorkInspector(QWidget):
             ("&Estimate", self.estimate),
             ("&Assignee", self.assignee),
             ("Allocated &hours", self.assignment_hours),
+            ("Covered &by", self.assignment_coverage),
             ("Assignment status", self.assignment_note),
             ("&Start", self.start),
             ("&End", self.end),
@@ -178,6 +185,8 @@ class WorkInspector(QWidget):
         self.primary_group.currentIndexChanged.connect(self._update_dirty)
         self.priority.currentIndexChanged.connect(self._update_dirty)
         self.assignee.currentIndexChanged.connect(self._update_dirty)
+        self.assignee.currentIndexChanged.connect(self._assignee_changed)
+        self.assignment_coverage.currentIndexChanged.connect(self._update_dirty)
         self.apply_button.clicked.connect(self.apply)
         self.cancel_button.clicked.connect(self.discard)
         self.clear()
@@ -192,6 +201,7 @@ class WorkInspector(QWidget):
             self.estimate,
             self.assignee,
             self.assignment_hours,
+            self.assignment_coverage,
             self.start,
             self.end,
         )
@@ -211,9 +221,35 @@ class WorkInspector(QWidget):
             self.end.text(),
         )
 
-    def _assignment_values(self) -> tuple[str, str]:
+    def _assignment_values(self) -> tuple[str, str, str]:
         selected = self.assignee.currentData()
-        return ("" if selected is None else str(selected), self.assignment_hours.text())
+        coverage = self.assignment_coverage.currentData()
+        return (
+            "" if selected is None else str(selected),
+            self.assignment_hours.text(),
+            "" if coverage is None else str(coverage),
+        )
+
+    def _assignee_changed(self) -> None:
+        if self._loading:
+            return
+        selected_rule = self.assignment_coverage.currentData()
+        selected_person = self.assignee.currentData()
+        plan = self.session.document.plan
+        if plan is not None:
+            populate_coverage_rules(
+                self.assignment_coverage,
+                plan,
+                UUID(selected_person) if selected_person else None,
+                UUID(selected_rule) if selected_rule else None,
+            )
+        self.assignment_coverage.setEnabled(
+            self._assignment_editable
+            and selected_person is not None
+            and self.original_item is not None
+            and self.original_item.kind != WorkItemType.EPIC
+        )
+        self._update_dirty()
 
     def _set_dirty(self, dirty: bool) -> None:
         if dirty != self.dirty:
@@ -242,6 +278,7 @@ class WorkInspector(QWidget):
         self.estimate.clear()
         self.assignee.clear()
         self.assignment_hours.clear()
+        self.assignment_coverage.clear()
         self.assignment_note.clear()
         self.start.clear()
         self.end.clear()
@@ -329,6 +366,13 @@ class WorkInspector(QWidget):
             if item.kind != WorkItemType.EPIC and not is_container and len(direct) == 1
             else ""
         )
+        direct_coverage = coverage_for_allocation(plan, direct[0].id) if len(direct) == 1 else None
+        populate_coverage_rules(
+            self.assignment_coverage,
+            plan,
+            assignee_id,
+            direct_coverage.reservation_rule_id if direct_coverage is not None else None,
+        )
         if conflict:
             self.assignment_note.setText(
                 "Legacy multiple assignments: use Work allocations to review and consolidate "
@@ -347,7 +391,8 @@ class WorkInspector(QWidget):
         else:
             self.assignment_note.setText(
                 "Hours are optional and stay separate from the estimate. Clearing hours "
-                "removes capacity demand; clearing the person also unassigns the work."
+                "removes capacity demand; clearing the person also unassigns the work. "
+                "Coverage uses only an explicitly selected compatible reservation."
             )
         self.start.setText(_date_text(item.start))
         self.end.setText(_date_text(item.end))
@@ -372,6 +417,9 @@ class WorkInspector(QWidget):
         self.assignee.setEnabled(self._assignment_editable)
         self.assignment_hours.setEnabled(
             self._assignment_editable and item.kind != WorkItemType.EPIC
+        )
+        self.assignment_coverage.setEnabled(
+            self._assignment_editable and item.kind != WorkItemType.EPIC and assignee_id is not None
         )
         self.start.setReadOnly(context_only)
         self.end.setReadOnly(context_only)
@@ -439,11 +487,13 @@ class WorkInspector(QWidget):
                 raise ValueError(
                     "Enter allocated hours as a non-negative number, such as 12.5."
                 ) from error
-            candidate = set_work_assignment(
+            rule = self.assignment_coverage.currentData()
+            candidate = set_work_assignment_coverage(
                 candidate,
                 item.id,
                 UUID(assignee) if assignee else None,
                 hours,
+                UUID(rule) if rule else None,
             )
         return candidate
 
@@ -484,7 +534,27 @@ class WorkInspector(QWidget):
         lines = ["Allocated people:"]
         for contributor in contributors:
             person = plan.person(contributor.person_id)
-            lines.append(f"- {person.name} [{str(person.id)[:8]}]: {contributor.hours} h")
+            direct = next(
+                (
+                    allocation
+                    for allocation in plan.allocations
+                    if allocation.work_item_id == item_id
+                    and allocation.person_id == contributor.person_id
+                ),
+                None,
+            )
+            coverage = coverage_for_allocation(plan, direct.id) if direct is not None else None
+            coverage_text = ""
+            if coverage is not None:
+                rule = next(
+                    rule
+                    for rule in plan.reservation_rules
+                    if rule.id == coverage.reservation_rule_id
+                )
+                coverage_text = f"; covered by {rule.name}"
+            lines.append(
+                f"- {person.name} [{str(person.id)[:8]}]: {contributor.hours} h{coverage_text}"
+            )
         return "\n".join(lines)
 
     @staticmethod

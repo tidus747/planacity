@@ -9,9 +9,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QSignalSpy, QTest
 from PySide6.QtWidgets import QMessageBox
 from test_allocation_settings import allocated_plan
+from test_reservation_coverage_settings import linked_plan
 
 from planacity.domain import Allocation, Relationship, RelationshipType, WorkGroup, WorkItem
 from planacity.domain.models import ImportedWork, ImportSnapshot, WorkItemType
+from planacity.planning.reservation_coverage_settings import coverage_for_allocation
 from planacity.ui.theme import Theme
 
 
@@ -275,6 +277,44 @@ def test_inspector_applies_compact_leaf_assignment_with_work_changes_once(app, w
     assert assignment.person_id == plan.people[2].id
     assert assignment.hours == Decimal("12.25")
     assert updated.imports == plan.imports
+    window.session.document.saved_plan = updated
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_inspector_changes_coverage_atomically_and_preserves_both_ids(app, window, theme):
+    plan = linked_plan()
+    item = plan.work_items[1]
+    allocation = plan.allocations[1]
+    original_coverage = plan.reservation_coverages[1]
+    window.set_theme(theme, persist=False)
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    window.show_page(1)
+    page = window.plan_page
+    page.table.setCurrentIndex(page.model.index_for_id(item.id))
+    app.processEvents()
+    inspector = page.inspector
+    changed = QSignalSpy(window.session.changed)
+
+    assert inspector.assignment_coverage.currentData() == str(original_coverage.reservation_rule_id)
+    shared_index = inspector.assignment_coverage.findData(str(plan.reservation_rules[0].id))
+    assert shared_index > 0
+    inspector.title.setText("Meetings and reviews")
+    inspector.assignment_coverage.setCurrentIndex(shared_index)
+    assert inspector.apply()
+
+    updated = window.session.document.plan
+    assert updated is not None
+    updated_allocation = next(entry for entry in updated.allocations if entry.id == allocation.id)
+    updated_coverage = coverage_for_allocation(updated, allocation.id)
+    assert changed.count() == 1
+    assert updated_allocation == allocation
+    assert updated_coverage is not None
+    assert updated_coverage.id == original_coverage.id
+    assert updated_coverage.reservation_rule_id == plan.reservation_rules[0].id
+    assert "covered by Duties" in inspector.allocations.text()
+    assert plan.work_items[1].title == "Meetings"
     window.session.document.saved_plan = updated
 
 
