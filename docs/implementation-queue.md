@@ -264,8 +264,10 @@ Domain-link status: implemented by issue #164. ReservationCoverage explicitly
 connects one allocation to one compatible reservation rule and validates stable
 identity, uniqueness, references, and person membership without inference.
 Persistence and lifecycle are implemented by issue #168 in schema 14. Capacity
-totals still do not consume the links; exact covered, excess, and unused hours
-remain the next focused slice of issue #161.
+reconciliation is implemented by issue #170: exact covered work consumes only
+the selected rule's dated reservation, excess uses ordinary planning capacity,
+and unused reserved hours remain visible. Manual Plan/People editing is the next
+focused slice of issue #161.
 
 ## C06 - Canonical sprint model and assignments
 

@@ -54,8 +54,27 @@ class CapacityBucket:
     def load_fraction(self) -> Fraction | None:
         if self.planning_hours is None or self.planning_hours <= 0:
             return None
-        assert self.allocated_hours is not None
-        return self.allocated_hours / self.planning_hours
+        excess = self.excess_hours
+        assert excess is not None
+        return excess / self.planning_hours
+
+    @property
+    def covered_hours(self) -> Fraction | None:
+        if self.allocated_hours is None:
+            return None
+        return sum((entry.covered_hours for entry in self.allocations), Fraction())
+
+    @property
+    def excess_hours(self) -> Fraction | None:
+        if self.allocated_hours is None:
+            return None
+        return sum((entry.excess_hours for entry in self.allocations), Fraction())
+
+    @property
+    def unused_reserved_hours(self) -> Fraction | None:
+        if self.reserved_hours is None:
+            return None
+        return sum((entry.unused_hours for entry in self.reservations), Fraction())
 
 
 @dataclass(frozen=True)
@@ -76,6 +95,26 @@ class PersonCapacityBreakdown:
     gaps: tuple[CapacityGap, ...]
     state: CapacityLoadState
     buckets: tuple[CapacityBucket, ...]
+
+    @property
+    def covered_hours(self) -> Fraction | None:
+        if self.allocated_hours is None:
+            return None
+        return sum((bucket.covered_hours or Fraction() for bucket in self.buckets), Fraction())
+
+    @property
+    def excess_hours(self) -> Fraction | None:
+        if self.allocated_hours is None:
+            return None
+        return sum((bucket.excess_hours or Fraction() for bucket in self.buckets), Fraction())
+
+    @property
+    def unused_reserved_hours(self) -> Fraction | None:
+        if self.reserved_hours is None:
+            return None
+        return sum(
+            (bucket.unused_reserved_hours or Fraction() for bucket in self.buckets), Fraction()
+        )
 
 
 @dataclass(frozen=True)
@@ -129,23 +168,33 @@ def _state(
 def _source_totals(
     days: tuple[DatedCapacityDay, ...],
 ) -> tuple[tuple[ReservationHours, ...], tuple[AllocationHours, ...]]:
-    reservations: dict[UUID, Fraction] = {}
-    allocations: dict[tuple[UUID, UUID], Fraction] = {}
+    reservations: dict[UUID, tuple[Fraction, Fraction]] = {}
+    allocations: dict[tuple[UUID, UUID], tuple[Fraction, Fraction]] = {}
     for day in days:
         for reservation_entry in day.reservations:
+            hours, covered = reservations.get(reservation_entry.rule_id, (Fraction(), Fraction()))
             reservations[reservation_entry.rule_id] = (
-                reservations.get(reservation_entry.rule_id, Fraction()) + reservation_entry.hours
+                hours + reservation_entry.hours,
+                covered + reservation_entry.covered_hours,
             )
         for allocation_entry in day.allocations:
             key = (allocation_entry.allocation_id, allocation_entry.work_item_id)
-            allocations[key] = allocations.get(key, Fraction()) + allocation_entry.hours
+            hours, covered = allocations.get(key, (Fraction(), Fraction()))
+            allocations[key] = (
+                hours + allocation_entry.hours,
+                covered + allocation_entry.covered_hours,
+            )
     return (
         tuple(
-            ReservationHours(rule_id, reservations[rule_id])
+            ReservationHours(rule_id, *reservations[rule_id])
             for rule_id in sorted(reservations, key=str)
         ),
         tuple(
-            AllocationHours(allocation_id, work_item_id, allocations[(allocation_id, work_item_id)])
+            AllocationHours(
+                allocation_id,
+                work_item_id,
+                *allocations[(allocation_id, work_item_id)],
+            )
             for allocation_id, work_item_id in sorted(allocations, key=lambda key: str(key[0]))
         ),
     )

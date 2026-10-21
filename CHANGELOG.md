@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Exact reservation-backed allocation reconciliation. Explicit coverage links
+  now consume only compatible dated reservation hours; covered work remains
+  visible without a second capacity deduction, while excess work, unused
+  reservation capacity, missing dates, and non-overlapping links stay explicit.
 - Persisted reservation coverage links in project schema 14. Explicit links
   between Allocations and compatible ReservationRules now survive project and
   backup roundtrips, provide immutable lifecycle services, and require deliberate
