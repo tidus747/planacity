@@ -514,6 +514,13 @@ hours, and remaining effort before Save. Container summaries separate direct and
 descendant allocations. Represent collaborative work as a parent with separately
 assigned leaves.
 
+For duty work already protected by recurring reserved capacity, use **Covered
+by** to choose one compatible saved reservation explicitly. The same selector is
+available in the compact Plan inspector and when People opens the work allocation
+source. Only rules containing the chosen person appear. Clearing the selection
+keeps the Allocation but removes its coverage; changing rules preserves stable
+IDs. Planacity never infers coverage from work names or Jira data.
+
 Legacy multi-person leaves keep every assignment and hour. They show **Multiple
 assignments need resolution** and reject another entry. Choose **Consolidate
 legacy...**, select the existing assignment to keep, and review its preserved ID,

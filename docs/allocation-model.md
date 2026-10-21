@@ -96,6 +96,23 @@ part of the draft. Reassigning a leaf preserves its Allocation ID and hours unle
 the hours field is edited. Hours remain hours even when Plan displays estimates
 in days or weeks; they are never copied from or synchronized with the estimate.
 
+**Covered by** optionally links the Allocation to one saved recurring reservation.
+The selector lists only rules that explicitly include the chosen person and always
+offers **No reservation coverage**. Planacity never guesses from titles, labels,
+Jira fields, work types, or assignees. Changing the person refreshes the compatible
+choices; an incompatible selection becomes visibly unlinked in the draft. Person,
+hours, and coverage are validated and applied together, so changing to another
+person and their compatible rule is one transaction. Changing rules preserves the
+Allocation and ReservationCoverage IDs. Clearing the link keeps the Allocation.
+
+The same selector appears in the compact Selected work inspector and in the shared
+Work allocations dialog opened from Plan or a People capacity source. Legacy rows
+show their selected reservation and expose it in **Edit...**. Epics, owner-only
+work, containers, and unassigned work have no allocation to cover. Selecting a
+rule without explicit allocated hours is rejected with guidance instead of
+creating hidden demand. Save/Apply commits once; Cancel or Escape preserves the
+complete original plan.
+
 An Epic exposes one feature owner and no hours because Epic ownership does not
 create capacity demand. A non-Epic container shows the distinct contributor team
 and exact rolled-up hours as read-only context; edit its leaves separately.
@@ -129,6 +146,11 @@ if an older build must still open the project.
 
 ![Work allocations in light appearance](images/work-allocations-light.png)
 ![Work allocations in dark appearance](images/work-allocations-dark.png)
+
+The explicit reservation selector with fictional duty work:
+
+![Reservation coverage editor in light appearance](images/reservation-coverage-editor-light.png)
+![Reservation coverage editor in dark appearance](images/reservation-coverage-editor-dark.png)
 
 The same assignment in the complete Plan inspector draft:
 

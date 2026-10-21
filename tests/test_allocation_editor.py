@@ -10,10 +10,12 @@ from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QLin
 from test_allocation_settings import allocated_plan
 from test_assignment_resolution import legacy_plan
 from test_editor_forms import accept, drive_dialog
+from test_reservation_coverage_settings import coverage_plan, linked_plan
 
 from planacity.domain import Allocation, WorkCalendar, WorkItemType
 from planacity.domain.estimate_units import EstimateUnit
 from planacity.planning.estimate_units import set_estimate_preferences
+from planacity.planning.reservation_coverage_settings import coverage_for_allocation
 from planacity.ui.allocations import AllocationDialog, AssignmentConsolidationDialog
 from planacity.ui.theme import Theme
 
@@ -155,6 +157,70 @@ def test_plan_row_and_draft_preview_share_concurrent_overload_finding(app, windo
     save(dialog)
     assert window.session.document.plan == plan
     assert not dialog.isVisible()
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_plan_and_people_allocation_editor_selects_compatible_coverage_transactionally(
+    app, window, theme
+):
+    plan = coverage_plan()
+    window.set_theme(theme, persist=False)
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    dialog = AllocationDialog(window, window.session, plan.work_items[0].id)
+    dialog.show()
+    app.processEvents()
+
+    assert dialog.coverage.accessibleName() == "Reservation coverage"
+    assert dialog.coverage.count() == 2
+    assert dialog.coverage.itemText(0) == "No reservation coverage"
+    assert "Duties" in dialog.coverage.itemText(1)
+    assert dialog.coverage.findText("Sam meetings", Qt.MatchFlag.MatchContains) == -1
+    dialog.coverage.setCurrentIndex(1)
+    app.processEvents()
+
+    candidate_coverage = coverage_for_allocation(
+        dialog.candidate, dialog.candidate.allocations[0].id
+    )
+    assert candidate_coverage is not None
+    assert candidate_coverage.reservation_rule_id == plan.reservation_rules[0].id
+    assert window.session.document.plan is plan
+    assert not dialog.grab().isNull()
+
+    save(dialog)
+    saved = window.session.document.plan
+    assert saved is not None
+    saved_coverage = coverage_for_allocation(saved, plan.allocations[0].id)
+    assert saved_coverage == candidate_coverage
+    window.session.document.saved_plan = saved
+
+
+def test_person_change_filters_rules_and_cancel_preserves_existing_link(app, window):
+    plan = linked_plan()
+    work = plan.work_items[1]
+    allocation = plan.allocations[1]
+    original_coverage = plan.reservation_coverages[1]
+    window.session.document.new(plan)
+    window.session.document.saved_plan = plan
+    window.session.changed.emit()
+    dialog = AllocationDialog(window, window.session, work.id)
+    dialog.show()
+
+    assert dialog.coverage.currentData() == str(original_coverage.reservation_rule_id)
+    dialog.person.setCurrentIndex(dialog.person.findData(str(plan.people[0].id)))
+    app.processEvents()
+
+    assert dialog.coverage.currentData() is None
+    assert dialog.coverage.findText("Sam meetings", Qt.MatchFlag.MatchContains) == -1
+    changed = next(entry for entry in dialog.candidate.allocations if entry.id == allocation.id)
+    assert changed.person_id == plan.people[0].id
+    assert coverage_for_allocation(dialog.candidate, allocation.id) is None
+    assert window.session.document.plan is plan
+
+    QTest.keyClick(dialog, Qt.Key.Key_Escape)
+    assert window.session.document.plan is plan
+    assert plan.reservation_coverages[1] == original_coverage
 
 
 def test_consolidation_preview_requires_selection_and_cancel_preserves_plan(app, window):

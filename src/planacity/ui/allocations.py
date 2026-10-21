@@ -24,12 +24,10 @@ from planacity.domain import Allocation, ProgramPlan, WorkItemType
 from planacity.planning.allocation_settings import (
     allocation_by_id,
     remove_allocation,
-    update_allocation,
 )
 from planacity.planning.allocations import summarize_allocations
 from planacity.planning.assignees import (
     effective_assignee_id,
-    set_work_assignment,
     work_contributors,
 )
 from planacity.planning.assignment_policy import assignment_policy_conflicts
@@ -38,6 +36,11 @@ from planacity.planning.assignment_resolution import (
     preview_assignment_consolidation,
 )
 from planacity.planning.findings import findings_for_work, planning_findings
+from planacity.planning.reservation_coverage_settings import (
+    coverage_for_allocation,
+    set_work_assignment_coverage,
+    update_allocation_coverage,
+)
 from planacity.planning.work_items import resolve_container_effort
 from planacity.ui.forms import validated_form
 from planacity.ui.pages import label
@@ -93,6 +96,41 @@ def allocation_summary_text(plan: ProgramPlan, work_id: UUID) -> str:
 
 def _signed_hours(value: Decimal) -> str:
     return f"+{value}" if value > 0 else str(value)
+
+
+def populate_coverage_rules(
+    combo: QComboBox,
+    plan: ProgramPlan,
+    person_id: UUID | None,
+    selected_rule_id: UUID | None,
+) -> None:
+    """Show only explicitly compatible rules in canonical plan order."""
+    blocked = combo.blockSignals(True)
+    combo.clear()
+    combo.addItem("No reservation coverage", None)
+    if person_id is not None:
+        for rule in plan.reservation_rules:
+            if person_id not in rule.person_ids:
+                continue
+            interval = "week" if rule.interval_weeks == 1 else "weeks"
+            combo.addItem(
+                f"{rule.name} - {rule.hours_per_person} h every "
+                f"{rule.interval_weeks} {interval} - "
+                f"{rule.effective.start.isoformat()} to {rule.effective.end.isoformat()}",
+                str(rule.id),
+            )
+    selected = combo.findData(str(selected_rule_id) if selected_rule_id is not None else None)
+    combo.setCurrentIndex(max(0, selected))
+    combo.blockSignals(blocked)
+
+
+def allocation_coverage_name(plan: ProgramPlan, allocation_id: UUID) -> str:
+    coverage = coverage_for_allocation(plan, allocation_id)
+    if coverage is None:
+        return "None"
+    return next(
+        rule.name for rule in plan.reservation_rules if rule.id == coverage.reservation_rule_id
+    )
 
 
 class AssignmentConsolidationDialog(QDialog):
@@ -217,10 +255,10 @@ class AllocationDialog(QDialog):
         self.original = self.candidate = session.document.plan
         self.work_id = work_id
         self._loading_compact = False
-        self._loaded_compact_values: tuple[str, str] = ("", "")
+        self._loaded_compact_values: tuple[str, str, str] = ("", "", "")
         work = self.original.work_item(work_id)
         self.setWindowTitle("Work allocations")
-        self.resize(680, 620)
+        self.resize(760, 680)
         layout = QVBoxLayout(self)
         guidance = (
             "Review direct and descendant effort; add new allocations to leaf work."
@@ -245,8 +283,12 @@ class AllocationDialog(QDialog):
         self.hours = QLineEdit()
         self.hours.setAccessibleName("Allocated hours")
         self.hours.setPlaceholderText("Optional explicit hours")
+        self.coverage = QComboBox()
+        self.coverage.setObjectName("allocationCoverage")
+        self.coverage.setAccessibleName("Reservation coverage")
         self.compact_form.addRow("&Assignee", self.person)
         self.compact_form.addRow("Allocated &hours", self.hours)
+        self.compact_form.addRow("Covered &by", self.coverage)
         layout.addWidget(self.compact)
         self.table = QTreeView()
         self.table.setAccessibleName("Work allocations")
@@ -254,7 +296,7 @@ class AllocationDialog(QDialog):
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.model = QStandardItemModel(self.table)
-        self.model.setHorizontalHeaderLabels(["Person", "Allocated hours"])
+        self.model.setHorizontalHeaderLabels(["Person", "Allocated hours", "Reservation coverage"])
         self.table.setModel(self.model)
         layout.addWidget(self.table, 1)
         actions = QHBoxLayout()
@@ -280,6 +322,8 @@ class AllocationDialog(QDialog):
                 "Container totals include descendant work once; direct legacy allocations "
                 "remain visible until moved or removed. Legacy multiple assignments keep all "
                 "hours and show a resolution finding; new leaves accept at most one allocation. "
+                "Coverage is an explicit link to a compatible saved reservation; it is never "
+                "inferred from the work name or Jira fields. "
                 "The preview compares dated demand with the whole team's calendars, "
                 "availability, reservations, and concurrent work. Save applies all changes. "
                 "Cancel discards them."
@@ -297,6 +341,7 @@ class AllocationDialog(QDialog):
         self.table.selectionModel().currentChanged.connect(self.selection_changed)
         self.person.currentIndexChanged.connect(self.person_changed)
         self.hours.editingFinished.connect(self.preview_compact)
+        self.coverage.currentIndexChanged.connect(self.preview_compact)
         self.refresh()
 
     def selected(self) -> UUID | None:
@@ -313,6 +358,14 @@ class AllocationDialog(QDialog):
             return
         if self.person.currentData() is None:
             self.hours.clear()
+        selected = self.coverage.currentData()
+        person = self.person.currentData()
+        populate_coverage_rules(
+            self.coverage,
+            self.candidate,
+            UUID(person) if person else None,
+            UUID(selected) if selected else None,
+        )
         self.preview_compact()
 
     def preview_compact(self) -> bool:
@@ -321,6 +374,7 @@ class AllocationDialog(QDialog):
         current_values = (
             "" if self.person.currentData() is None else str(self.person.currentData()),
             self.hours.text(),
+            "" if self.coverage.currentData() is None else str(self.coverage.currentData()),
         )
         if current_values == self._loaded_compact_values:
             return True
@@ -334,11 +388,13 @@ class AllocationDialog(QDialog):
                 raise ValueError(
                     "Enter allocated hours as a non-negative number, such as 12.5."
                 ) from error
-            self.candidate = set_work_assignment(
+            rule = self.coverage.currentData()
+            self.candidate = set_work_assignment_coverage(
                 self.candidate,
                 self.work_id,
                 UUID(person) if person else None,
                 hours,
+                UUID(rule) if rule else None,
             )
         except ValueError as error:
             self.error.setText(str(error))
@@ -373,14 +429,30 @@ class AllocationDialog(QDialog):
             if item.kind != WorkItemType.EPIC and not children and len(direct) == 1
             else ""
         )
+        direct_coverage = (
+            coverage_for_allocation(self.candidate, direct[0].id) if len(direct) == 1 else None
+        )
+        populate_coverage_rules(
+            self.coverage,
+            self.candidate,
+            assignee,
+            direct_coverage.reservation_rule_id if direct_coverage is not None else None,
+        )
         self.hours.setVisible(item.kind != WorkItemType.EPIC)
         label_widget = self.compact_form.labelForField(self.hours)
         if label_widget is not None:
             label_widget.setVisible(item.kind != WorkItemType.EPIC)
+        coverage_label = self.compact_form.labelForField(self.coverage)
+        coverage_visible = item.kind != WorkItemType.EPIC and not children
+        self.coverage.setVisible(coverage_visible)
+        self.coverage.setEnabled(coverage_visible and assignee is not None)
+        if coverage_label is not None:
+            coverage_label.setVisible(coverage_visible)
         self.compact.setVisible(compact)
         self._loaded_compact_values = (
             "" if self.person.currentData() is None else str(self.person.currentData()),
             self.hours.text(),
+            "" if self.coverage.currentData() is None else str(self.coverage.currentData()),
         )
         self._loading_compact = False
 
@@ -391,6 +463,7 @@ class AllocationDialog(QDialog):
             row = [
                 QStandardItem(self.candidate.person(allocation.person_id).name),
                 QStandardItem(str(allocation.hours)),
+                QStandardItem(allocation_coverage_name(self.candidate, allocation.id)),
             ]
             for cell in row:
                 cell.setData(str(allocation.id), Qt.ItemDataRole.UserRole)
@@ -398,7 +471,9 @@ class AllocationDialog(QDialog):
             self.model.appendRow(row)
             if allocation.id == selected:
                 self.table.setCurrentIndex(row[0].index())
-        self.table.setColumnWidth(0, 340)
+        self.table.setColumnWidth(0, 210)
+        self.table.setColumnWidth(1, 130)
+        self.table.setColumnWidth(2, 260)
         self.summary.setText(allocation_summary_text(self.candidate, self.work_id))
         contributors = work_contributors(self.candidate, self.work_id)
         if children:
@@ -449,7 +524,8 @@ class AllocationDialog(QDialog):
         else:
             message = (
                 "Hours are optional and separate from the estimate. Blank hours means owner "
-                "only; Unassigned also removes this leaf's capacity demand."
+                "only; Unassigned also removes this leaf's capacity demand. Coverage uses "
+                "only the explicitly selected compatible reservation."
             )
             guidance = "Choose one assignee and optional explicit capacity hours."
         if not self.candidate.people and compact:
@@ -474,6 +550,27 @@ class AllocationDialog(QDialog):
         people.setCurrentIndex(people.findData(str(original.person_id)))
         hours = QLineEdit(str(original.hours))
         hours.setAccessibleName("Allocation hours")
+        coverage = QComboBox()
+        coverage.setAccessibleName("Reservation coverage")
+        existing_coverage = coverage_for_allocation(self.candidate, original.id)
+        populate_coverage_rules(
+            coverage,
+            self.candidate,
+            original.person_id,
+            existing_coverage.reservation_rule_id if existing_coverage is not None else None,
+        )
+
+        def person_changed() -> None:
+            selected_rule = coverage.currentData()
+            selected_person = people.currentData()
+            populate_coverage_rules(
+                coverage,
+                self.candidate,
+                UUID(selected_person) if selected_person else None,
+                UUID(selected_rule) if selected_rule else None,
+            )
+
+        people.currentIndexChanged.connect(person_changed)
         identifier_holder: list[UUID] = []
 
         def build() -> ProgramPlan:
@@ -490,14 +587,19 @@ class AllocationDialog(QDialog):
                 hours=value,
                 id=original.id,
             )
-            updated = update_allocation(self.candidate, allocation)
+            selected_rule = coverage.currentData()
+            updated = update_allocation_coverage(
+                self.candidate,
+                allocation,
+                UUID(selected_rule) if selected_rule else None,
+            )
             identifier_holder.append(allocation.id)
             return updated
 
         updated = validated_form(
             self,
             "Edit legacy allocation",
-            [("&Person", people), ("&Hours", hours)],
+            [("&Person", people), ("&Hours", hours), ("Covered &by", coverage)],
             build,
         )
         if updated is not None:

@@ -33,7 +33,10 @@ from planacity.planning.assignment_resolution import preview_assignment_consolid
 from planacity.planning.people import remove_person
 from planacity.planning.reservation_coverage_settings import (
     add_reservation_coverage,
+    coverage_for_allocation,
     remove_reservation_coverage,
+    set_work_assignment_coverage,
+    update_allocation_coverage,
     update_reservation_coverage,
 )
 from planacity.planning.reservation_settings import remove_reservation, update_reservation
@@ -129,6 +132,88 @@ def test_lifecycle_preserves_ids_order_and_unrelated_plan_data() -> None:
         update_reservation_coverage(plan, unknown)
     with pytest.raises(ValueError, match="does not exist"):
         remove_reservation_coverage(plan, uuid4())
+
+
+def test_atomic_allocation_editor_preserves_ids_and_filters_through_domain_validation() -> None:
+    plan = linked_plan()
+    allocation = plan.allocations[1]
+    coverage = coverage_for_allocation(plan, allocation.id)
+    assert coverage is not None
+
+    changed = update_allocation_coverage(
+        plan,
+        replace(allocation, hours=Decimal("7.5")),
+        plan.reservation_rules[0].id,
+    )
+
+    assert changed.allocations[1].id == allocation.id
+    assert changed.allocations[1].hours == Decimal("7.5")
+    assert changed.reservation_coverages[1].id == coverage.id
+    assert changed.reservation_coverages[1].reservation_rule_id == plan.reservation_rules[0].id
+    assert plan.allocations[1].hours == 4
+
+    cleared = update_allocation_coverage(changed, changed.allocations[1], None)
+    assert coverage_for_allocation(cleared, allocation.id) is None
+    assert cleared.allocations == changed.allocations
+
+    with pytest.raises(ValueError, match="does not include"):
+        update_allocation_coverage(
+            plan,
+            replace(allocation, person_id=plan.people[0].id),
+            plan.reservation_rules[1].id,
+        )
+
+
+def test_compact_assignment_and_coverage_are_one_atomic_candidate() -> None:
+    plan = coverage_plan()
+    item = plan.work_items[0]
+    allocation = plan.allocations[0]
+
+    linked = set_work_assignment_coverage(
+        plan,
+        item.id,
+        plan.people[0].id,
+        Decimal("9"),
+        plan.reservation_rules[0].id,
+    )
+    coverage = coverage_for_allocation(linked, allocation.id)
+
+    assert linked.allocations[0].id == allocation.id
+    assert linked.allocations[0].hours == 9
+    assert coverage is not None
+
+    changed = set_work_assignment_coverage(
+        linked,
+        item.id,
+        plan.people[1].id,
+        Decimal("10"),
+        plan.reservation_rules[1].id,
+    )
+    changed_coverage = coverage_for_allocation(changed, allocation.id)
+
+    assert changed.allocations[0].id == allocation.id
+    assert changed.allocations[0].person_id == plan.people[1].id
+    assert changed_coverage is not None and changed_coverage.id == coverage.id
+    assert changed_coverage.reservation_rule_id == plan.reservation_rules[1].id
+    assert linked.allocations[0].person_id == plan.people[0].id
+
+    cleared = set_work_assignment_coverage(
+        changed,
+        item.id,
+        plan.people[1].id,
+        Decimal("10"),
+        None,
+    )
+    assert coverage_for_allocation(cleared, allocation.id) is None
+
+    with pytest.raises(ValueError, match="explicit allocated hours"):
+        set_work_assignment_coverage(
+            plan,
+            item.id,
+            plan.people[0].id,
+            None,
+            plan.reservation_rules[0].id,
+        )
 
 
 def test_project_and_backup_roundtrip_schema_fourteen_exactly(tmp_path) -> None:
