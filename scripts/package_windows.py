@@ -9,6 +9,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import sysconfig
 import tempfile
 import tomllib
 import zipfile
@@ -114,6 +115,11 @@ def _safe_reset(path: Path, parent: Path) -> None:
             entry.unlink()
 
 
+def _deployment_tool_path() -> Path:
+    executable_name = "pyside6-deploy.exe" if sys.platform == "win32" else "pyside6-deploy"
+    return Path(sysconfig.get_path("scripts")) / executable_name
+
+
 def deploy() -> None:
     if sys.platform != "win32":
         raise RuntimeError("The portable Windows package must be built on Windows.")
@@ -123,8 +129,7 @@ def deploy() -> None:
     write_windows_icon(ICON_SOURCE, ICON_OUTPUT)
     generated_config = BUILD_ROOT / "pysidedeploy.spec"
     shutil.copy2(DEPLOY_CONFIG, generated_config)
-    executable_name = "pyside6-deploy.exe" if sys.platform == "win32" else "pyside6-deploy"
-    candidate = Path(sys.executable).with_name(executable_name)
+    candidate = _deployment_tool_path()
     if not candidate.is_file():
         raise FileNotFoundError("pyside6-deploy is not installed beside the active Python.")
     deploy_command = str(candidate)

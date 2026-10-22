@@ -2,6 +2,8 @@
 
 import hashlib
 import struct
+import sys
+import sysconfig
 import zipfile
 from pathlib import Path
 
@@ -69,3 +71,11 @@ def test_safe_reset_keeps_target_directory_and_clears_contents(tmp_path: Path) -
 
     assert target.is_dir()
     assert list(target.iterdir()) == []
+
+
+def test_deployment_tool_uses_active_interpreter_scripts_directory() -> None:
+    tool = package_windows._deployment_tool_path()
+
+    assert tool.parent == Path(sysconfig.get_path("scripts"))
+    expected = "pyside6-deploy.exe" if sys.platform == "win32" else "pyside6-deploy"
+    assert tool.name == expected
