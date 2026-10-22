@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Reproducible portable Windows preview packaging. The Windows workflow builds
+  and smoke-tests an unsigned x64 application that needs no Python installation,
+  then produces a versioned ZIP and SHA-256 checksum with the license, startup
+  guide, and fictional Moon Heist example. Artifacts are attached only when a
+  matching GitHub prerelease is explicitly published.
 - Manual reservation coverage editing in Plan and People. Allocation drafts and
   the compact Plan inspector now select, change, or clear one compatible saved
   reservation explicitly while preserving allocation and coverage identities.

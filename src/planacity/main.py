@@ -1,15 +1,18 @@
 """Desktop application entry point."""
 
 import ctypes
+import os
 import sys
 from importlib.metadata import version
 
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from planacity.ui.icons import image_icon
 from planacity.ui.main_window import MainWindow
 
 WINDOWS_APP_ID = "Planacity.Planacity"
+PACKAGE_SMOKE_TEST_ENV = "PLANACITY_PACKAGE_SMOKE_TEST"
 
 
 def _set_windows_runtime_identity() -> None:
@@ -37,4 +40,6 @@ def main() -> int:
     app.setWindowIcon(image_icon("planacity-mark.png"))
     window = MainWindow()
     window.show()
+    if os.environ.get(PACKAGE_SMOKE_TEST_ENV) == "1":
+        QTimer.singleShot(500, app.quit)
     return app.exec()

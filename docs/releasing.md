@@ -29,11 +29,47 @@ the exact reviewed commit containing the intended version.
    Clearly state that these are Python packages, not standalone installers.
    Verify installing the wheel and launching `python -m planacity` in a fresh
    virtual environment before attaching the artifacts.
-   The running Windows application sets a Planacity process identity and window
-   icon. A desktop icon for the executable itself requires the future standalone
-   Windows package to embed an `.ico` resource.
 6. Verify the published release and links. Never move a published tag; fixes get
    a new patch version. Start the next development version in a separate PR.
+
+## Windows portable development previews
+
+The repository can produce an unsigned Windows x64 preview that runs without a
+Python installation. This is a feedback artifact, not a stable installer.
+
+Use 64-bit Python 3.12, the Visual Studio C++ build tools with the Windows SDK,
+and the pinned deployment dependencies. From the repository root:
+
+```powershell
+python -m pip install -e ".[dev,deploy]"
+python scripts/package_windows.py
+```
+
+The script generates a multi-resolution executable icon, invokes
+`pyside6-deploy` in standalone mode, launches the packaged executable from an
+unrelated temporary directory, and writes these files under `dist/windows/`:
+
+```text
+Planacity-v0.4.0-dev.0-windows-x64.zip
+Planacity-v0.4.0-dev.0-windows-x64.zip.sha256
+```
+
+The name is derived from the project version. A Python development version such
+as `0.4.0.dev0` maps to the prerelease label `v0.4.0-dev.0`. The ZIP contains one
+versioned root directory, the standalone application, `LICENSE.txt`, the Windows
+quick-start guide, and the fictional Moon Heist backup.
+
+The `Windows portable preview` workflow builds and retains the same artifacts
+for relevant pull requests and manual runs. It does not create a tag, release,
+or installer. It uploads assets to GitHub only after the maintainer explicitly
+publishes a prerelease whose tag exactly matches the packaged version. Stable
+releases are deliberately ignored by this preview workflow.
+
+Before publishing a preview, review the exact commit, let its checks pass, test
+the extracted ZIP on a clean Windows x64 machine, and compare its SHA-256 with
+the generated checksum. State clearly that the executable is not code-signed and
+may trigger a Windows SmartScreen unknown-publisher warning. Never disable
+SmartScreen globally as part of these instructions.
 
 ## v0.1.0 prepared notes
 

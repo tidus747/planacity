@@ -2,4 +2,6 @@ include CHANGELOG.md CONTRIBUTING.md
 recursive-include tests *.py
 recursive-include docs *.md *.png
 recursive-include examples *.md *.json *.csv
+recursive-include packaging *.py *.spec *.txt
+include scripts/package_windows.py
 recursive-include src/planacity/resources *.md
