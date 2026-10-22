@@ -73,8 +73,8 @@ example.
 | --- | --- |
 | Source version | `0.4.0.dev0` |
 | Active milestone | v0.5 - Program Calendar |
-| Project file schema | 12 |
-| Distribution | Source preview - no stable installer yet |
+| Project file schema | 14 |
+| Distribution | Portable Windows preview automated - no stable installer yet |
 
 The v0.1 planning foundation and v0.2 Jira roundtrip are implemented. The v0.3
 Visual Planning source candidate has
@@ -82,6 +82,11 @@ Visual Planning source candidate has
 an approved release. The v0.4 Team & Capacity feature set is implemented in the
 source preview. Active work now targets the v0.5 Program Calendar milestone;
 this does not publish or rename the current `0.4.0.dev0` source version.
+
+The repository can also build and smoke-test an unsigned, portable Windows x64
+ZIP that runs without a Python installation. No executable has been published
+by this change; downloads remain subject to an explicitly approved GitHub
+prerelease. See the [release procedure](docs/releasing.md#windows-portable-development-previews).
 
 Current reservation previews deduct shared capacity-affecting program events but
 not work allocations. Plan findings and People now present the shared dated-capacity
