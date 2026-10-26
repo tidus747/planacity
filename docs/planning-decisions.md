@@ -9,6 +9,8 @@ preserved Jira source-priority text schema 10, canonical work ownership schema 1
 and shared calendar events schema 12, plus sprint inputs in schema 13. The
 transactional Plan inspector, Overview
 analysis, and People associations require no additional persisted state.
+Sprint load is also a projection over schema 13 inputs and the canonical dated
+capacity result; it introduces no cached totals or team-membership state.
 Later presentation sections remain future behavior.
 See the [roadmap](roadmap.md) for order and acceptance.
 

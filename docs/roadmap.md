@@ -366,7 +366,10 @@ The first implementation slice is the canonical sprint and assignment model in
 load calculations, Jira mapping, and assisted distribution remain separate PRs.
 Manual sprint editing and explicit leaf-work assignment are the focused second
 slice in [#156](https://github.com/tidus747/planacity/issues/156). Sprint load
-and capacity comparison remain a later slice.
+and capacity comparison are the focused third slice in
+[#179](https://github.com/tidus747/planacity/issues/179). It reuses canonical
+dated capacity, retains concurrent non-sprint demand, and treats WorkGroup scope
+as a derived reporting association rather than inventing team membership.
 
 Optional REST connectivity is tracked by
 [#146](https://github.com/tidus747/planacity/issues/146). A Jira REST adapter

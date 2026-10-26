@@ -36,10 +36,13 @@ from planacity.planning.calendar_events import (
     remove_calendar_event,
     update_calendar_event,
 )
+from planacity.planning.estimate_units import format_fraction
 from planacity.planning.sprints import (
     SprintFindingKind,
+    SprintLoadState,
     add_sprint,
     assign_work_to_sprint,
+    calculate_sprint_loads,
     remove_sprint,
     sprint,
     sprint_findings,
@@ -116,6 +119,17 @@ def assignment_status(plan: ProgramPlan, item: WorkItem) -> str:
     if finding.kind == SprintFindingKind.WORK_DATES_INCOMPLETE:
         return "Work dates incomplete"
     return "Work outside sprint dates"
+
+
+def sprint_load_status(state: SprintLoadState) -> str:
+    return {
+        SprintLoadState.EMPTY_SCOPE: "Empty scope",
+        SprintLoadState.UNKNOWN: "Unknown capacity",
+        SprintLoadState.INCOMPLETE: "Incomplete",
+        SprintLoadState.OVERLOADED: "Overloaded",
+        SprintLoadState.NO_ASSIGNED_WORK: "No assigned work",
+        SprintLoadState.WITHIN_CAPACITY: "Within capacity",
+    }[state]
 
 
 def edit_sprint(parent: QWidget, session: Session, sprint_id: UUID | None = None) -> None:
@@ -312,7 +326,23 @@ class CalendarPage(WorkspacePage):
     """List and manage plan-wide dated context without inventing appointments."""
 
     HEADERS = ("Name", "Category", "Start", "End", "Capacity impact", "Status")
-    SPRINT_HEADERS = ("Name", "Start", "End", "WorkGroup scope", "External reference", "Status")
+    SPRINT_HEADERS = (
+        "Name",
+        "Start",
+        "End",
+        "WorkGroup scope",
+        "External reference",
+        "Schedule status",
+        "Participants",
+        "Planning",
+        "Sprint work",
+        "Covered",
+        "Ordinary",
+        "Competing",
+        "Remaining",
+        "Unplaced",
+        "Load status",
+    )
     ASSIGNMENT_HEADERS = ("Work", "Type", "Dates", "Sprint", "Status")
 
     def __init__(self, session: Session) -> None:
@@ -383,8 +413,9 @@ class CalendarPage(WorkspacePage):
         sprint_panel = Panel("Sprint planning")
         sprint_panel.content.addWidget(
             label(
-                "Sprints are manual planning periods. WorkGroup scope is context; capacity "
-                "and automatic distribution are not calculated in this view."
+                "Sprints are manual planning periods. Capacity uses the exact sprint dates "
+                "and all competing work. WorkGroup participants are derived from positive "
+                "whole-plan allocations; automatic distribution is not performed."
             )
         )
         self.sprint_empty_state = label("Open a plan to manage sprints.")
@@ -507,8 +538,20 @@ class CalendarPage(WorkspacePage):
             else ()
         )
         groups = {value.id: value.name for value in plan.work_groups} if plan is not None else {}
+        loads = (
+            {value.sprint_id: value for value in calculate_sprint_loads(plan)}
+            if plan is not None
+            else {}
+        )
         for value in sprints:
             assert plan is not None
+            load = loads[value.id]
+            participants = ", ".join(plan.person(person_id).name for person_id in load.person_ids)
+            participant_text = (
+                f"{load.known_people}/{len(load.person_ids)} known: {participants}"
+                if load.person_ids
+                else "None"
+            )
             row = [
                 QStandardItem(text)
                 for text in (
@@ -522,11 +565,24 @@ class CalendarPage(WorkspacePage):
                     ),
                     value.external_reference or "",
                     sprint_status(plan, value),
+                    participant_text,
+                    format_fraction(load.planning_hours),
+                    format_fraction(load.sprint_hours),
+                    format_fraction(load.covered_hours),
+                    format_fraction(load.ordinary_hours),
+                    format_fraction(load.competing_hours),
+                    format_fraction(load.remaining_hours),
+                    format_fraction(load.unplaced_hours),
+                    sprint_load_status(load.state),
                 )
             ]
             for cell in row:
                 cell.setEditable(False)
                 cell.setData(str(value.id), Qt.ItemDataRole.UserRole)
+                if load.messages:
+                    explanation = "\n".join(load.messages)
+                    cell.setToolTip(explanation)
+                    cell.setData(explanation, Qt.ItemDataRole.AccessibleDescriptionRole)
             self.sprint_model.appendRow(row)
             if value.id == selected_sprint_id:
                 self.sprint_table.setCurrentIndex(row[0].index())
