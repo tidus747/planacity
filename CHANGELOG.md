@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Sprint load and capacity comparison in Calendar. Each manual sprint now shows
+  its derived participants, planning capacity, explicitly assigned scheduled
+  work, reservation-covered and ordinary demand, competing ordinary work,
+  signed remaining capacity, unplaced sprint demand, and a text status. Missing
+  inputs and work outside a derived WorkGroup scope remain explicit.
 - Reservation coverage explanations in People and Overview. Per-person and
   per-period tables now separate scheduled work into reservation-covered and
   ordinary demand, expose unused reserved hours, and keep remaining capacity

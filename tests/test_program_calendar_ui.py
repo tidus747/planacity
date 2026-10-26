@@ -8,6 +8,7 @@ import pytest
 from PySide6.QtWidgets import QComboBox, QLabel, QLineEdit, QMessageBox
 from test_calendar_settings import calendar_plan
 from test_editor_forms import accept, drive_dialog
+from test_sprint_load import scoped_sprint_plan
 from test_sprints import sprint_plan
 
 from planacity.domain import CalendarEvent, CalendarEventKind, PlanningHorizon, Sprint
@@ -340,5 +341,33 @@ def test_sprint_forms_reject_invalid_and_stale_drafts(app, window):
             value.work_item_id == task.id
             for value in window.session.document.plan.sprint_assignments
         )
+    finally:
+        window.session.document.saved_plan = window.session.document.plan
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_calendar_sprint_rows_reconcile_load_and_capacity(app, window, theme):
+    plan, sprint = scoped_sprint_plan()
+    window.session.apply(plan)
+    window.set_theme(theme, persist=False)
+    window.show_page(4)
+    page = window.calendar_page
+    try:
+        assert page.sprint_model.rowCount() == 1
+        assert page.sprint_model.item(0, 0).text() == sprint.name
+        assert [page.sprint_model.item(0, column).text() for column in range(6, 15)] == [
+            "1/1 known: Alex",
+            "35",
+            "20",
+            "5",
+            "15",
+            "8",
+            "12",
+            "0",
+            "Overloaded",
+        ]
+        assert page.sprint_model.horizontalHeaderItem(9).text() == "Covered"
+        assert page.sprint_model.horizontalHeaderItem(11).text() == "Competing"
+        assert not page.sprint_table.grab().isNull()
     finally:
         window.session.document.saved_plan = window.session.document.plan

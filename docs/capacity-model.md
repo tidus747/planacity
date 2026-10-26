@@ -220,6 +220,25 @@ allocation drafts consume the same snapshot. Overload findings include all
 concurrent work and reservations for the affected person, even when a draft is
 opened from only one task. They warn but do not block saving an incomplete plan.
 
+## Sprint load projection
+
+Calendar calculates each manual sprint over its exact inclusive dates with the
+same dated-capacity service. **Sprint work** includes only scheduled Allocation
+hours whose leaf work is explicitly assigned to that sprint. **Covered** is the
+subset funded by an explicit reservation link, and **Ordinary** is the remainder.
+**Competing** is ordinary demand from other concurrent work for the participating
+people. Signed remaining capacity therefore retains all competing demand even
+when that work is not assigned to the selected sprint.
+
+A whole-roster sprint includes every roster person. A WorkGroup-scoped sprint
+derives participants from positive whole-plan allocations whose effective work
+context includes that group. This is reporting context, not persisted team
+membership. The result exposes known-person counts, empty derived scope, missing
+calendars, assigned work without positive Allocation hours, assigned people
+outside the derived scope, and sprint allocation demand that cannot be placed.
+It never changes work dates, sprint membership, allocations, reservations, or
+imports, and it does not distribute work automatically.
+
 ## Capacity boundaries and follow-ups
 
 The nominal-calendar and availability APIs remain smaller reusable calculations;

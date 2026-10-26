@@ -301,6 +301,20 @@ rejecting irregular plans. Preserve stable identities and schema 13.
 Non-goals: sprint capacity, Jira mapping, automatic distribution, velocity, and
 Scrum ceremony management.
 
+Status: completed by issue #156.
+
+## C08 - Sprint load and capacity in Calendar
+
+Target: v0.5. Depends on C07 and the canonical dated-capacity engine. Tracked by
+[issue #179](https://github.com/tidus747/planacity/issues/179).
+
+Project each sprint through its exact dates, explicit work assignments, and
+derived whole-roster or WorkGroup participant scope. Show scheduled sprint work,
+reservation-covered and ordinary demand, competing ordinary work, planning and
+signed remaining capacity, unplaced demand, known-person coverage, and actionable
+incomplete states. Reuse canonical source identities and calculations without a
+schema change. Jira mapping and automatic distribution remain later slices.
+
 ## J01 - Additive Jira import with existing-reference anchors
 
 Target: v0.5 usability. Safe prerequisite for v0.8 reconciliation. Tracked by

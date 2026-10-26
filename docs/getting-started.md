@@ -67,11 +67,20 @@ No account or network connection is needed while planning.
    **Set sprint...** on executable leaf work to assign or move it; **Unassign**
    removes only sprint membership. Overlaps, dates outside the horizon,
    incomplete work dates, and work outside its sprint remain visible findings.
+   Each sprint row compares its explicitly assigned allocation demand with the
+   canonical capacity for the same dates. Covered and ordinary sprint work stay
+   separate, while **Competing** retains other ordinary work for the participating
+   people so it cannot become false free time. Whole-roster sprints use the full
+   roster. WorkGroup scope derives participants from positive whole-plan work
+   associations; it does not create team membership. Missing calendars, empty
+   scope, owner-only work, out-of-scope people, and unplaced demand remain explicit.
    Planacity does not move work dates or distribute work automatically.
    Real Calendar workspace screenshots: [light](images/program-calendar-light.png)
    and [dark](images/program-calendar-dark.png).
    Sprint assignment screenshots: [light](images/calendar-sprints-light.png) and
    [dark](images/calendar-sprints-dark.png).
+   Sprint load screenshots: [light](images/calendar-sprint-load-light.png) and
+   [dark](images/calendar-sprint-load-dark.png).
    Real import review screenshots: [light](images/availability-import-light.png)
    and [dark](images/availability-import-dark.png).
    Overview also summarizes the events that intersect the planning horizon and
