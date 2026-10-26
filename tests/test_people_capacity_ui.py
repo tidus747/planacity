@@ -1,11 +1,13 @@
 """People presents exact dated capacity and links each source back to its editor."""
 
+from dataclasses import replace
 from datetime import date
 
 import pytest
 from test_capacity_breakdown import MONDAY, WEEK, plan_with_capacity
 
 import planacity.ui.editor_pages as editor_pages
+from planacity.domain import ReservationCoverage
 from planacity.planning.capacity_breakdown import CapacityBucketScale
 from planacity.ui.reservations import ReservationWizard
 from planacity.ui.theme import Theme
@@ -20,28 +22,31 @@ def test_people_capacity_totals_ranges_and_heatmap(window, theme):
     page = window.people_page
     try:
         assert page.model.rowCount() == 3
-        assert [page.model.item(0, column).text() for column in range(7, 13)] == [
+        assert [page.model.item(0, column).text() for column in range(7, 16)] == [
             "5",
             "35",
             "28",
+            "0",
+            "28",
+            "5",
             "7",
             "0",
             "Overloaded",
         ]
-        assert page.model.item(1, 11).text() == "3"
-        assert page.model.item(1, 12).text() == "Incomplete"
+        assert page.model.item(1, 14).text() == "3"
+        assert page.model.item(1, 15).text() == "Incomplete"
         assert page.model.item(2, 8).text() == "Unknown"
-        assert page.model.item(2, 12).text() == "Unknown"
+        assert page.model.item(2, 15).text() == "Unknown"
 
         page.table.setCurrentIndex(page.model.index(0, 0))
         assert page.detail_model.rowCount() == 1
         assert page.detail_model.item(0, 0).text() == "2026-10-05 to 2026-10-11"
-        assert page.detail_model.item(0, 4).text() == "Overloaded"
+        assert page.detail_model.item(0, 7).text() == "Overloaded"
 
         page.scale.setCurrentIndex(page.scale.findData(CapacityBucketScale.DAY.value))
         assert page.detail_model.rowCount() == 7
-        assert page.detail_model.item(0, 3).text() == "-5"
-        assert page.detail_model.item(0, 4).text() == "Overloaded"
+        assert page.detail_model.item(0, 6).text() == "-5"
+        assert page.detail_model.item(0, 7).text() == "Overloaded"
         assert page.reservation_choice.count() == 1
         assert page.work_choice.count() == 2
 
@@ -50,8 +55,8 @@ def test_people_capacity_totals_ranges_and_heatmap(window, theme):
         assert page.period.start == page.period.end == date(2026, 10, 6)
         assert page.model.item(0, 8).text() == "7"
         assert page.model.item(0, 9).text() == "4"
-        assert page.model.item(0, 10).text() == "3"
-        assert page.model.item(0, 12).text() == "Within capacity"
+        assert page.model.item(0, 13).text() == "3"
+        assert page.model.item(0, 15).text() == "Within capacity"
 
         previous = page.period
         page.range_start.setText("2026-10-07")
@@ -64,6 +69,50 @@ def test_people_capacity_totals_ranges_and_heatmap(window, theme):
         assert page.period == WEEK
         assert page.range_start.text() == str(WEEK.start)
         assert page.range_end.text() == str(WEEK.end)
+    finally:
+        window.session.document.saved_plan = window.session.document.plan
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_people_explains_covered_ordinary_and_unused_hours(window, theme):
+    plan = plan_with_capacity()
+    plan = replace(
+        plan,
+        reservation_coverages=(
+            ReservationCoverage(
+                allocation_id=plan.allocations[0].id,
+                reservation_rule_id=plan.reservation_rules[0].id,
+            ),
+        ),
+    )
+    window.session.apply(plan)
+    window.set_theme(theme, persist=False)
+    window.show_page(3)
+    page = window.people_page
+    try:
+        assert [page.model.item(0, column).text() for column in range(9, 14)] == [
+            "28",
+            "5",
+            "23",
+            "0",
+            "12",
+        ]
+        page.table.setCurrentIndex(page.model.index(0, 0))
+        assert [page.detail_model.item(0, column).text() for column in range(2, 7)] == [
+            "28",
+            "5",
+            "23",
+            "0",
+            "12",
+        ]
+        assert "covered 5 h" in page.detail_heading.text()
+        assert "ordinary 23 h" in page.detail_heading.text()
+        assert "covered 5 h" in page.reservation_choice.currentText()
+        assert any(
+            "Integration" in page.work_choice.itemText(index)
+            and "ordinary 15 h" in page.work_choice.itemText(index)
+            for index in range(page.work_choice.count())
+        )
     finally:
         window.session.document.saved_plan = window.session.document.plan
 

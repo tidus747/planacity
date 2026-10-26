@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Reservation coverage explanations in People and Overview. Per-person and
+  per-period tables now separate scheduled work into reservation-covered and
+  ordinary demand, expose unused reserved hours, and keep remaining capacity
+  based only on ordinary demand. Partial or non-overlapping explicit links create
+  actionable planning findings with the affected work, person, rule, and dates.
 - Reproducible portable Windows preview packaging. The Windows workflow builds
   and smoke-tests an unsigned x64 application that needs no Python installation,
   then produces a versioned ZIP and SHA-256 checksum with the license, startup

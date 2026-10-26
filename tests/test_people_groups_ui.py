@@ -28,11 +28,11 @@ def test_roster_and_details_separate_whole_plan_context_from_range_hours(app, wi
     page = window.people_page
     try:
         first_row = _row_for_person(page, plan.people[0].id)
-        assert page.model.item(first_row, 13).text() == (
+        assert page.model.item(first_row, 16).text() == (
             "Alpha, Ambiguous group, Beta, Gamma, Ungrouped"
         )
         assert page.model.item(first_row, 9).text() == "14"
-        assert page.model.item(first_row, 11).text() == "4"
+        assert page.model.item(first_row, 14).text() == "4"
         page.table.setCurrentIndex(page.model.index(first_row, 0))
         app.processEvents()
 
@@ -75,7 +75,7 @@ def test_group_filter_keeps_complete_capacity_and_no_assignment_state(window):
         page.group_filter.setCurrentIndex(page.group_filter.findData(NO_ASSIGNED_WORK_KEY))
         assert page.model.rowCount() == 1
         assert page.model.item(0, 0).data(Qt.ItemDataRole.UserRole) == str(plan.people[2].id)
-        assert page.model.item(0, 13).text() == "No assigned work"
+        assert page.model.item(0, 16).text() == "No assigned work"
         assert page.group_model.rowCount() == 0
         assert "No assigned work" in page.group_heading.text()
 

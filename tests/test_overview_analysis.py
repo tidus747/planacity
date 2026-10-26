@@ -11,6 +11,7 @@ from planacity.domain import (
     Allocation,
     AvailabilityEvent,
     ProgramPlan,
+    ReservationCoverage,
     ReservationRule,
     WorkGroup,
     WorkItem,
@@ -41,6 +42,9 @@ def test_overview_capacity_reconciles_known_subtotals_and_unplaced_demand() -> N
     assert result.capacity.reserved_hours == 5
     assert result.capacity.planning_hours == 75
     assert result.capacity.scheduled_hours == 28
+    assert result.capacity.covered_hours == 0
+    assert result.capacity.ordinary_hours == 28
+    assert result.capacity.unused_reserved_hours == 5
     assert result.capacity.remaining_hours == 47
     assert result.capacity.unplaced_hours == 3
     assert result.capacity.partial
@@ -110,7 +114,40 @@ def test_breakdown_keeps_unavailability_and_named_reservations_separate() -> Non
     assert capacity.reserved_hours == 9
     assert capacity.planning_hours == 67
     assert capacity.scheduled_hours == 28
+    assert capacity.covered_hours == 0
+    assert capacity.ordinary_hours == 28
+    assert capacity.unused_reserved_hours == 9
     assert capacity.remaining_hours == 39
+
+
+def test_overview_explains_linked_work_without_counting_it_twice() -> None:
+    plan = plan_with_capacity()
+    linked = replace(
+        plan,
+        reservation_coverages=(
+            ReservationCoverage(
+                allocation_id=plan.allocations[0].id,
+                reservation_rule_id=plan.reservation_rules[0].id,
+            ),
+        ),
+    )
+
+    result = calculate_overview_analysis(linked)
+    alex = result.people[0]
+
+    assert alex.scheduled_hours == 28
+    assert alex.covered_hours == 5
+    assert alex.ordinary_hours == 23
+    assert alex.unused_reserved_hours == 0
+    assert alex.remaining_hours == 12
+    assert result.capacity.covered_hours == 5
+    assert result.capacity.ordinary_hours == 23
+    assert result.capacity.unused_reserved_hours == 0
+    assert result.capacity.remaining_hours == 52
+    assert any(
+        "funds 5 h" in message and "not an additional deduction" in message
+        for message in result.coverage
+    )
 
 
 def test_estimated_topics_use_leaves_and_keep_ambiguous_and_unknown_explicit() -> None:
@@ -190,6 +227,9 @@ def test_empty_plan_is_complete_empty_data_not_unknown_capacity() -> None:
     assert result.capacity.nominal_hours == 0
     assert result.capacity.planning_hours == 0
     assert result.capacity.scheduled_hours == 0
+    assert result.capacity.covered_hours == 0
+    assert result.capacity.ordinary_hours == 0
+    assert result.capacity.unused_reserved_hours == 0
     assert result.capacity.remaining_hours == 0
     assert any("No people" in message for message in result.coverage)
 

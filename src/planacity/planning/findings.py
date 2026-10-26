@@ -31,6 +31,7 @@ class FindingRule(StrEnum):
     ALLOCATION_MISMATCH = "work.allocation_mismatch"
     UNRESOLVED_ASSIGNMENT = "work.unresolved_assignment"
     HIERARCHY_EFFORT = "work.hierarchy_effort"
+    RESERVATION_COVERAGE_SHORTFALL = "capacity.reservation_coverage_shortfall"
     UNRESOLVED_RESERVATION = "capacity.unresolved_reservation"
     NO_PLANNING_CAPACITY = "capacity.no_planning_capacity"
     OVERLOAD = "capacity.overload"
@@ -151,6 +152,30 @@ def _gap_finding(plan: ProgramPlan, gap: CapacityGap) -> PlanningFinding | None:
             source_ids=source_ids,
             date_range=gap.period,
         )
+    if gap.kind == CapacityGapKind.NON_OVERLAPPING_COVERAGE:
+        assert gap.source_id is not None and gap.work_item_id is not None
+        allocation = next(value for value in plan.allocations if value.id == gap.source_id)
+        coverage = next(
+            value for value in plan.reservation_coverages if value.allocation_id == allocation.id
+        )
+        rule = next(
+            value for value in plan.reservation_rules if value.id == coverage.reservation_rule_id
+        )
+        person = plan.person(allocation.person_id)
+        hours = Fraction(allocation.hours) if gap.hours is None else gap.hours
+        return PlanningFinding(
+            FindingRule.RESERVATION_COVERAGE_SHORTFALL,
+            FindingSeverity.WARNING,
+            "Reservation coverage does not overlap",
+            f"{plan.work_item(gap.work_item_id).title} has {_hours(hours)} h allocated to "
+            f"{person.name}, but reservation {rule.name} covers 0 h because their dates do "
+            "not overlap. The complete allocation remains ordinary demand.",
+            "Change the work dates, reservation dates, or explicit coverage selection.",
+            work_item_ids=work_ids,
+            person_ids=person_ids,
+            source_ids=_ids({allocation.id, rule.id}),
+            date_range=gap.period,
+        )
     if gap.kind == CapacityGapKind.QUERY_LIMIT:
         return PlanningFinding(
             FindingRule.CAPACITY_QUERY_LIMIT,
@@ -161,6 +186,68 @@ def _gap_finding(plan: ProgramPlan, gap: CapacityGap) -> PlanningFinding | None:
             date_range=gap.period,
         )
     return None
+
+
+def _coverage_shortfall_findings(
+    plan: ProgramPlan, capacity: DatedCapacity
+) -> tuple[PlanningFinding, ...]:
+    """Explain linked work that remains ordinary demand in the plan horizon."""
+    non_overlapping = {
+        gap.source_id
+        for gap in capacity.all_gaps
+        if gap.kind == CapacityGapKind.NON_OVERLAPPING_COVERAGE and gap.source_id is not None
+    }
+    allocations = {allocation.id: allocation for allocation in plan.allocations}
+    rules = {rule.id: rule for rule in plan.reservation_rules}
+    people = {person.person_id: person for person in capacity.people}
+    findings = []
+    for coverage in sorted(plan.reservation_coverages, key=lambda value: str(value.id)):
+        if coverage.allocation_id in non_overlapping:
+            continue
+        allocation = allocations[coverage.allocation_id]
+        person_result = people.get(allocation.person_id)
+        if person_result is None:
+            continue
+        entry = next(
+            (
+                value
+                for value in person_result.allocation_breakdown
+                if value.allocation_id == allocation.id
+            ),
+            None,
+        )
+        if entry is None or entry.excess_hours <= 0:
+            continue
+        item = plan.work_item(allocation.work_item_id)
+        rule = rules[coverage.reservation_rule_id]
+        person = plan.person(allocation.person_id)
+        assert item.start is not None and item.end is not None
+        period = PlanningHorizon(
+            max(item.start, capacity.period.start),
+            min(item.end, capacity.period.end),
+        )
+        title = (
+            "Reservation coverage unavailable"
+            if entry.covered_hours == 0
+            else "Partial reservation coverage"
+        )
+        findings.append(
+            PlanningFinding(
+                FindingRule.RESERVATION_COVERAGE_SHORTFALL,
+                FindingSeverity.WARNING,
+                title,
+                f"{item.title} has {_hours(entry.hours)} h scheduled for {person.name} in "
+                f"the plan horizon: {_hours(entry.covered_hours)} h is covered by "
+                f"{rule.name}, and {_hours(entry.excess_hours)} h remains ordinary demand.",
+                "Review the allocated hours, work dates, reservation capacity, or explicit "
+                "coverage selection.",
+                work_item_ids=(item.id,),
+                person_ids=(person.id,),
+                source_ids=_ids({allocation.id, rule.id}),
+                date_range=period,
+            )
+        )
+    return tuple(findings)
 
 
 def _overload_findings(plan: ProgramPlan, capacity: DatedCapacity) -> tuple[PlanningFinding, ...]:
@@ -328,6 +415,7 @@ def planning_findings(plan: ProgramPlan) -> tuple[PlanningFinding, ...]:
         finding = _gap_finding(plan, gap)
         if finding is not None:
             findings.append(finding)
+    findings.extend(_coverage_shortfall_findings(plan, capacity))
     findings.extend(_overload_findings(plan, capacity))
     return tuple(findings)
 

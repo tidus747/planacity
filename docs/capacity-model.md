@@ -30,10 +30,13 @@ combine distinct partial absences into one share if they should add up.
 
 People starts at the plan horizon and also accepts explicit Day, Week, or custom
 inclusive ranges. Its roster shows nominal, unavailable, available, reserved,
-planning, allocated, signed remaining, and unplaced hours. The selected-person
-table groups the same exact daily result by day, ISO week, or the complete selected
-period. Status is always written as text as well as highlighted: overloaded,
-incomplete, unknown, full, within capacity, no work, or no planning capacity.
+planning, allocated, reservation-covered, ordinary, unused reserved, signed
+remaining, and unplaced hours. Covered plus ordinary equals scheduled allocated
+work for every complete result. Covered work is not deducted from planning
+capacity again. The selected-person table groups the same exact daily result by
+day, ISO week, or the complete selected period. Status is always written as text
+as well as highlighted: overloaded, incomplete, unknown, full, within capacity,
+no work, or no planning capacity.
 
 The detail names every contributing reservation rule and dated task. Source
 actions reopen the matching reservation or allocation editor. A period total is
@@ -84,6 +87,11 @@ or use Save As if the file must remain readable in an older build.
 
 Screenshots using an explicitly configured example schedule:
 
+- Reservation coverage breakdowns using fictional Moon Heist data:
+  [Overview light](images/reservation-coverage-breakdown-overview-light.png),
+  [Overview dark](images/reservation-coverage-breakdown-overview-dark.png),
+  [People light](images/reservation-coverage-breakdown-people-light.png), and
+  [People dark](images/reservation-coverage-breakdown-people-dark.png).
 - Complete People capacity: [light](images/people-capacity-light.png),
   [dark](images/people-capacity-dark.png).
 - People: [light](images/people-calendars-light.png),
@@ -189,6 +197,14 @@ alongside the gap, while `complete` prevents consumers from presenting an
 incomplete result as a fully feasible plan. Queries requiring more than 100,000
 person-days return one actionable incomplete result and no partial totals.
 
+An explicit coverage link that leaves ordinary demand creates an actionable
+planning finding. The finding identifies the work, person, allocation, reservation
+rule, and intersecting dates, and reports the exact covered and ordinary hours.
+A link whose work and reservation dates do not overlap produces one dedicated
+finding with zero covered hours. Fully covered links and unlinked ordinary work do
+not produce false shortfall findings. Unused reserved capacity remains an
+informational value rather than a warning by itself.
+
 All public hour values use exact `Fraction` results derived from stored Decimal
 inputs. No display rounding or caller Decimal context changes the total. Shared
 calendar events apply to every roster person. On each date, the strongest active
@@ -212,9 +228,13 @@ canonical integration boundary for findings and People/Overview totals. R05
 exposes its gaps and overloads as reusable planning findings. R06 exposes the same
 exact totals and source IDs in People. Overview projects those same results over
 the fixed inclusive plan horizon, with known-person subtotals and explicit
-coverage notes when any result is partial. Its topic view keeps scheduled
-horizon allocations separate from whole-plan estimated leaf effort. Shared
-program events edited in Calendar use this same calculation boundary.
+coverage notes when any result is partial. Its Capacity by person and Capacity
+breakdown modes show scheduled, covered, ordinary, unused reserved, and remaining
+hours from the same result. The load chart compares ordinary demand with planning
+capacity; its accessible detail retains total scheduled and covered hours. Its
+topic view keeps scheduled horizon allocations separate from whole-plan estimated
+leaf effort. Shared program events edited in Calendar use this same calculation
+boundary.
 
 People WorkGroup filtering is a presentation over the same complete person
 result. It never recalculates capacity from only the visible group. Whole-plan
