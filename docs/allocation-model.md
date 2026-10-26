@@ -113,6 +113,12 @@ rule without explicit allocated hours is rejected with guidance instead of
 creating hidden demand. Save/Apply commits once; Cancel or Escape preserves the
 complete original plan.
 
+People and Overview explain the result of each explicit link without changing the
+stored Allocation. Scheduled work is split into covered and ordinary hours, and
+unused reserved capacity remains visible. Remaining capacity subtracts only the
+ordinary portion. A partial or non-overlapping link creates an actionable finding;
+an unlinked allocation remains ordinary work without a coverage warning.
+
 An Epic exposes one feature owner and no hours because Epic ownership does not
 create capacity demand. A non-Epic container shows the distinct contributor team
 and exact rolled-up hours as read-only context; edit its leaves separately.

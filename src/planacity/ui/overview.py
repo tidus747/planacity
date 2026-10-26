@@ -300,6 +300,9 @@ class OverviewPage(WorkspacePage):
                 "Person",
                 "Planning capacity",
                 "Scheduled work",
+                "Covered by reservations",
+                "Ordinary work",
+                "Unused reserved",
                 "Remaining",
                 "Unplaced demand",
                 "State and coverage",
@@ -315,6 +318,9 @@ class OverviewPage(WorkspacePage):
                     name,
                     _hours(person.planning_hours),
                     _hours(person.scheduled_hours),
+                    _hours(person.covered_hours),
+                    _hours(person.ordinary_hours),
+                    _hours(person.unused_reserved_hours),
                     _hours(person.remaining_hours),
                     _hours(person.unplaced_hours),
                     f"{state}. {messages}" if messages else state,
@@ -324,8 +330,11 @@ class OverviewPage(WorkspacePage):
             bars.append(
                 AnalysisBar(
                     name,
-                    person.scheduled_hours,
-                    f"Work {_hours(person.scheduled_hours)}; planning "
+                    person.ordinary_hours,
+                    f"Scheduled {_hours(person.scheduled_hours)}; covered "
+                    f"{_hours(person.covered_hours)}; ordinary "
+                    f"{_hours(person.ordinary_hours)}; unused reserved "
+                    f"{_hours(person.unused_reserved_hours)}; planning "
                     f"{_hours(person.planning_hours)}; remaining "
                     f"{_hours(person.remaining_hours)}; {state}",
                     reference=person.planning_hours,
@@ -449,14 +458,35 @@ class OverviewPage(WorkspacePage):
                 (
                     "Scheduled work",
                     capacity.scheduled_hours,
-                    "Allocated work placed in the horizon",
+                    "All allocated work placed in the horizon; includes covered work",
                     "scheduled",
+                    None,
+                ),
+                (
+                    "Reservation-covered work",
+                    capacity.covered_hours,
+                    "Subset of scheduled work funded by reserved capacity; not another deduction",
+                    "covered",
+                    None,
+                ),
+                (
+                    "Ordinary work demand",
+                    capacity.ordinary_hours,
+                    "Scheduled work that consumes planning capacity",
+                    "ordinary",
                     capacity.planning_hours,
+                ),
+                (
+                    "Unused reserved capacity",
+                    capacity.unused_reserved_hours,
+                    "Reserved capacity not consumed by explicitly linked work",
+                    "unused-reserved",
+                    None,
                 ),
                 (
                     "Remaining capacity",
                     capacity.remaining_hours,
-                    "Signed planning capacity after scheduled work",
+                    "Signed planning capacity after ordinary work demand",
                     "remaining",
                     None,
                 ),

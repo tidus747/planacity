@@ -616,7 +616,7 @@ class PeoplePage(WorkspacePage):
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.model = QStandardItemModel(0, 14, self.table)
+        self.model = QStandardItemModel(0, 17, self.table)
         self.model.setHorizontalHeaderLabels(
             [
                 "Person",
@@ -629,6 +629,9 @@ class PeoplePage(WorkspacePage):
                 "Reserved hours",
                 "Planning hours",
                 "Allocated work",
+                "Covered by reservations",
+                "Ordinary work",
+                "Unused reserved",
                 "Remaining hours",
                 "Unplaced demand",
                 "Status",
@@ -636,7 +639,7 @@ class PeoplePage(WorkspacePage):
             ]
         )
         self.table.setModel(self.model)
-        self.table.header().moveSection(13, 1)
+        self.table.header().moveSection(16, 1)
         self.content.addWidget(self.table, 1)
         buttons = QHBoxLayout()
         self.buttons: list[QPushButton] = []
@@ -727,12 +730,15 @@ class PeoplePage(WorkspacePage):
         self.detail_table.setAlternatingRowColors(True)
         self.detail_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.detail_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.detail_model = QStandardItemModel(0, 7, self.detail_table)
+        self.detail_model = QStandardItemModel(0, 10, self.detail_table)
         self.detail_model.setHorizontalHeaderLabels(
             [
                 "Period",
                 "Planning capacity",
                 "Allocated work",
+                "Covered by reservations",
+                "Ordinary work",
+                "Unused reserved",
                 "Remaining",
                 "Load status",
                 "Reservations",
@@ -857,6 +863,9 @@ class PeoplePage(WorkspacePage):
                         self._hours(capacity.reserved_hours),
                         self._hours(capacity.planning_hours),
                         self._hours(capacity.allocated_hours),
+                        self._hours(capacity.covered_hours),
+                        self._hours(capacity.excess_hours),
+                        self._hours(capacity.unused_reserved_hours),
                         self._hours(capacity.remaining_hours),
                         self._hours(capacity.unplaced_hours),
                         self._state_text(capacity.state),
@@ -866,7 +875,7 @@ class PeoplePage(WorkspacePage):
                 for item in row:
                     item.setData(str(person.id), Qt.ItemDataRole.UserRole)
                     item.setEditable(False)
-                self._decorate_status(row[-1], capacity.state, capacity.gaps)
+                self._decorate_status(row[15], capacity.state, capacity.gaps)
                 self.model.appendRow(row)
                 if capacity.person_id == self.selected_person_id:
                     self.table.setCurrentIndex(row[0].index())
@@ -879,7 +888,7 @@ class PeoplePage(WorkspacePage):
         self._selection_changed()
         for column in range(self.model.columnCount()):
             self.table.resizeColumnToContents(column)
-        self.table.setColumnWidth(13, min(self.table.columnWidth(13), 360))
+        self.table.setColumnWidth(16, min(self.table.columnWidth(16), 360))
 
     def _selection_changed(self, *args: object) -> None:
         selected_value = self.table.currentIndex().data(Qt.ItemDataRole.UserRole)
@@ -1069,6 +1078,9 @@ class PeoplePage(WorkspacePage):
             f"{plan.person(person.person_id).name}: "
             f"planning {self._hours(person.planning_hours)} h; "
             f"allocated {self._hours(person.allocated_hours)} h; "
+            f"covered {self._hours(person.covered_hours)} h; "
+            f"ordinary {self._hours(person.excess_hours)} h; "
+            f"unused reserved {self._hours(person.unused_reserved_hours)} h; "
             f"remaining {self._hours(person.remaining_hours)} h."
         )
         unique_messages = tuple(dict.fromkeys(gap.message for gap in person.gaps))
@@ -1077,11 +1089,16 @@ class PeoplePage(WorkspacePage):
             reservation_names = {rule.id: rule.name for rule in plan.reservation_rules}
             reservations = ", ".join(
                 f"{reservation_names.get(entry.rule_id, 'Unknown reservation')}: "
-                f"{self._hours(entry.hours)} h"
+                f"reserved {self._hours(entry.hours)} h; "
+                f"covered {self._hours(entry.covered_hours)} h; "
+                f"unused {self._hours(entry.unused_hours)} h"
                 for entry in bucket.reservations
             )
             work = ", ".join(
-                f"{plan.work_item(entry.work_item_id).title}: {self._hours(entry.hours)} h"
+                f"{plan.work_item(entry.work_item_id).title}: "
+                f"allocated {self._hours(entry.hours)} h; "
+                f"covered {self._hours(entry.covered_hours)} h; "
+                f"ordinary {self._hours(entry.excess_hours)} h"
                 for entry in bucket.allocations
             )
             row = [
@@ -1090,6 +1107,9 @@ class PeoplePage(WorkspacePage):
                     self._period_text(bucket.period),
                     self._hours(bucket.planning_hours),
                     self._hours(bucket.allocated_hours),
+                    self._hours(bucket.covered_hours),
+                    self._hours(bucket.excess_hours),
+                    self._hours(bucket.unused_reserved_hours),
                     self._hours(bucket.remaining_hours),
                     self._state_text(bucket.state),
                     reservations or "-",
@@ -1099,7 +1119,7 @@ class PeoplePage(WorkspacePage):
             for item in row:
                 item.setData(index, Qt.ItemDataRole.UserRole)
                 item.setEditable(False)
-            self._decorate_status(row[4], bucket.state, bucket.gaps)
+            self._decorate_status(row[7], bucket.state, bucket.gaps)
             self.detail_model.appendRow(row)
         if self.detail_model.rowCount():
             self.detail_table.setCurrentIndex(self.detail_model.index(0, 0))
@@ -1130,13 +1150,17 @@ class PeoplePage(WorkspacePage):
             for entry in bucket.reservations:
                 self.reservation_choice.addItem(
                     f"{names.get(entry.rule_id, 'Unknown reservation')} "
-                    f"({self._hours(entry.hours)} h)",
+                    f"(reserved {self._hours(entry.hours)} h; covered "
+                    f"{self._hours(entry.covered_hours)} h; unused "
+                    f"{self._hours(entry.unused_hours)} h)",
                     str(entry.rule_id),
                 )
             for allocation_entry in bucket.allocations:
                 self.work_choice.addItem(
                     f"{plan.work_item(allocation_entry.work_item_id).title} "
-                    f"({self._hours(allocation_entry.hours)} h)",
+                    f"(allocated {self._hours(allocation_entry.hours)} h; covered "
+                    f"{self._hours(allocation_entry.covered_hours)} h; ordinary "
+                    f"{self._hours(allocation_entry.excess_hours)} h)",
                     str(allocation_entry.work_item_id),
                 )
         self.reservation_choice.blockSignals(False)

@@ -247,14 +247,17 @@ Open **Overview** and expand **Analysis** to inspect the complete inclusive plan
 horizon. This scope is fixed and is not changed by temporary Plan or Timeline
 filters. Use the analysis selector to compare:
 
-- **Capacity by person**: planning capacity, scheduled work, signed remaining
-  hours, unplaced demand, and the resulting state for every roster member.
+- **Capacity by person**: planning capacity, total scheduled work,
+  reservation-covered work, ordinary demand, unused reserved hours, signed
+  remaining hours, unplaced demand, and the resulting state for every roster
+  member. Covered work is a subset of scheduled work, not another deduction.
 - **Planned work by topic**: either scheduled allocation hours inside the
   horizon or estimated leaf effort across the whole current plan. Work with no
   reporting topic stays in Ungrouped; conflicting inherited topics stay in
   Ambiguous.
 - **Capacity breakdown**: nominal time, recorded unavailability, available time,
-  each named reservation rule, planning capacity, scheduled work, remaining
+  each named reservation rule, planning capacity, total scheduled work,
+  reservation-covered work, ordinary demand, unused reserved capacity, remaining
   time, and unplaced demand.
 
 Solid bars show known values, dashed outlines show the comparison capacity, and
@@ -268,6 +271,14 @@ Actual Overview analysis in both appearances:
 
 ![Overview analysis in light mode](images/overview-analysis-light.png)
 ![Overview analysis in dark mode](images/overview-analysis-dark.png)
+
+Reservation coverage evidence using the fictional Moon Heist plan with one
+explicitly linked allocation:
+
+![Reservation coverage breakdown in Overview, light mode](images/reservation-coverage-breakdown-overview-light.png)
+![Reservation coverage breakdown in Overview, dark mode](images/reservation-coverage-breakdown-overview-dark.png)
+![Reservation coverage breakdown in People, light mode](images/reservation-coverage-breakdown-people-light.png)
+![Reservation coverage breakdown in People, dark mode](images/reservation-coverage-breakdown-people-dark.png)
 
 ## Try the complete fictional example
 

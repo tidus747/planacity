@@ -11,6 +11,7 @@ from planacity.domain import (
     PersonCalendar,
     PlanningHorizon,
     ProgramPlan,
+    ReservationCoverage,
     ReservationRule,
     WorkCalendar,
     WorkItem,
@@ -222,3 +223,97 @@ def test_unresolved_reservation_is_related_to_the_persons_allocated_work():
     assert finding.work_item_ids == (task.id,)
     assert finding.person_ids == (person.id,)
     assert finding.source_ids == (rule.id,)
+
+
+def test_partial_reservation_coverage_is_actionable_and_keeps_exact_ids():
+    person = Person(name="Alex")
+    period = PlanningHorizon(MONDAY, FRIDAY)
+    task = WorkItem(
+        title="Front office",
+        kind=WorkItemType.TASK,
+        estimate_hours=Decimal(10),
+        start=period.start,
+        end=period.end,
+    )
+    allocation = Allocation(work_item_id=task.id, person_id=person.id, hours=Decimal(10))
+    rule = ReservationRule(
+        name="Front office reserve",
+        person_ids=(person.id,),
+        hours_per_person=Decimal(4),
+        anchor=MONDAY,
+        interval_weeks=1,
+        effective=period,
+    )
+    plan = configured_plan((task,), (allocation,), people=(person,), horizon=period)
+    plan = replace(
+        plan,
+        reservation_rules=(rule,),
+        reservation_coverages=(
+            ReservationCoverage(
+                allocation_id=allocation.id,
+                reservation_rule_id=rule.id,
+            ),
+        ),
+    )
+
+    finding = next(
+        value
+        for value in planning_findings(plan)
+        if value.rule_key == FindingRule.RESERVATION_COVERAGE_SHORTFALL
+    )
+
+    assert finding.title == "Partial reservation coverage"
+    assert finding.work_item_ids == (task.id,)
+    assert finding.person_ids == (person.id,)
+    assert finding.source_ids == tuple(sorted((allocation.id, rule.id), key=str))
+    assert finding.date_range == period
+    assert "4 h is covered" in finding.explanation
+    assert "6 h remains ordinary demand" in finding.explanation
+    assert finding in findings_for_work(plan, planning_findings(plan), task.id)
+
+
+def test_non_overlapping_coverage_has_one_finding_and_unlinked_work_has_none():
+    person = Person(name="Alex")
+    first_week = PlanningHorizon(MONDAY, FRIDAY)
+    second_week = PlanningHorizon(date(2026, 10, 12), date(2026, 10, 16))
+    task = WorkItem(
+        title="Later duty",
+        kind=WorkItemType.TASK,
+        estimate_hours=Decimal(4),
+        start=second_week.start,
+        end=second_week.end,
+    )
+    allocation = Allocation(work_item_id=task.id, person_id=person.id, hours=Decimal(4))
+    rule = ReservationRule(
+        name="Earlier reserve",
+        person_ids=(person.id,),
+        hours_per_person=Decimal(4),
+        anchor=MONDAY,
+        interval_weeks=1,
+        effective=first_week,
+    )
+    plan = configured_plan((task,), (allocation,), people=(person,))
+    linked = replace(
+        plan,
+        reservation_rules=(rule,),
+        reservation_coverages=(
+            ReservationCoverage(
+                allocation_id=allocation.id,
+                reservation_rule_id=rule.id,
+            ),
+        ),
+    )
+
+    findings = tuple(
+        value
+        for value in planning_findings(linked)
+        if value.rule_key == FindingRule.RESERVATION_COVERAGE_SHORTFALL
+    )
+
+    assert len(findings) == 1
+    assert findings[0].title == "Reservation coverage does not overlap"
+    assert "covers 0 h" in findings[0].explanation
+    assert findings[0].source_ids == tuple(sorted((allocation.id, rule.id), key=str))
+    assert FindingRule.RESERVATION_COVERAGE_SHORTFALL not in {
+        value.rule_key for value in planning_findings(replace(linked, reservation_coverages=()))
+    }

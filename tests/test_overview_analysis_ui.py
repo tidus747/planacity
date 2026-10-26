@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from test_capacity_breakdown import plan_with_capacity
 
-from planacity.domain import WorkGroup
+from planacity.domain import ReservationCoverage, WorkGroup
 from planacity.ui.overview import AnalysisMode, TopicMeasure
 from planacity.ui.theme import Theme
 
@@ -43,9 +43,12 @@ def test_capacity_by_person_has_exact_accessible_table_and_chart(app, window, th
     assert page.model.horizontalHeaderItem(0).text() == "Person"
     assert page.model.item(0, 1).text() == "35 h"
     assert page.model.item(0, 2).text() == "28 h"
-    assert page.model.item(0, 3).text() == "7 h"
-    assert "Overloaded" in page.model.item(0, 5).text()
-    assert page.model.item(1, 4).text() == "3 h"
+    assert page.model.item(0, 3).text() == "0 h"
+    assert page.model.item(0, 4).text() == "28 h"
+    assert page.model.item(0, 5).text() == "5 h"
+    assert page.model.item(0, 6).text() == "7 h"
+    assert "Overloaded" in page.model.item(0, 8).text()
+    assert page.model.item(1, 7).text() == "3 h"
     assert page.model.item(2, 1).text() == "Unknown"
     assert len(page.chart.rows) == 3
     assert "Alex" in page.chart.accessibleDescription()
@@ -98,6 +101,9 @@ def test_topic_measures_and_capacity_breakdown_share_one_projection(app, window)
         f"Reservation: Meeting [{str(plan.reservation_rules[0].id)[:8]}]",
         "Planning capacity",
         "Scheduled work",
+        "Reservation-covered work",
+        "Ordinary work demand",
+        "Unused reserved capacity",
         "Remaining capacity",
         "Unplaced demand",
     )
@@ -105,9 +111,49 @@ def test_topic_measures_and_capacity_breakdown_share_one_projection(app, window)
     assert page.model.item(3, 1).text() == "5 h"
     assert page.model.item(4, 1).text() == "75 h"
     assert page.model.item(5, 1).text() == "28 h"
-    assert page.model.item(6, 1).text() == "47 h"
-    assert page.model.item(7, 1).text() == "3 h"
+    assert page.model.item(6, 1).text() == "0 h"
+    assert page.model.item(7, 1).text() == "28 h"
+    assert page.model.item(8, 1).text() == "5 h"
+    assert page.model.item(9, 1).text() == "47 h"
+    assert page.model.item(10, 1).text() == "3 h"
     assert not page.measure.isVisible()
+    window.session.document.saved_plan = window.session.document.plan
+
+
+@pytest.mark.parametrize("theme", list(Theme))
+def test_overview_coverage_values_are_exact_and_non_additive(app, window, theme):
+    page, plan = load_overview(window)
+    linked = replace(
+        plan,
+        reservation_coverages=(
+            ReservationCoverage(
+                allocation_id=plan.allocations[0].id,
+                reservation_rule_id=plan.reservation_rules[0].id,
+            ),
+        ),
+    )
+    window.session.document.new(linked)
+    window.session.document.saved_plan = linked
+    window.session.changed.emit()
+    window.set_theme(theme, persist=False)
+    app.processEvents()
+
+    assert [page.model.item(0, column).text() for column in range(2, 7)] == [
+        "28 h",
+        "5 h",
+        "23 h",
+        "0 h",
+        "12 h",
+    ]
+    assert page.chart.rows[0].value == 23
+    assert "Scheduled 28 h" in page.chart.rows[0].detail
+    assert "covered 5 h" in page.chart.rows[0].detail
+    page.mode.setCurrentIndex(page.mode.findData(AnalysisMode.BREAKDOWN.value))
+    app.processEvents()
+    assert page.model.item(6, 1).text() == "5 h"
+    assert page.model.item(7, 1).text() == "23 h"
+    assert page.model.item(8, 1).text() == "0 h"
+    assert "not another deduction" in page.model.item(6, 2).text()
     window.session.document.saved_plan = window.session.document.plan
 
 

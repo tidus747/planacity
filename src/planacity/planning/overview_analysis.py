@@ -21,6 +21,9 @@ class OverviewPerson:
     name: str
     planning_hours: Fraction | None
     scheduled_hours: Fraction | None
+    covered_hours: Fraction | None
+    ordinary_hours: Fraction | None
+    unused_reserved_hours: Fraction | None
     remaining_hours: Fraction | None
     unplaced_hours: Fraction
     state: CapacityLoadState
@@ -64,6 +67,9 @@ class OverviewCapacity:
     reserved_hours: Fraction | None
     planning_hours: Fraction | None
     scheduled_hours: Fraction | None
+    covered_hours: Fraction | None
+    ordinary_hours: Fraction | None
+    unused_reserved_hours: Fraction | None
     remaining_hours: Fraction | None
     unplaced_hours: Fraction
 
@@ -195,6 +201,16 @@ def _coverage(
         f"{len(allocated_people)} of {len(plan.people)} people have positive planned work "
         "allocations in the complete plan."
     )
+    if plan.reservation_coverages:
+        covered = _known_total(people, "covered_hours")
+        ordinary = _known_total(people, "ordinary_hours")
+        unused = _known_total(people, "unused_reserved_hours")
+        if covered is not None and ordinary is not None and unused is not None:
+            messages.append(
+                f"Explicit reservation coverage funds {covered} h of scheduled work; "
+                f"{ordinary} h remains ordinary demand and {unused} reserved h is unused. "
+                "Covered work is informational here, not an additional deduction."
+            )
     if unplaced_hours:
         messages.append(
             f"{unplaced_hours} h of work or reservation demand could not be placed; positive "
@@ -262,6 +278,9 @@ def calculate_overview_analysis(plan: ProgramPlan) -> OverviewAnalysis:
             plan.person(person.person_id).name,
             person.planning_hours,
             person.allocated_hours,
+            person.covered_hours,
+            person.excess_hours,
+            person.unused_reserved_hours,
             person.remaining_hours,
             person.unplaced_hours,
             person.state,
@@ -313,6 +332,9 @@ def calculate_overview_analysis(plan: ProgramPlan) -> OverviewAnalysis:
         _optional_total(tuple(person.reserved_hours for person in breakdown.people)),
         _known_total(people, "planning_hours"),
         _known_total(people, "scheduled_hours"),
+        _known_total(people, "covered_hours"),
+        _known_total(people, "ordinary_hours"),
+        _known_total(people, "unused_reserved_hours"),
         _known_total(people, "remaining_hours"),
         unplaced,
     )

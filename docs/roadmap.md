@@ -347,6 +347,12 @@ linking and calculation rules come first; optional Jira CSV field mapping follow
 without guessing from names or labels. Implement this after the core v0.5 Calendar
 foundation and before claiming complete Jira reconciliation in v0.8.
 
+The domain link, schema 14 lifecycle, canonical calculation, manual editing, and
+shared People/Overview explanations are complete through issues #164, #168, #170,
+#172, and #177. Jira CSV mapping remains separate: current import preserves
+assignees without creating Allocation hours, so there is no allocation-level link
+to persist until the user makes capacity demand explicit.
+
 ### Later sprint planning and API connectivity
 
 Sprint planning is tracked by
