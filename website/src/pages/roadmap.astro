@@ -90,8 +90,8 @@ const later = [
               reviewed generic availability CSV import workflow.
             </li>
             <li>
-              First-class sprints with manual Calendar editing and explicit
-              assignment of executable leaf work.
+              First-class sprints with manual Calendar editing, explicit leaf
+              assignment, exact capacity comparison, and graphical lanes.
             </li>
             <li>
               Estimate units in hours, days, or weeks, with calendar setup in
@@ -139,11 +139,12 @@ const later = [
           <article class="release">
             <span class="release-tag">v0.5 C</span>
             <div>
-              <h3>Manual sprint planning - foundation complete</h3>
+              <h3>Sprint Calendar and load - complete in source</h3>
               <p>
                 Schema 13 stores first-class sprints and leaf assignments.
                 Calendar supports explicit creation, editing, assignment,
-                reassignment, and diagnostics without moving work dates.
+                reassignment, exact capacity comparison, and graphical day,
+                week, or month lanes without moving work dates.
               </p>
             </div>
           </article>
@@ -170,15 +171,14 @@ const later = [
           <article class="release">
             <span class="release-tag">SPRINTS</span>
             <div>
-              <h3>Sprint capacity and load</h3>
+              <h3>Sprint interoperability and reviewed proposals</h3>
               <p>
-                Calendar now compares explicit sprint work with derived roster
-                or WorkGroup capacity, while retaining reservation coverage,
-                competing demand, missing inputs, and signed remaining hours.
-                Automatic distribution remains a later reviewed proposal, not
-                a silent mutation.
+                Manual planning, capacity comparison, and graphical lanes are
+                now implemented. Jira sprint mapping remains configurable later,
+                and automatic distribution must be an explainable reviewed
+                proposal rather than a silent mutation.
               </p>
-              <a href={`${repo}/issues/179`}>Follow issue #179</a>
+              <a href={`${repo}/issues/147`}>Follow issue #147</a>
             </div>
           </article>
           <article class="release">

@@ -37,12 +37,12 @@ from planacity.planning.calendar_events import (
     update_calendar_event,
 )
 from planacity.planning.estimate_units import format_fraction
+from planacity.planning.sprint_calendar import project_sprint_calendar
 from planacity.planning.sprints import (
     SprintFindingKind,
     SprintLoadState,
     add_sprint,
     assign_work_to_sprint,
-    calculate_sprint_loads,
     remove_sprint,
     sprint,
     sprint_findings,
@@ -53,6 +53,7 @@ from planacity.ui.availability_import_wizard import AvailabilityImportWizard
 from planacity.ui.forms import CalendarLineEdit, validated_form
 from planacity.ui.pages import Panel, WorkspacePage, label
 from planacity.ui.session import Session
+from planacity.ui.sprint_calendar import SprintCalendarPanel
 
 
 def kind_label(kind: CalendarEventKind) -> str:
@@ -421,6 +422,9 @@ class CalendarPage(WorkspacePage):
         self.sprint_empty_state = label("Open a plan to manage sprints.")
         self.sprint_empty_state.setAccessibleName("Sprint planning status")
         sprint_panel.content.addWidget(self.sprint_empty_state)
+        self.sprint_layer = SprintCalendarPanel()
+        self.sprint_layer.sprintSelected.connect(self._select_sprint_from_layer)
+        sprint_panel.content.addWidget(self.sprint_layer)
         sprint_actions = QHBoxLayout()
         self.add_sprint_button = QPushButton("Add sprint...")
         self.edit_sprint_button = QPushButton("Edit sprint...")
@@ -491,6 +495,8 @@ class CalendarPage(WorkspacePage):
         self.sprint_model.removeRows(0, self.sprint_model.rowCount())
         self.assignment_model.removeRows(0, self.assignment_model.rowCount())
         plan = self.session.document.plan
+        sprint_projection = project_sprint_calendar(plan) if plan is not None else None
+        self.sprint_layer.set_projection(sprint_projection)
         events = (
             sorted(
                 plan.calendar_events,
@@ -539,8 +545,8 @@ class CalendarPage(WorkspacePage):
         )
         groups = {value.id: value.name for value in plan.work_groups} if plan is not None else {}
         loads = (
-            {value.sprint_id: value for value in calculate_sprint_loads(plan)}
-            if plan is not None
+            {value.id: value.load for value in sprint_projection.lanes}
+            if sprint_projection is not None
             else {}
         )
         for value in sprints:
@@ -679,6 +685,9 @@ class CalendarPage(WorkspacePage):
         self.edit_button.setEnabled(selected)
         self.delete_button.setEnabled(selected)
         sprint_selected = self.selected_sprint_id() is not None
+        if sprint_selected:
+            assert (selected_sprint_id := self.selected_sprint_id()) is not None
+            self.sprint_layer.select_sprint(selected_sprint_id)
         self.edit_sprint_button.setEnabled(sprint_selected)
         self.delete_sprint_button.setEnabled(sprint_selected)
         work_id = self.selected_work_id()
@@ -692,6 +701,12 @@ class CalendarPage(WorkspacePage):
             if plan is not None
             else False
         )
+
+    def _select_sprint_from_layer(self, sprint_id: UUID) -> None:
+        for row in range(self.sprint_model.rowCount()):
+            if self.sprint_model.item(row, 0).data(Qt.ItemDataRole.UserRole) == str(sprint_id):
+                self.sprint_table.setCurrentIndex(self.sprint_model.index(row, 0))
+                return
 
     def add_event(self) -> None:
         edit_calendar_event(self, self.session)

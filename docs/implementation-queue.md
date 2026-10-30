@@ -315,6 +315,23 @@ signed remaining capacity, unplaced demand, known-person coverage, and actionabl
 incomplete states. Reuse canonical source identities and calculations without a
 schema change. Jira mapping and automatic distribution remain later slices.
 
+Status: completed by issue #179 and PR #180.
+
+## C09 - Graphical sprint layer in Calendar
+
+Target: v0.5. Depends on C08. Tracked by
+[issue #181](https://github.com/tidus747/planacity/issues/181).
+
+Project horizon-intersecting sprints as deterministic lanes on the shared day,
+week, or month axis. Draw canonical sprint boundaries and explicitly assigned
+work without inferring membership from dates, hierarchy, ownership, or Jira.
+Distinguish work crossing sprint dates with a dashed treatment and exact text;
+retain outside-horizon counts, incomplete dates, load details, and synchronized
+selection with the exact sprint table. Do not change schema 14 or project data.
+
+Non-goals: Jira sprint mapping, automatic distribution, velocity, work-date
+changes, a second capacity calculation, or Scrum ceremony management.
+
 ## J01 - Additive Jira import with existing-reference anchors
 
 Target: v0.5 usability. Safe prerequisite for v0.8 reconciliation. Tracked by

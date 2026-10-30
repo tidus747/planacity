@@ -74,6 +74,12 @@ No account or network connection is needed while planning.
    roster. WorkGroup scope derives participants from positive whole-plan work
    associations; it does not create team membership. Missing calendars, empty
    scope, owner-only work, out-of-scope people, and unplaced demand remain explicit.
+   The graphical sprint layer aligns one lane per horizon-intersecting sprint to
+   the same day, week, or month axis used by Timeline. Large patterned bands show
+   sprint boundaries; small solid bars are explicitly assigned work, while dashed
+   bars cross their sprint dates. Select a lane or exact table row to inspect the
+   same load and assignment details. Outside-horizon sprints remain counted and
+   available in the exact table rather than disappearing.
    Planacity does not move work dates or distribute work automatically.
    Real Calendar workspace screenshots: [light](images/program-calendar-light.png)
    and [dark](images/program-calendar-dark.png).
@@ -81,6 +87,9 @@ No account or network connection is needed while planning.
    [dark](images/calendar-sprints-dark.png).
    Sprint load screenshots: [light](images/calendar-sprint-load-light.png) and
    [dark](images/calendar-sprint-load-dark.png).
+   Graphical sprint layer screenshots:
+   [light](images/calendar-sprint-layer-light.png) and
+   [dark](images/calendar-sprint-layer-dark.png).
    Real import review screenshots: [light](images/availability-import-light.png)
    and [dark](images/availability-import-dark.png).
    Overview also summarizes the events that intersect the planning horizon and

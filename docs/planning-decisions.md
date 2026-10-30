@@ -11,6 +11,9 @@ transactional Plan inspector, Overview
 analysis, and People associations require no additional persisted state.
 Sprint load is also a projection over schema 13 inputs and the canonical dated
 capacity result; it introduces no cached totals or team-membership state.
+The graphical Calendar layer is another read-only projection over those inputs.
+It clips drawing coordinates to the planning horizon, but retains canonical dates,
+outside-horizon counts, explicit assignment identity, and the exact load details.
 Later presentation sections remain future behavior.
 See the [roadmap](roadmap.md) for order and acceptance.
 
