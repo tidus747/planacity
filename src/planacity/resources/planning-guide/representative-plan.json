@@ -1,0 +1,256 @@
+{
+  "format": "planacity",
+  "schema_version": 14,
+  "plan": {
+    "name": "Aurora Relay Demonstration",
+    "horizon": {
+      "start": "2026-01-01",
+      "end": "2026-01-31"
+    },
+    "description": "A fictional program exercising every schema 14 collection.",
+    "id": "00000000-0000-4000-8000-000000000001",
+    "work_items": [
+      {
+        "title": "Prepare the relay",
+        "kind": "epic",
+        "id": "00000000-0000-4000-8000-000000000040",
+        "parent_id": null,
+        "assignee_id": "00000000-0000-4000-8000-000000000010",
+        "estimate_hours": null,
+        "start": "2026-01-05",
+        "end": "2026-01-08",
+        "description": "Feature ownership for the fictional relay demonstration.",
+        "labels": [
+          "demo"
+        ],
+        "primary_group_id": "00000000-0000-4000-8000-000000000030",
+        "priority": "high"
+      },
+      {
+        "title": "Calibrate the transmitter",
+        "kind": "task",
+        "id": "00000000-0000-4000-8000-000000000041",
+        "parent_id": "00000000-0000-4000-8000-000000000040",
+        "assignee_id": "00000000-0000-4000-8000-000000000010",
+        "estimate_hours": "8",
+        "start": "2026-01-05",
+        "end": "2026-01-05",
+        "description": "Calibrate the fictional transmitter against the test load.",
+        "labels": [
+          "calibration"
+        ],
+        "primary_group_id": "00000000-0000-4000-8000-000000000030",
+        "priority": "highest"
+      },
+      {
+        "title": "Verify the relay path",
+        "kind": "task",
+        "id": "00000000-0000-4000-8000-000000000042",
+        "parent_id": "00000000-0000-4000-8000-000000000040",
+        "assignee_id": null,
+        "estimate_hours": "4",
+        "start": "2026-01-06",
+        "end": "2026-01-06",
+        "description": "Confirm the fictional end-to-end relay path.",
+        "labels": [],
+        "primary_group_id": "00000000-0000-4000-8000-000000000030",
+        "priority": "medium"
+      }
+    ],
+    "people": [
+      {
+        "name": "Alex Vega",
+        "id": "00000000-0000-4000-8000-000000000010"
+      }
+    ],
+    "work_groups": [
+      {
+        "name": "Relay readiness",
+        "id": "00000000-0000-4000-8000-000000000030",
+        "epic_ids": [
+          "00000000-0000-4000-8000-000000000040"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source_id": "00000000-0000-4000-8000-000000000042",
+        "target_id": "00000000-0000-4000-8000-000000000041",
+        "kind": "depends_on",
+        "id": "00000000-0000-4000-8000-000000000050"
+      }
+    ],
+    "imports": [
+      {
+        "name": "fictional-jira.csv",
+        "headers": [
+          "Issue key",
+          "Summary"
+        ],
+        "rows": [
+          [
+            "DEMO-0",
+            "Prepare the relay"
+          ],
+          [
+            "DEMO-1",
+            "Calibrate the transmitter"
+          ]
+        ],
+        "records": [
+          {
+            "item": {
+              "title": "Prepare the relay",
+              "kind": "epic",
+              "id": "00000000-0000-4000-8000-000000000040",
+              "parent_id": null,
+              "assignee_id": "00000000-0000-4000-8000-000000000010",
+              "estimate_hours": null,
+              "start": "2026-01-05",
+              "end": "2026-01-08",
+              "description": "Feature ownership for the fictional relay demonstration.",
+              "labels": [
+                "demo"
+              ],
+              "primary_group_id": "00000000-0000-4000-8000-000000000030",
+              "priority": "high"
+            },
+            "external_reference": "DEMO-0",
+            "external_person": "Alex Vega",
+            "person": {
+              "name": "Alex Vega",
+              "id": "00000000-0000-4000-8000-000000000010"
+            },
+            "status": "To Do",
+            "external_priority": "High"
+          },
+          {
+            "item": {
+              "title": "Calibrate the transmitter",
+              "kind": "task",
+              "id": "00000000-0000-4000-8000-000000000041",
+              "parent_id": "00000000-0000-4000-8000-000000000040",
+              "assignee_id": "00000000-0000-4000-8000-000000000010",
+              "estimate_hours": "8",
+              "start": "2026-01-05",
+              "end": "2026-01-05",
+              "description": "Calibrate the fictional transmitter against the test load.",
+              "labels": [
+                "calibration"
+              ],
+              "primary_group_id": "00000000-0000-4000-8000-000000000030",
+              "priority": "highest"
+            },
+            "external_reference": "DEMO-1",
+            "external_person": "Alex Vega",
+            "person": {
+              "name": "Alex Vega",
+              "id": "00000000-0000-4000-8000-000000000010"
+            },
+            "status": "To Do",
+            "external_priority": "Highest"
+          }
+        ],
+        "id": "00000000-0000-4000-8000-000000000060"
+      }
+    ],
+    "work_calendars": [
+      {
+        "name": "Standard week",
+        "weekday_hours": [
+          "8",
+          "8",
+          "8",
+          "8",
+          "8",
+          "0",
+          "0"
+        ],
+        "id": "00000000-0000-4000-8000-000000000020"
+      }
+    ],
+    "person_calendars": [
+      {
+        "person_id": "00000000-0000-4000-8000-000000000010",
+        "calendar_id": "00000000-0000-4000-8000-000000000020"
+      }
+    ],
+    "availability_events": [
+      {
+        "person_id": "00000000-0000-4000-8000-000000000010",
+        "period": {
+          "start": "2026-01-09",
+          "end": "2026-01-09"
+        },
+        "unavailable_fraction": "1",
+        "id": "00000000-0000-4000-8000-000000000070"
+      }
+    ],
+    "calendar_events": [
+      {
+        "name": "Company demonstration",
+        "kind": "company_event",
+        "period": {
+          "start": "2026-01-12",
+          "end": "2026-01-12"
+        },
+        "unavailable_fraction": "0.5",
+        "id": "00000000-0000-4000-8000-000000000071"
+      }
+    ],
+    "reservation_rules": [
+      {
+        "name": "Weekly support",
+        "person_ids": [
+          "00000000-0000-4000-8000-000000000010"
+        ],
+        "hours_per_person": "2",
+        "anchor": "2026-01-05",
+        "interval_weeks": 1,
+        "effective": {
+          "start": "2026-01-01",
+          "end": "2026-01-31"
+        },
+        "id": "00000000-0000-4000-8000-000000000080"
+      }
+    ],
+    "estimate_preferences": {
+      "unit": "hours",
+      "calendar_id": null
+    },
+    "allocations": [
+      {
+        "work_item_id": "00000000-0000-4000-8000-000000000041",
+        "person_id": "00000000-0000-4000-8000-000000000010",
+        "hours": "8",
+        "id": "00000000-0000-4000-8000-000000000090"
+      }
+    ],
+    "reservation_coverages": [
+      {
+        "allocation_id": "00000000-0000-4000-8000-000000000090",
+        "reservation_rule_id": "00000000-0000-4000-8000-000000000080",
+        "id": "00000000-0000-4000-8000-000000000091"
+      }
+    ],
+    "sprints": [
+      {
+        "name": "Relay sprint",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-01-14"
+        },
+        "id": "00000000-0000-4000-8000-000000000100",
+        "external_reference": "BOARD-7:SPRINT-1",
+        "work_group_id": "00000000-0000-4000-8000-000000000030"
+      }
+    ],
+    "sprint_assignments": [
+      {
+        "sprint_id": "00000000-0000-4000-8000-000000000100",
+        "work_item_id": "00000000-0000-4000-8000-000000000041",
+        "id": "00000000-0000-4000-8000-000000000101"
+      }
+    ]
+  }
+}

@@ -453,6 +453,7 @@ Capture real contrasting-type/group examples, with selection and warning states.
 Target: v0.5. Depends on the existing JSON codec/export workflow. No dependency
 on a provider, model, graph view, or future schema field. Implement against the
 actual writer schema at that time, not a hardcoded schema 8 assumption.
+Tracked by [issue #185](https://github.com/tidus747/planacity/issues/185).
 
 Use the [architecture proposal](agent-assisted-planning.md). Bundle an offline
 guide, complete field reference and valid empty/representative examples. Identify
@@ -465,6 +466,11 @@ roundtrip through the canonical codec; documented fields match the writer;
 unsupported versions are explained; release checks detect stale identifiers.
 Review compatibility every release, updating content only when needed.
 No UI, provider SDK, custom exchange format or extra schema library in this PR.
+
+Status: implemented by issue #185. The package contains a provider-neutral guide
+body, version-composed contract service, complete schema 14 field reference, and
+strictly validated empty and representative examples. CI inspects both wheel and
+source distributions. Help/About exposure remains A02.
 
 ## A02 - Expose the guide through Help and About
 
