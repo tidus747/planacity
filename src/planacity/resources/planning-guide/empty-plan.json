@@ -1,0 +1,31 @@
+{
+  "format": "planacity",
+  "schema_version": 14,
+  "plan": {
+    "name": "New program",
+    "horizon": {
+      "start": "2026-01-01",
+      "end": "2026-01-31"
+    },
+    "description": "",
+    "id": "00000000-0000-4000-8000-000000000001",
+    "work_items": [],
+    "people": [],
+    "work_groups": [],
+    "relationships": [],
+    "imports": [],
+    "work_calendars": [],
+    "person_calendars": [],
+    "availability_events": [],
+    "calendar_events": [],
+    "reservation_rules": [],
+    "estimate_preferences": {
+      "unit": "hours",
+      "calendar_id": null
+    },
+    "allocations": [],
+    "reservation_coverages": [],
+    "sprints": [],
+    "sprint_assignments": []
+  }
+}

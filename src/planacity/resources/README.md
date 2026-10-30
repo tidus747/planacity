@@ -2,6 +2,7 @@
 
 - `icons/`: theme-aware navigation icons.
 - `images/`: the Planacity application mark, wordmark, and other desktop graphics.
+- `planning-guide/`: the offline agent-planning contract and validated JSON examples.
 
 These folders are included in Python wheels and source distributions. Load them
 with `importlib.resources` rather than paths relative to the working directory.

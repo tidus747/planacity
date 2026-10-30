@@ -6,6 +6,10 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- A packaged, provider-neutral planning guide contract for the current JSON
+  writer. The offline resources include a complete schema 14 field reference,
+  version identifiers, safe proposal instructions, and validated empty and
+  representative examples for future Help integration.
 - A graphical sprint layer in Calendar. Each horizon-intersecting sprint has a
   deterministic lane at day, week, or month scale, with explicit assigned-work
   bars, exact load details, and synchronized table selection. Dashed work bars,
