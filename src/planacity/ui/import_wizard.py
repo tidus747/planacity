@@ -1,6 +1,7 @@
 """Review field mapping, people, and the complete candidate before importing."""
 
 from pathlib import Path
+from uuid import UUID
 
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
@@ -28,6 +29,7 @@ from planacity.integrations.jira.csv_io import (
     Mapping,
     external_people,
     external_priorities,
+    external_sprints,
     importable_rows,
     preview_additive_import,
 )
@@ -46,6 +48,7 @@ ALIASES = {
     "person": ("Assignee",),
     "status": ("Status",),
     "priority": ("Priority",),
+    "sprint": ("Sprint", "Sprint name", "Sprint Name", "Sprint ID", "Sprint Id"),
 }
 
 
@@ -70,6 +73,8 @@ class ImportWizard(QDialog):
         self.person_boxes: dict[str, QComboBox] = {}
         self.type_boxes: dict[str, QComboBox] = {}
         self.priority_boxes: dict[str, QComboBox] = {}
+        self.sprint_boxes: dict[str, QComboBox] = {}
+        self.sprint_mappings: tuple[tuple[str, UUID | None], ...] = ()
         self.profile_types: tuple[tuple[str, WorkItemType], ...] = (
             ("Epic", WorkItemType.EPIC),
             ("Task", WorkItemType.TASK),
@@ -205,8 +210,22 @@ class ImportWizard(QDialog):
                     people[name] = (
                         Person(name=name) if selected == "new" else self.plan.person(selected)
                     )
+                sprint_mappings: list[tuple[str, UUID | None]] = []
+                for name, box in self.sprint_boxes.items():
+                    selected = box.currentData()
+                    if selected == "unmapped":
+                        raise ValueError(
+                            f"Choose a Planacity sprint or Leave unassigned for {name!r}."
+                        )
+                    sprint_mappings.append((name, None if selected == "unassigned" else selected))
+                self.sprint_mappings = tuple(sprint_mappings)
                 result = preview_additive_import(
-                    self.plan, self.table, self.mapping, people, self.source
+                    self.plan,
+                    self.table,
+                    self.mapping,
+                    people,
+                    self.source,
+                    self.sprint_mappings,
                 )
                 self.candidate = result.candidate
                 self.anchors = result.anchors
@@ -217,6 +236,13 @@ class ImportWizard(QDialog):
                     "Mapped people join the roster; this does not allocate work or capacity.",
                     "Status and external assignees are preserved for export, not edited here.",
                 ]
+                if self.sprint_mappings:
+                    assigned = sum(sprint_id is not None for _, sprint_id in self.sprint_mappings)
+                    lines.append(
+                        f"Map {assigned} of {len(self.sprint_mappings)} source sprint value(s) "
+                        "to existing Planacity sprints. This creates only explicit leaf-work "
+                        "sprint assignments."
+                    )
                 if self.anchors:
                     anchor_count = len(self.anchors)
                     references = "reference" if anchor_count == 1 else "references"
@@ -246,14 +272,21 @@ class ImportWizard(QDialog):
                         "Title",
                         "Source priority",
                         "Planacity priority",
+                        "Source sprint",
+                        "Planacity sprint",
                         "Hours",
                         "Person",
                         "Start",
                         "End",
                     ]
                 )
-                for record in source.records:
+                sprint_column = dict(self.mapping.columns).get("sprint")
+                sprint_names = {value.id: value.name for value in self.plan.sprints}
+                mapped_sprints = dict(self.sprint_mappings)
+                for source_row, record in zip(source.rows, source.records, strict=True):
                     item = record.item
+                    source_sprint = "" if sprint_column is None else source_row[sprint_column]
+                    mapped_sprint = mapped_sprints.get(source_sprint)
                     values = (
                         record.external_reference,
                         "Import new work",
@@ -266,6 +299,12 @@ class ImportWizard(QDialog):
                             else "Unset"
                             if item.priority is None
                             else item.priority.value.title()
+                        ),
+                        "Not mapped" if sprint_column is None else source_sprint or "Blank",
+                        (
+                            "Unassigned"
+                            if not source_sprint.strip() or mapped_sprint is None
+                            else sprint_names[mapped_sprint]
                         ),
                         "Unknown" if item.estimate_hours is None else str(item.estimate_hours),
                         record.person.name if record.person else "Unassigned",
@@ -285,6 +324,8 @@ class ImportWizard(QDialog):
                         item.title,
                         "Ignored",
                         "Unchanged",
+                        "Ignored",
+                        "Unchanged",
                         "Unchanged",
                         "Unchanged",
                         "Unchanged",
@@ -294,7 +335,7 @@ class ImportWizard(QDialog):
                     for cell in row:
                         cell.setEditable(False)
                     self.preview_model.appendRow(row)
-                for column in range(10):
+                for column in range(12):
                     self.preview_table.resizeColumnToContents(column)
                 self.preview.setPlainText("\n".join(lines))
             else:
@@ -314,6 +355,7 @@ class ImportWizard(QDialog):
         self.type_boxes = {}
         self.person_boxes = {}
         self.priority_boxes = {}
+        self.sprint_boxes = {}
         rows = importable_rows(self.plan, self.table, self.mapping)
         column = dict(self.mapping.columns)["type"]
         form.addRow(label("Map every new external work type explicitly."))
@@ -358,6 +400,35 @@ class ImportWizard(QDialog):
                 if exact is not None:
                     box.setCurrentIndex(box.findData(exact.value))
             self.priority_boxes[name] = box
+            form.addRow(label(name), box)
+        source_sprints = external_sprints(self.table, self.mapping, rows)
+        if source_sprints:
+            form.addRow(
+                label(
+                    "Map every source sprint value explicitly to an existing Planacity "
+                    "sprint, or deliberately leave it unassigned. Names and IDs are not "
+                    "matched automatically."
+                )
+            )
+        for name in source_sprints:
+            box = QComboBox()
+            box.setAccessibleName(f"Source sprint {name}")
+            box.addItem("Choose sprint", "unmapped")
+            box.addItem("Leave unassigned", "unassigned")
+            for sprint in sorted(
+                self.plan.sprints,
+                key=lambda value: (
+                    value.period.start,
+                    value.period.end,
+                    value.name.casefold(),
+                    str(value.id),
+                ),
+            ):
+                box.addItem(
+                    f"{sprint.name} ({sprint.period.start} to {sprint.period.end})",
+                    sprint.id,
+                )
+            self.sprint_boxes[name] = box
             form.addRow(label(name), box)
         form.addRow(label("Map external people. Names are not matched automatically."))
         for name in external_people(self.table, self.mapping, rows):
