@@ -6,6 +6,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- A graphical sprint layer in Calendar. Each horizon-intersecting sprint has a
+  deterministic lane at day, week, or month scale, with explicit assigned-work
+  bars, exact load details, and synchronized table selection. Dashed work bars,
+  clipping text, and retained outside-horizon counts keep date conflicts and
+  incomplete inputs visible without changing the plan.
 - Sprint load and capacity comparison in Calendar. Each manual sprint now shows
   its derived participants, planning capacity, explicitly assigned scheduled
   work, reservation-covered and ordinary demand, competing ordinary work,

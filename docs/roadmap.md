@@ -370,6 +370,11 @@ and capacity comparison are the focused third slice in
 [#179](https://github.com/tidus747/planacity/issues/179). It reuses canonical
 dated capacity, retains concurrent non-sprint demand, and treats WorkGroup scope
 as a derived reporting association rather than inventing team membership.
+The graphical Calendar layer is the focused fourth slice in
+[#181](https://github.com/tidus747/planacity/issues/181). It aligns sprint and
+explicit assigned-work lanes to the shared Timeline axis while retaining exact
+load text and all canonical dates. Jira mapping and assisted distribution remain
+separate later work.
 
 Optional REST connectivity is tracked by
 [#146](https://github.com/tidus747/planacity/issues/146). A Jira REST adapter

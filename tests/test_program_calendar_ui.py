@@ -225,6 +225,13 @@ def test_calendar_manages_sprints_assignments_and_roundtrip(
         window.session.apply(add_sprint(window.session.document.plan, overlapping))
         assert page.sprint_model.rowCount() == 2
         assert "Overlaps" in page.sprint_model.item(0, 5).text()
+        assert page.sprint_layer.label_model.rowCount() == 2
+        page.sprint_layer.labels.setCurrentIndex(page.sprint_layer.label_model.index(1, 0))
+        app.processEvents()
+        assert page.selected_sprint_id() == overlapping.id
+        page.sprint_table.setCurrentIndex(page.sprint_model.index(0, 0))
+        app.processEvents()
+        assert page.sprint_layer.selected_sprint_id() == created.id
 
         def reassign(form):
             choice = next(
@@ -369,5 +376,18 @@ def test_calendar_sprint_rows_reconcile_load_and_capacity(app, window, theme):
         assert page.sprint_model.horizontalHeaderItem(9).text() == "Covered"
         assert page.sprint_model.horizontalHeaderItem(11).text() == "Competing"
         assert not page.sprint_table.grab().isNull()
+        layer = page.sprint_layer
+        assert layer.label_model.rowCount() == 1
+        assert layer.schedule_model.rowCount() == 1
+        assert layer.labels.model().index(0, 0).data() == f"{sprint.name} (1 work)"
+        assert "sprint work 20 h" in layer.details.toPlainText()
+        assert "remaining 12 h" in layer.details.toPlainText()
+        assert not layer.schedule.grab().isNull()
+        week_columns = layer.schedule_model.columnCount()
+        layer.scale.setCurrentIndex(layer.scale.findData("day"))
+        assert layer.schedule_model.columnCount() > week_columns
+        layer.scale.setCurrentIndex(layer.scale.findData("month"))
+        assert layer.schedule_model.columnCount() <= week_columns
+        assert page.selected_sprint_id() == sprint.id
     finally:
         window.session.document.saved_plan = window.session.document.plan
