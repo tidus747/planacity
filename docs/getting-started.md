@@ -225,6 +225,25 @@ Actual Jira priority mapping in both appearances:
 ![Jira priority mapping in light mode](images/jira-priority-mapping-light.png)
 ![Jira priority mapping in dark mode](images/jira-priority-mapping-dark.png)
 
+## Map Jira sprint values explicitly
+
+Map the optional Sprint column on the first Jira import page. The value-mapping
+page then lists each distinct nonblank value from genuinely new rows. Choose one
+existing Planacity sprint or **Leave unassigned** for every value. Planacity does
+not guess from a sprint name, external reference, work dates, hierarchy, assignee,
+or Jira board convention. Blank cells remain unassigned without another choice.
+
+Only executable imported leaves can receive a SprintAssignment. Sprint values on
+Epics or Tasks that contain imported Subtasks must be left unassigned. Rows whose
+external reference already exists remain omitted anchors: their CSV Sprint cell is
+ignored and their current assignment is preserved. Mapping profiles remember the
+Sprint column position but never source values or plan-specific sprint IDs.
+
+Actual Jira sprint mapping in both appearances:
+
+![Jira sprint mapping in light mode](images/jira-sprint-mapping-light.png)
+![Jira sprint mapping in dark mode](images/jira-sprint-mapping-dark.png)
+
 ## Edit complete work details
 
 Select a matching Plan row to open its inspector. Labels use one non-blank value

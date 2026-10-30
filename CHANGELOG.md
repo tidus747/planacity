@@ -44,6 +44,11 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
   baseline, while new children can retain hierarchy links to those stable items.
   Deleted anchors, ambiguous identities, and files with no new work remain
   blocked for the later reconciliation workflow.
+- Explicit Jira CSV sprint mapping for new work. An optional Sprint column lists
+  each distinct nonblank source value for deliberate mapping to an existing
+  Planacity sprint or Leave unassigned. Only imported executable leaves receive
+  assignments; repeated-reference anchors and their current sprint membership
+  remain unchanged, and reusable profiles store no plan-specific sprint IDs.
 - Manual sprint planning in Calendar. Users can create, edit, and delete
   canonical sprints, review date diagnostics, and explicitly assign, reassign,
   or unassign executable leaf work. All actions preserve stable identities,

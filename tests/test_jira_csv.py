@@ -13,6 +13,7 @@ from planacity.domain import (
     Person,
     PlanningHorizon,
     ProgramPlan,
+    Sprint,
     WorkItem,
     WorkItemType,
     WorkPriority,
@@ -21,6 +22,7 @@ from planacity.integrations.jira.csv_io import (
     JIRA_DATE_TIME_FORMAT,
     Mapping,
     external_priorities,
+    external_sprints,
     parse_import_date,
     preview_additive_import,
     preview_import,
@@ -43,6 +45,7 @@ from planacity.integrations.jira.profiles import (
 from planacity.persistence.codec import dumps, loads
 from planacity.persistence.project import load_project, save_project
 from planacity.planning.changes import work_changes
+from planacity.planning.sprints import assign_work_to_sprint
 
 CSV = (
     "Issue key,Summary,Issue Type,Parent,Original Estimate,Assignee,Status,Priority,Custom,Custom\n"
@@ -407,6 +410,119 @@ def test_additive_import_can_reference_existing_parent_omitted_from_csv(plan):
 
     assert result.anchors == ()
     assert result.candidate.work_items[-1].parent_id == initial.work_items[0].id
+
+
+def test_sprint_values_require_explicit_mapping_and_create_leaf_assignments(plan):
+    sprint = Sprint(
+        name="Iteration Alpha",
+        period=PlanningHorizon(date(2026, 2, 1), date(2026, 2, 14)),
+        external_reference="board-7:42",
+    )
+    current = replace(plan, sprints=(sprint,))
+    table = read_csv(
+        "Key,Summary,Type,Sprint\nJIRA-1,Assigned task,Task,42\nJIRA-2,Blank task,Task,\n"
+    )
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("sprint", 3)))
+
+    assert external_sprints(table, mapping) == ("42",)
+    with pytest.raises(ValueError, match="Map every external sprint value explicitly"):
+        preview_import(current, table, mapping, {}, "sprints.csv")
+
+    result = preview_import(
+        current,
+        table,
+        mapping,
+        {},
+        "sprints.csv",
+        (("42", sprint.id),),
+    )
+
+    assert len(result.sprint_assignments) == 1
+    assert result.sprint_assignments[0].sprint_id == sprint.id
+    assert result.sprint_assignments[0].work_item_id == result.work_items[0].id
+    assert result.imports[-1].rows[0][3] == "42"
+    assert result.imports[-1].rows[1][3] == ""
+    assert current.sprint_assignments == ()
+
+
+def test_sprint_mapping_can_deliberately_leave_work_unassigned(plan):
+    sprint = Sprint(name="Iteration", period=plan.horizon)
+    current = replace(plan, sprints=(sprint,))
+    table = read_csv("Key,Summary,Type,Sprint\nJIRA-1,Task,Task,Later\n")
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("sprint", 3)))
+
+    result = preview_import(current, table, mapping, {}, "unassigned.csv", (("Later", None),))
+
+    assert result.sprint_assignments == ()
+
+
+@pytest.mark.parametrize(
+    ("sprint_mappings", "message"),
+    [
+        ((("Alpha", None), ("Alpha", None)), "at most once"),
+        ((("Other", None),), "Map every external sprint value explicitly"),
+        ((("Alpha", uuid4()),), "existing sprint"),
+    ],
+)
+def test_invalid_sprint_value_mappings_fail_without_mutation(plan, sprint_mappings, message):
+    sprint = Sprint(name="Iteration", period=plan.horizon)
+    current = replace(plan, sprints=(sprint,))
+    table = read_csv("Key,Summary,Type,Sprint\nJIRA-1,Task,Task,Alpha\n")
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("sprint", 3)))
+
+    with pytest.raises(ValueError, match=message):
+        preview_import(current, table, mapping, {}, "invalid.csv", sprint_mappings)
+
+    assert current.work_items == current.imports == current.sprint_assignments == ()
+
+
+def test_mapped_sprint_rejects_non_leaf_work_with_row_context(plan):
+    sprint = Sprint(name="Iteration", period=plan.horizon)
+    current = replace(plan, sprints=(sprint,))
+    table = read_csv(
+        "Key,Summary,Type,Parent,Sprint\nJIRA-1,Epic,Epic,,Alpha\nJIRA-2,Child,Task,JIRA-1,Alpha\n"
+    )
+    mapping = Mapping(
+        (
+            ("reference", 0),
+            ("title", 1),
+            ("type", 2),
+            ("parent", 3),
+            ("sprint", 4),
+        )
+    )
+
+    with pytest.raises(ValueError, match=r"CSV row 2 \(JIRA-1\).*executable leaf"):
+        preview_import(current, table, mapping, {}, "container.csv", (("Alpha", sprint.id),))
+
+    assert current.work_items == current.imports == current.sprint_assignments == ()
+
+
+def test_additive_anchor_sprint_value_is_ignored_and_assignment_is_preserved(plan):
+    sprint = Sprint(name="Iteration", period=plan.horizon)
+    current = replace(plan, sprints=(sprint,))
+    mapping = Mapping((("reference", 0), ("title", 1), ("type", 2), ("sprint", 3)))
+    initial = preview_import(
+        current,
+        read_csv("Key,Summary,Type,Sprint\nJIRA-1,Original,Task,\n"),
+        mapping,
+        {},
+        "initial.csv",
+    )
+    initial = assign_work_to_sprint(initial, sprint.id, initial.work_items[0].id)
+
+    result = preview_additive_import(
+        initial,
+        read_csv(
+            "Key,Summary,Type,Sprint\nJIRA-1,Stale,Task,Changed in Jira\nJIRA-2,New work,Task,\n"
+        ),
+        mapping,
+        {},
+        "additive.csv",
+    )
+
+    assert result.candidate.sprint_assignments == initial.sprint_assignments
+    assert result.candidate.imports[-1].rows == (("JIRA-2", "New work", "Task", ""),)
 
 
 def test_additive_import_rejects_an_anchor_removed_from_current_plan(plan):

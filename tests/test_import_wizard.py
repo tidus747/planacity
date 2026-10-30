@@ -6,7 +6,14 @@ from datetime import date
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from planacity.domain import PlanningHorizon, ProgramPlan, WorkItem, WorkItemType, WorkPriority
+from planacity.domain import (
+    PlanningHorizon,
+    ProgramPlan,
+    Sprint,
+    WorkItem,
+    WorkItemType,
+    WorkPriority,
+)
 from planacity.integrations.jira.csv_io import (
     JIRA_DATE_TIME_FORMAT,
     Mapping,
@@ -53,6 +60,82 @@ def test_wizard_offers_jira_datetime_input_format(app):
 
     assert wizard.date_format.findText(JIRA_DATE_TIME_FORMAT) >= 0
     wizard.deleteLater()
+
+
+def test_wizard_requires_explicit_sprint_choices_and_previews_result(app):
+    first = Sprint(
+        name="Iteration Alpha",
+        period=PlanningHorizon(date(2026, 1, 1), date(2026, 1, 14)),
+    )
+    second = Sprint(
+        name="Iteration Beta",
+        period=PlanningHorizon(date(2026, 1, 15), date(2026, 1, 28)),
+    )
+    plan = replace(empty_plan(), sprints=(second, first))
+    table = read_csv(
+        "Issue key,Summary,Issue Type,Sprint\n"
+        "TEST-1,Assigned,Task,Alpha source\n"
+        "TEST-2,Deliberately unassigned,Task,Beta source\n"
+        "TEST-3,Blank source,Task,\n"
+    )
+    wizard = ImportWizard(plan, table, "sprints.csv")
+    wizard.show()
+
+    wizard.advance()
+
+    assert set(wizard.sprint_boxes) == {"Alpha source", "Beta source"}
+    assert all(box.currentData() == "unmapped" for box in wizard.sprint_boxes.values())
+    wizard.advance()
+    assert wizard.pages.currentIndex() == 1
+    assert "Choose a Planacity sprint" in wizard.error.toPlainText()
+
+    alpha = wizard.sprint_boxes["Alpha source"]
+    beta = wizard.sprint_boxes["Beta source"]
+    alpha.setCurrentIndex(alpha.findData(first.id))
+    beta.setCurrentIndex(beta.findData("unassigned"))
+    wizard.advance()
+
+    assert wizard.pages.currentIndex() == 2
+    assert wizard.candidate is not None
+    assert len(wizard.candidate.sprint_assignments) == 1
+    assert wizard.candidate.sprint_assignments[0].work_item_id == wizard.candidate.work_items[0].id
+    assert wizard.candidate.sprint_assignments[0].sprint_id == first.id
+    assert wizard.preview_model.item(0, 6).text() == "Alpha source"
+    assert wizard.preview_model.item(0, 7).text() == first.name
+    assert wizard.preview_model.item(1, 6).text() == "Beta source"
+    assert wizard.preview_model.item(1, 7).text() == "Unassigned"
+    assert wizard.preview_model.item(2, 6).text() == "Blank"
+    assert "Map 1 of 2 source sprint value(s)" in wizard.preview.toPlainText()
+    assert plan.sprint_assignments == ()
+    wizard.reject()
+    wizard.deleteLater()
+
+
+def test_sprint_profile_saves_column_only_not_plan_specific_choices(app, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog
+
+    sprint = Sprint(name="Secret iteration", period=empty_plan().horizon)
+    plan = replace(empty_plan(), sprints=(sprint,))
+    table = read_csv("Issue key,Summary,Issue Type,Sprint\nTEST-1,Task,Task,Customer sprint\n")
+    profile = tmp_path / "sprint-mapping.json"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *args: (str(profile), ""))
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *args: (str(profile), ""))
+    wizard = ImportWizard(plan, table, "sprints.csv")
+
+    wizard.save_profile()
+    text = profile.read_text(encoding="utf-8")
+
+    assert '"sprint", 3' in text
+    assert "Customer sprint" not in text
+    assert sprint.name not in text
+    assert str(sprint.id) not in text
+    other = ImportWizard(plan, table, "other.csv")
+    other.load_profile()
+    assert other.current_mapping() == wizard.current_mapping()
+    other.advance()
+    assert other.sprint_boxes["Customer sprint"].currentData() == "unmapped"
+    wizard.deleteLater()
+    other.deleteLater()
 
 
 def test_wizard_previews_existing_anchors_without_mapping_or_mutating_them(app):

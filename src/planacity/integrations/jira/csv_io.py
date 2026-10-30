@@ -8,7 +8,14 @@ from datetime import date, datetime
 from decimal import Decimal, DecimalException
 from uuid import UUID, uuid4
 
-from planacity.domain import Person, ProgramPlan, WorkItem, WorkItemType, WorkPriority
+from planacity.domain import (
+    Person,
+    ProgramPlan,
+    SprintAssignment,
+    WorkItem,
+    WorkItemType,
+    WorkPriority,
+)
 from planacity.domain.models import ImportedWork, ImportSnapshot
 
 FIELDS = (
@@ -23,6 +30,7 @@ FIELDS = (
     "person",
     "status",
     "priority",
+    "sprint",
 )
 DATE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d/%b/%y")
 JIRA_DATE_TIME_FORMAT = "%d/%b/%y %I:%M %p"
@@ -198,6 +206,51 @@ def external_priorities(
     )
 
 
+def external_sprints(
+    table: CsvTable,
+    mapping: Mapping,
+    rows: tuple[tuple[str, ...], ...] | None = None,
+) -> tuple[str, ...]:
+    """Return distinct nonblank source sprint values in first-seen order."""
+    validate_columns(table, mapping)
+    index = dict(mapping.columns).get("sprint")
+    return (
+        ()
+        if index is None
+        else tuple(
+            dict.fromkeys(
+                row[index] for row in (table.rows if rows is None else rows) if row[index].strip()
+            )
+        )
+    )
+
+
+def _sprint_mapping(
+    plan: ProgramPlan,
+    source_values: tuple[str, ...],
+    mappings: tuple[tuple[str, UUID | None], ...],
+) -> dict[str, UUID | None]:
+    names = [name for name, _ in mappings]
+    if len(names) != len(set(names)):
+        raise ValueError("Map each external sprint value at most once.")
+    if set(names) != set(source_values):
+        missing = sorted(set(source_values) - set(names))
+        extra = sorted(set(names) - set(source_values))
+        details = []
+        if missing:
+            details.append("missing: " + ", ".join(missing))
+        if extra:
+            details.append("not present in new rows: " + ", ".join(extra))
+        raise ValueError("Map every external sprint value explicitly (" + "; ".join(details) + ").")
+    known = {value.id for value in plan.sprints}
+    for name, sprint_id in mappings:
+        if not name.strip():
+            raise ValueError("External sprint mapping names must be nonblank.")
+        if sprint_id is not None and (not isinstance(sprint_id, UUID) or sprint_id not in known):
+            raise ValueError(f"External sprint {name!r} must map to an existing sprint.")
+    return dict(mappings)
+
+
 def _validate_parent_type(
     kind: WorkItemType,
     title: str,
@@ -219,6 +272,7 @@ def preview_additive_import(
     mapping: Mapping,
     people: dict[str, Person],
     source_name: str,
+    sprint_mappings: tuple[tuple[str, UUID | None], ...] = (),
 ) -> JiraImportPreview:
     """Build an additive candidate while retaining existing references as anchors."""
     validate_columns(table, mapping)
@@ -277,6 +331,8 @@ def preview_additive_import(
         raise ValueError(
             "Map these external people before importing: " + ", ".join(sorted(missing))
         )
+    source_sprints = external_sprints(table, mapping, new_rows)
+    mapped_sprints = _sprint_mapping(plan, source_sprints, sprint_mappings)
 
     ids: dict[str, UUID] = {}
     types_by_identity: dict[str, WorkItemType | None] = {}
@@ -299,6 +355,7 @@ def preview_additive_import(
                 types_by_identity.setdefault(reference, item.kind)
 
     records = []
+    record_rows: list[tuple[int, tuple[str, ...], WorkItem]] = []
     source_rows = []
     errors = []
     for number, (row, key, reference, kind) in enumerate(
@@ -358,6 +415,7 @@ def preview_additive_import(
                     external_priority=cell(row, "priority"),
                 )
             )
+            record_rows.append((number, row, item))
             source_rows.append(row)
         except DecimalException:
             errors.append(
@@ -376,12 +434,28 @@ def preview_additive_import(
         if mapped_person.id in roster and roster[mapped_person.id] != mapped_person:
             raise ValueError("A mapped person differs from the current roster. Review the mapping.")
         roster[mapped_person.id] = mapped_person
+    imported_work = plan.work_items + tuple(record.item for record in records)
+    child_parents = {item.parent_id for item in imported_work if item.parent_id is not None}
+    sprint_assignments = list(plan.sprint_assignments)
+    for number, row, item in record_rows:
+        source_sprint = cell(row, "sprint")
+        sprint_id = mapped_sprints.get(source_sprint)
+        if not source_sprint.strip() or sprint_id is None:
+            continue
+        if item.kind == WorkItemType.EPIC or item.id in child_parents:
+            raise ValueError(
+                f"CSV row {number} ({cell(row, 'reference')}): only executable leaf work "
+                "can be assigned to a sprint. Leave this source sprint value unassigned or "
+                "map it only on executable rows."
+            )
+        sprint_assignments.append(SprintAssignment(sprint_id=sprint_id, work_item_id=item.id))
     return JiraImportPreview(
         replace(
             plan,
-            work_items=plan.work_items + tuple(record.item for record in records),
+            work_items=imported_work,
             people=tuple(roster.values()),
             imports=plan.imports + (snapshot,),
+            sprint_assignments=tuple(sprint_assignments),
         ),
         tuple(anchors),
     )
@@ -393,6 +467,9 @@ def preview_import(
     mapping: Mapping,
     people: dict[str, Person],
     source_name: str,
+    sprint_mappings: tuple[tuple[str, UUID | None], ...] = (),
 ) -> ProgramPlan:
     """Return the candidate plan for callers that do not need preview classifications."""
-    return preview_additive_import(plan, table, mapping, people, source_name).candidate
+    return preview_additive_import(
+        plan, table, mapping, people, source_name, sprint_mappings
+    ).candidate

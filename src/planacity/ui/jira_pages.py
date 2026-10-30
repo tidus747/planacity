@@ -392,8 +392,10 @@ class ImportPage(WorkspacePage):
             label(
                 "Imported source cells stay in the project. Export includes "
                 "work structure, hours, dates, explicitly mapped priority, original "
-                "status and external assignees. WorkGroups, relationships, and unmapped columns "
-                "are not exported. Keep a JSON backup for the complete plan."
+                "status and external assignees. Optional Sprint values can be mapped "
+                "explicitly to existing Planacity sprints during import. WorkGroups, "
+                "relationships, sprint assignments, and unmapped columns are not exported. "
+                "Keep a JSON backup for the complete plan."
             )
         )
         panel.content.addWidget(

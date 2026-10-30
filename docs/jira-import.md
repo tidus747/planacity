@@ -30,6 +30,12 @@ connection are used.
    Match each nonblank external person to a roster entry or explicitly create
    one. This sets the canonical work assignee in the current plan and preserved
    baseline. It does not create work allocations or capacity hours.
+   If Sprint is mapped, review every distinct nonblank value from the new rows.
+   Choose one existing Planacity sprint or deliberately choose **Leave
+   unassigned**. Planacity does not match sprint names, external references,
+   dates, hierarchy, or assignees automatically. Only executable leaf work can
+   receive a sprint assignment; Epics and Tasks with imported children must
+   remain unassigned. Blank cells require no choice.
 4. Review the complete preview and choose **Import**. Errors keep the wizard open;
    Cancel leaves the document unchanged. Imported work is added to the active
    plan, which becomes unsaved until you save it.
@@ -45,9 +51,11 @@ reuse a local JSON profile. After choosing custom type mappings, go Back to the
 first page to save them. Priority value mappings follow the same workflow.
 Profiles require the same headers in the same order;
 they never silently adapt a changed CSV. They contain column names, positions,
-type and priority-value mappings, units, and date format, not CSV rows or person
-identities. Version 1 profiles remain readable; newly saved version 2 profiles
-include priority mappings.
+type and priority-value mappings, units, date format, and the optional Sprint
+column position, not CSV rows, person identities, source sprint values, or
+plan-specific sprint IDs. Sprint choices are reviewed again for every import.
+Version 1 profiles remain readable; newly saved version 2 profiles include
+priority mappings.
 Profiles with duplicate JSON fields are rejected rather than choosing one value.
 Remove the duplicate fields or save a new profile from the wizard. A failed load
 keeps the current mapping unchanged.
@@ -79,6 +87,14 @@ Jira-side changes, and resolving conflicts still belong to the explicit v0.8
 reconciliation workflow tracked by issue #139. Unknown parents, invalid
 hierarchy, dates, estimates, and duplicate references within one CSV block the
 complete import.
+
+Sprint mapping follows the same additive boundary. A repeated-reference anchor's
+Sprint cell is ignored together with its other cells, so its current Planacity
+sprint assignment is never changed. Only new rows contribute source sprint values
+to the mapping page and only their canonical leaf work can receive new
+SprintAssignment records. The original source cell remains in the immutable raw
+snapshot. Jira sprint export, automatic sprint creation, and synchronization are
+not part of this workflow.
 
 ## Imported work in Plan
 
@@ -136,6 +152,8 @@ Real screenshots using only the fictional example:
 ![Jira date-time mapping in dark mode](images/jira-datetime-dark.png)
 ![Priority mapping in light mode](images/jira-priority-mapping-light.png)
 ![Priority mapping in dark mode](images/jira-priority-mapping-dark.png)
+![Sprint mapping in light mode](images/jira-sprint-mapping-light.png)
+![Sprint mapping in dark mode](images/jira-sprint-mapping-dark.png)
 ![Import preview in light mode](images/import-light.png)
 ![Import preview in dark mode](images/import-dark.png)
 ![Changes in light mode](images/changes-light.png)

@@ -339,6 +339,20 @@ Status: implemented by issue #159. Plan derives provenance from snapshot WorkIte
 IDs, applies a light/dark amber treatment plus an import icon, and explains that
 the work remains editable and unsynchronized. No schema field or lock was added.
 
+## C10 - Explicit Jira CSV sprint mapping
+
+Target: v0.5. Depends on C06 and J01. Tracked by
+[issue #183](https://github.com/tidus747/planacity/issues/183).
+
+Add an optional Sprint import column and require every distinct nonblank value on
+new rows to map explicitly to an existing Planacity sprint or Leave unassigned.
+Create assignments only for executable imported leaves. Repeated-reference
+anchors remain omitted and unchanged. Preserve source cells in the raw snapshot,
+but keep plan-specific sprint choices out of reusable profiles. No schema change.
+
+Non-goals: Jira sprint export, automatic name or ID matching, sprint creation,
+anchor updates, REST synchronization, or automatic distribution.
+
 ## S01 - Define single-person assignment transitions
 
 Target: v0.4 correction before D01. Depends on existing allocation services.
