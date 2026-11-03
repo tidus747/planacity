@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
-    QMessageBox,
     QPushButton,
     QScrollArea,
     QStackedWidget,
@@ -25,6 +24,7 @@ from planacity.ui.icons import image_icon, image_pixmap, navigation_icon
 from planacity.ui.jira_pages import ChangesPage, ImportPage
 from planacity.ui.overview import OverviewPage
 from planacity.ui.pages import label
+from planacity.ui.planning_guide import planning_guide_shortcut, show_about, show_planning_guide
 from planacity.ui.program_calendar import CalendarPage
 from planacity.ui.project_actions import ProjectActions
 from planacity.ui.reservations import reserve_capacity_dialog
@@ -190,24 +190,13 @@ class MainWindow(QMainWindow):
             action.triggered.connect(partial(self.set_theme, theme))
             group.addAction(action)
             self.theme_actions[theme] = action
-        about = self.menuBar().addMenu("&Help").addAction("About Planacity")
-        about.triggered.connect(self._about)
-
-    def _about(self) -> None:
-        QMessageBox.about(
-            self,
-            "About Planacity",
-            "<b>Planacity</b><p>Plan the work. "
-            "Respect the capacity.</p><p>Program Calendar development preview. "
-            "Create, edit, and save local Program Plans. "
-            "Import and export Jira CSV, and review work on the Timeline. "
-            "Configure work calendars and review nominal hours. "
-            "Edit dated availability and review overlaps. "
-            "Reserve recurring capacity with a per-person preview. "
-            "Review dated capacity, reservations, allocations, and planning findings. "
-            "Manage shared holidays and program events with explicit capacity impact. "
-            "Create manual sprints and assign executable work in Calendar.</p>",
-        )
+        help_menu = self.menuBar().addMenu("&Help")
+        self.planning_guide_action = help_menu.addAction("Planning with an &agent...")
+        self.planning_guide_action.setShortcut(planning_guide_shortcut())
+        self.planning_guide_action.triggered.connect(lambda: show_planning_guide(self))
+        help_menu.addSeparator()
+        self.about_action = help_menu.addAction("&About Planacity")
+        self.about_action.triggered.connect(lambda: show_about(self))
 
     def _refresh_document(self) -> None:
         document = self.session.document
