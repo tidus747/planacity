@@ -6,6 +6,9 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ### Added
 
+- Offline planning guidance in Help and About. The version-matched dialog shows
+  application, JSON schema, and guide revisions, copies instructions without
+  plan data, and saves an explicit UTF-8 Markdown guide for external review.
 - A packaged, provider-neutral planning guide contract for the current JSON
   writer. The offline resources include a complete schema 14 field reference,
   version identifiers, safe proposal instructions, and validated empty and

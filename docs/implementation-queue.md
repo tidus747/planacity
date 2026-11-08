@@ -475,6 +475,7 @@ source distributions. Help/About exposure remains A02.
 ## A02 - Expose the guide through Help and About
 
 Target: v0.5. Depends on A01. This is the smallest user-facing feature.
+Tracked by [issue #187](https://github.com/tidus747/planacity/issues/187).
 
 Add Help -> Planning with an agent and an About button opening the same offline
 guide. Display the three version identifiers, Copy instructions, and Save guide.
@@ -487,6 +488,11 @@ Acceptance: keyboard access, readable light/dark text, clipboard contents,
 export cancellation/write errors, no network dependency, and packaged install
 without source files. Include real screenshots in both themes. No model launch,
 account/API configuration, automatic data transfer, or project modification.
+
+Status: implemented by issue #187. Help and About open one packaged-guide dialog
+with exact version identifiers, read-only instructions, clipboard isolation, and
+explicit UTF-8 Markdown save behavior. The dialog has no access to the current
+ProgramPlan. Proposal comparison and planning-kit preparation remain A03.
 
 ## A03 - Review external proposals and prepare planning kits
 

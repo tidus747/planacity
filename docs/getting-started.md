@@ -125,6 +125,32 @@ current plan has unsaved changes. **File -> Plan properties...** edits the name,
 description, and horizon. Both appearances remain available from the sidebar and
 **View -> Appearance**; this preference is stored separately from project data.
 
+## Plan with an external assistant
+
+Choose **Help -> Planning with an agent...** (`F1` on supported keyboards), or
+open **About Planacity** and choose the same action. The offline dialog identifies
+the installed application version, writable JSON schema, and guide revision. It
+contains the complete version-matched JSON contract and the current planning
+rules.
+
+**Copy instructions** places only that guide text on the clipboard. It never
+includes the active plan, people, work, imported rows, or bundled examples.
+**Save guide...** writes the same instructions as UTF-8 Markdown after an
+explicit path and replacement decision. Cancel and write errors leave the plan
+and dialog unchanged.
+
+The current assisted workflow remains **Export JSON backup -> edit a separate
+proposal -> Restore JSON backup -> manually review -> Save As**. Structural
+restore validation does not prove that capacity or dependencies are feasible,
+and Planacity does not yet compare the candidate automatically with its original.
+Opening the guide launches no model, uses no account, and sends nothing over the
+network.
+
+Actual offline guide in both appearances:
+
+![Planning with an agent in light mode](images/planning-guide-light.png)
+![Planning with an agent in dark mode](images/planning-guide-dark.png)
+
 ## Explain People WorkGroups
 
 People associations are calculated from positive work allocations and effective

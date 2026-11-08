@@ -1,7 +1,8 @@
 # Versioned guidance for agent-assisted planning
 
-Date: 2026-10-07. Status: A01 packaged contract implemented; A02-A03 remain
-planned. See the [implementation queue](implementation-queue.md) for A01-A03.
+Date: 2026-10-07. Status: A01 packaged contract and A02 offline Help UI
+implemented; A03 remains planned. See the
+[implementation queue](implementation-queue.md) for A01-A03.
 
 ## Decision and user outcome
 
@@ -48,8 +49,9 @@ The A01 implementation loads these resources from the installed Python package
 and composes the guide header from distribution metadata, the canonical codec
 schema constant, and one guide-revision constant. It does not depend on a source
 checkout. The empty and representative examples are validated by the strict
-decoder and inspected in built wheel and source distributions. A02 will add the
-Help and About entry points; A01 itself adds no user interface.
+decoder and inspected in built wheel and source distributions. A02 exposes this
+same contract from Help and About, with copy and save actions that never receive
+or include the active plan.
 
 Display all three in the guide and exported kit. Obtain application/schema
 identifiers from their existing constants during packaging, not copied UI text.
