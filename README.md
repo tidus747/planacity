@@ -15,8 +15,8 @@
   <a href="https://github.com/tidus747/planacity/actions/workflows/ci.yml">
     <img alt="CI" src="https://github.com/tidus747/planacity/actions/workflows/ci.yml/badge.svg?branch=main">
   </a>
-  <img alt="Development version 0.4.0.dev0" src="https://img.shields.io/badge/version-0.4.0.dev0-075985">
-  <img alt="Python 3.11 or newer" src="https://img.shields.io/badge/python-3.11%2B-3776AB">
+  <img alt="Development version 0.5.0.dev0" src="https://img.shields.io/badge/version-0.5.0.dev0-075985">
+  <img alt="Python 3.11 through 3.14" src="https://img.shields.io/badge/python-3.11--3.14-3776AB">
   <a href="LICENSE">
     <img alt="GPL 3.0 license" src="https://img.shields.io/badge/license-GPL--3.0-6f42c1">
   </a>
@@ -71,22 +71,23 @@ example.
 
 | | Current state |
 | --- | --- |
-| Source version | `0.4.0.dev0` |
-| Active milestone | v0.5 - Program Calendar |
+| Source version | `0.5.0.dev0` |
+| Prepared preview | v0.5 - Program Calendar |
 | Project file schema | 14 |
-| Distribution | Portable Windows preview automated - no stable installer yet |
+| Distribution | Windows portable prerelease pending - no stable installer yet |
 
-The v0.1 planning foundation and v0.2 Jira roundtrip are implemented. The v0.3
-Visual Planning source candidate has
-[prepared release notes](docs/releases/v0.3.0.md), but publication still requires
-an approved release. The v0.4 Team & Capacity feature set is implemented in the
-source preview. Active work now targets the v0.5 Program Calendar milestone;
-this does not publish or rename the current `0.4.0.dev0` source version.
+The v0.1 planning foundation, v0.2 Jira roundtrip, v0.3 Visual Planning, and v0.4
+Team & Capacity feature sets are implemented in source. The current
+`0.5.0.dev0` candidate adds Program Calendar, sprint planning, and the latest
+capacity and Jira safeguards. Its
+[prepared release notes](docs/releases/v0.5.0-dev.0.md) do not publish a tag or
+GitHub prerelease; publication still requires approval of the exact tested
+`main` commit.
 
-The repository can also build and smoke-test an unsigned, portable Windows x64
-ZIP that runs without a Python installation. No executable has been published
-by this change; downloads remain subject to an explicitly approved GitHub
-prerelease. See the [release procedure](docs/releasing.md#windows-portable-development-previews).
+The repository can build and smoke-test an unsigned, portable Windows x64 ZIP
+that runs without a Python installation. No executable is advertised until the
+matching GitHub prerelease and checksum exist. See the
+[release procedure](docs/releasing.md#windows-portable-development-previews).
 
 Current reservation previews deduct shared capacity-affecting program events but
 not work allocations. Plan findings and People now present the shared dated-capacity
@@ -110,7 +111,7 @@ Schemas 1-11 open with no shared program calendar events.
 
 ## Run from source
 
-Planacity requires Python 3.11 or newer. Windows is the initial desktop target.
+Planacity requires Python 3.11 through 3.14. Windows is the initial desktop target.
 
 ```powershell
 py -3.11 -m venv .venv

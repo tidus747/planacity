@@ -37,7 +37,8 @@ same invariants available to the future UI and file loaders without Qt imports.
 
 ## v0.1 decisions
 
-- Use a `src` layout, setuptools, and Python 3.11+; PySide6 is the sole runtime
+- Use a `src` layout, setuptools, and Python 3.11 through 3.14; PySide6 is the
+  sole runtime
   dependency. Pytest, Ruff, mypy, and build are development tools.
 - Keep the initial shell honest about unavailable functionality. Add actual
   editing and file actions as complete, tested increments.

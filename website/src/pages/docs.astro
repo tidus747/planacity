@@ -35,15 +35,15 @@ const linux =
           <strong>A development preview, built in the open.</strong>
           <p>
             There is no stable installer yet. You will need Git and Python 3.11
-            or newer. Installing dependencies requires an internet connection;
-            planning afterwards works offline.
+            through 3.14. Installing dependencies requires an internet
+            connection; planning afterwards works offline.
           </p>
         </div>
         <section id="install">
           <h2>01. Run from source</h2>
           <p>Windows is the initial desktop target. In PowerShell, run:</p>
           <pre><code>{windows}</code></pre>
-          <p>On Linux, with Python 3.11 or newer:</p>
+          <p>On Linux, with Python 3.11 through 3.14:</p>
           <pre><code>{linux}</code></pre>
           <p>
             The application opens as a desktop window. Keep your plans in local{" "}
@@ -147,8 +147,8 @@ const linux =
         <section id="status">
           <h2>Know the current boundaries</h2>
           <p>
-            Current source is <strong>0.4.0.dev0</strong>; v0.5 Program Calendar
-            is the active development milestone, not a published release.
+            Current source is the <strong>0.5.0.dev0</strong> Program Calendar
+            preview candidate, not a published release.
             Calendars, availability, reservations, and dated work use one exact
             capacity calculation across findings, People, and Overview.
           </p>
@@ -161,9 +161,9 @@ const linux =
             Shared holidays and program events affect capacity, are editable in
             Calendar, appear in Overview, and can be enabled as aligned Timeline
             lanes. Calendar also reviews generic availability CSV files and
-            supports manual sprint planning. Next: reconcile reservation-backed
-            Jira work explicitly, add sprint load views, and adapt provider
-            exports without guessing.{" "}
+            supports manual sprint planning, exact sprint load, graphical sprint
+            lanes, and explicit reservation-backed work. Provider-specific
+            imports and reviewed planning proposals remain later work.{" "}
             <a href={`${base}/roadmap/`}>See the roadmap</a>, or{" "}
             <a href={`${repo}/issues`}>report what you find</a>.
           </p>
