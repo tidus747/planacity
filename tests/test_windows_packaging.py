@@ -13,12 +13,19 @@ from PySide6.QtGui import QImage
 from scripts import package_windows
 
 
+def test_current_project_version_produces_prepared_preview_assets() -> None:
+    version = package_windows.project_version()
+
+    assert version == "0.5.0.dev0"
+    assert package_windows.artifact_stem(version) == "Planacity-v0.5.0-dev.0-windows-x64"
+
+
 def test_preview_version_maps_to_semver_artifact_name() -> None:
-    assert package_windows.release_label("0.4.0.dev0") == "0.4.0-dev.0"
-    assert package_windows.artifact_stem("0.4.0.dev1") == "Planacity-v0.4.0-dev.1-windows-x64"
-    assert package_windows.release_label("0.4.0") == "0.4.0"
+    assert package_windows.release_label("0.5.0.dev0") == "0.5.0-dev.0"
+    assert package_windows.artifact_stem("0.5.0.dev1") == "Planacity-v0.5.0-dev.1-windows-x64"
+    assert package_windows.release_label("0.5.0") == "0.5.0"
     with pytest.raises(ValueError, match="Unsupported development version"):
-        package_windows.release_label("0.4.0.devnext")
+        package_windows.release_label("0.5.0.devnext")
 
 
 def test_windows_icon_contains_every_required_resolution(tmp_path: Path) -> None:
@@ -41,7 +48,7 @@ def test_windows_icon_contains_every_required_resolution(tmp_path: Path) -> None
 def test_archive_has_one_versioned_root_and_matching_checksum(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    version = "0.4.0.dev7"
+    version = "0.5.0.dev7"
     staged = tmp_path / package_windows.artifact_stem(version)
     staged.mkdir()
     (staged / "Planacity.exe").write_bytes(b"preview")

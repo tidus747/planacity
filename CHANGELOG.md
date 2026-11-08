@@ -4,6 +4,8 @@ Meaningful user-facing changes are recorded here. Planacity uses Semantic Versio
 
 ## [Unreleased]
 
+## [0.5.0-dev.0] - Release candidate
+
 ### Added
 
 - Offline planning guidance in Help and About. The version-matched dialog shows

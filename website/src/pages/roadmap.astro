@@ -51,14 +51,14 @@ const later = [
       <aside class="doc-nav" aria-label="Roadmap sections">
         <p>In this roadmap</p>
         <a href="#available">Available today</a>
-        <a href="#current">v0.5 / Current focus</a>
-        <a href="#next">v0.5 / Next slices</a>
+        <a href="#current">v0.5 / Preview candidate</a>
+        <a href="#next">After v0.5</a>
         <a href="#later">Beyond the preview</a>
         <a href={`${repo}/issues`}>Track GitHub issues</a>
       </aside>
       <div class="prose">
         <div class="notice">
-          <strong>Current target: v0.5 Program Calendar</strong>
+          <strong>Current target: review the v0.5 Program Calendar preview</strong>
           <p>
             This is a development preview, not a published stable release. The
             roadmap describes direction, not promised delivery dates.
@@ -107,9 +107,9 @@ const later = [
         <section id="current">
           <h2>Now: keep capacity and Jira traceability consistent.</h2>
           <p>
-            Development proceeds through focused issues, one at a time. The
-            source version remains 0.4.0.dev0 until a release change is
-            reviewed.
+            Development proceeds through focused issues, one at a time. Source
+            version 0.5.0.dev0 is prepared for review; it is not a published
+            release or stable installer.
           </p>
           <article class="release">
             <span class="release-tag">v0.5 A</span>
@@ -149,9 +149,9 @@ const later = [
             </div>
           </article>
           <article class="release">
-            <span class="release-tag">ACTIVE</span>
+            <span class="release-tag">v0.5 D</span>
             <div>
-              <h3>Reservation-backed Jira work</h3>
+              <h3>Reservation-backed capacity - complete in source</h3>
               <p>
                 The explicit allocation-to-reservation domain link and schema
                 14 persistence lifecycle are in place. Exact capacity now
@@ -167,16 +167,16 @@ const later = [
           </article>
         </section>
         <section id="next">
-          <h2>Next: deepen the v0.5 planning loop.</h2>
+          <h2>Next: learn from the preview, then move toward v0.6.</h2>
           <article class="release">
             <span class="release-tag">SPRINTS</span>
             <div>
-              <h3>Sprint interoperability and reviewed proposals</h3>
+              <h3>Reviewed sprint proposals</h3>
               <p>
-                Manual planning, capacity comparison, and graphical lanes are
-                now implemented. Jira sprint mapping remains configurable later,
-                and automatic distribution must be an explainable reviewed
-                proposal rather than a silent mutation.
+                Manual planning, Jira sprint import mapping, capacity comparison,
+                and graphical lanes are implemented. Automatic distribution must
+                remain an explainable reviewed proposal rather than a silent
+                mutation.
               </p>
               <a href={`${repo}/issues/147`}>Follow issue #147</a>
             </div>
@@ -197,8 +197,9 @@ const later = [
             <div>
               <h3>Offline planning-assistant guide</h3>
               <p>
-                Package the versioned schema guidance and expose it through Help
-                without accounts, automatic uploads, or a provider dependency.
+                The versioned offline guide is available through Help and About.
+                A later review workflow may compare external proposals without
+                accounts, automatic uploads, or a provider dependency.
               </p>
             </div>
           </article>
